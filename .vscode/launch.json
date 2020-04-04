@@ -5,18 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-
-            "name": "CMake Debug",
+            "name": "Example Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/main",
+            "program": "${workspaceFolder}/build/examples/window/window",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/",
+            "cwd": "${workspaceFolder}/build/examples/window",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "miDebuggerArgs": "-v",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
