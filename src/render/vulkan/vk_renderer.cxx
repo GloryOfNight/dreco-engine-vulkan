@@ -3,16 +3,12 @@
 #include "vk_check.hxx"
 #include "vk_log.hxx"
 
-#include <vulkan/vk_icd.h>
-#include <vulkan/vk_layer.h>
-#include <vulkan/vulkan_core.h>
-
 #include <iostream>
 
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), allocator(nullptr)
 {
-	createInstance();
 	createWindow();
+	createInstance();
 	createSurface();
 	selectPhysicalDevice();
 	createLogicalDevice();
