@@ -1,10 +1,11 @@
-#include <iostream>
 #include "engine/engine.hxx"
 
-int main() 
+#include <iostream>
+
+int main()
 {
-    std::cout << "Hello there" << std::endl;
-    engine e;
-    e.runMainLoop();
-    return 0;
+	std::cout << "Hello there" << std::endl;
+	engine e;
+	e.runMainLoop();
+	return 0;
 }

@@ -36,21 +36,6 @@ Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat:   false
 FixNamespaceComments: true
-ForEachMacros:
-  - for
-IncludeBlocks:   Regroup
-IncludeCategories:
-  - Regex:           '.*\.generated\.h'
-    Priority:        100
-  - Regex:           '.*(PCH).*'
-    Priority:        -1
-  - Regex:           '".*"'
-    Priority:        1
-  - Regex:           '^<.*\.(h)>'
-    Priority:        3
-  - Regex:           '^<.*>'
-    Priority:        4
-IncludeIsMainRegex: '([-_](test|unittest))?$'
 IndentCaseLabels: true
 IndentPPDirectives: None
 IndentWidth:     4
@@ -103,8 +88,8 @@ RawStringFormats:
       - ParseTextProtoOrDie
     CanonicalDelimiter: ''
 ReflowComments:  true
-SortIncludes:    true
-SortUsingDeclarations: true
+SortIncludes:    false
+SortUsingDeclarations: false
 SpaceAfterCStyleCast: true
 SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true

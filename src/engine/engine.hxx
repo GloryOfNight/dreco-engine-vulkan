@@ -5,13 +5,13 @@ class vk_renderer;
 class engine
 {
 public:
-    engine();
-    ~engine();
+	engine();
+	~engine();
 
-    void runMainLoop();
-    
+	void runMainLoop();
+
 private:
-    vk_renderer *renderer;
+	vk_renderer* renderer;
 
-    bool keep_main_loop = false;
+	bool keep_main_loop = false;
 };
