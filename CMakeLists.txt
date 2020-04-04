@@ -12,7 +12,7 @@ add_library(${PROJECT_NAME} ${SOURCE_LIST})
 find_package(glfw3 REQUIRED)
 
 if (UNIX)
-target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} vulkan glfw)
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC

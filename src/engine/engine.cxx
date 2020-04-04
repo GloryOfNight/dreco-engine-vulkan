@@ -1,6 +1,5 @@
 #include "engine.hxx"
 #include "render/vulkan/vk_renderer.hxx"
-
 #include <GLFW/glfw3.h>
 
 engine::engine()
