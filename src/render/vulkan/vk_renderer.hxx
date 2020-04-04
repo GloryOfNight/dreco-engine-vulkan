@@ -14,14 +14,35 @@ public:
     GLFWwindow *getWindow() const;
 
 protected:
-private:
+    inline void createWindow();
+
+    inline void createInstance();
+    
+    inline void createSurface();
+
+    inline void selectPhysicalDevice();
+    
+    inline void createLogicalDevice();
+private:   
     engine *_engine;
 
     GLFWwindow *window;
+
+    VkAllocationCallbacks* allocator;
 
     VkInstance instance;
 
     VkSurfaceKHR surface;
 
-    VkAllocationCallbacks* allocator;
+    VkPhysicalDevice mGpu = VK_NULL_HANDLE;
+
+    VkPhysicalDeviceProperties mGpuProperties;
+    
+    VkPhysicalDeviceFeatures mGpuFeatures;
+
+    VkDevice device = VK_NULL_HANDLE;
+
+    VkQueue mGraphicsQueue;
+
+    
 };
