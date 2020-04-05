@@ -6,6 +6,9 @@
 #include "vk_swapchain.hxx"
 
 #include <vulkan/vulkan_core.h>
+
+#include <vector>
+#include <set>
 #include <iostream>
 
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
@@ -60,15 +63,15 @@ void vk_renderer::createInstance()
         .apiVersion = VK_API_VERSION_1_1
     };
     
-    uint32_t count;
-    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+    uint32_t extCount;
+    const char** extensions = glfwGetRequiredInstanceExtensions(&extCount);
 
     VkInstanceCreateInfo instance_info
     {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .enabledExtensionCount = count,
+        .enabledExtensionCount = extCount,
         .ppEnabledExtensionNames = extensions
     };
 	// clang-format on
@@ -107,42 +110,48 @@ void vk_renderer::selectPhysicalDevice()
 
 void vk_renderer::createLogicalDevice()
 {
-	uint32_t queueFamilyPropertiesCount;
-	vkGetPhysicalDeviceQueueFamilyProperties(mGpu, &queueFamilyPropertiesCount, nullptr);
-	VkQueueFamilyProperties queueFamilyProperties[queueFamilyPropertiesCount];
-	vkGetPhysicalDeviceQueueFamilyProperties(
-		mGpu, &queueFamilyPropertiesCount, &queueFamilyProperties[0]);
+	vk_queue_family queueFamily;
+	queueFamily.findQueueFamilies(mGpu, mSurface);
+	
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
+	std::set<uint32_t> uniqueQueueFamilies {queueFamily.mIdxGraphicsFamily};
 
-	VkDeviceQueueCreateInfo deviceQueueInfos[queueFamilyPropertiesCount]{};
-	for (uint32_t i = 0; i < queueFamilyPropertiesCount; ++i)
+	for (auto i : uniqueQueueFamilies) 
 	{
 		float priorities[]{1.0f};
 
-		VkDeviceQueueCreateInfo& deviceQueueInfo = deviceQueueInfos[0];
+		VkDeviceQueueCreateInfo deviceQueueInfo{};
 		deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		deviceQueueInfo.queueFamilyIndex = i;
-		deviceQueueInfo.queueCount = queueFamilyPropertiesCount;
+		deviceQueueInfo.queueCount = 1;
 		deviceQueueInfo.pQueuePriorities = priorities;
+		queueCreateInfoList.push_back(deviceQueueInfo);
 	}
+
+	const uint32_t deviceExtensionsCount = 1;
+	const char* deviceExtensions[deviceExtensionsCount] 
+	{
+		"VK_KHR_swapchain"
+	};
 
 	// clang-format off
 	VkDeviceCreateInfo deviceCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		.pNext = nullptr,
-		.queueCreateInfoCount = queueFamilyPropertiesCount,
-		.pQueueCreateInfos = deviceQueueInfos,
+		.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfoList.size()),
+		.pQueueCreateInfos = queueCreateInfoList.data(),
 		.enabledLayerCount = 0,
 		.ppEnabledLayerNames = nullptr,
-		.enabledExtensionCount = 0,
-		.ppEnabledExtensionNames = nullptr,
+		.enabledExtensionCount = deviceExtensionsCount,
+		.ppEnabledExtensionNames = deviceExtensions,
 		.pEnabledFeatures = &mGpuFeatures
     };
 	// clang-format on
 
 	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
 
-	vkGetDeviceQueue(mDevice, 0, 0, &mGraphicsQueue);
+	vkGetDeviceQueue(mDevice, queueFamily.mIdxGraphicsFamily, 0, &mGraphicsQueue);
 }
 
 void vk_renderer::createSwapchain()
