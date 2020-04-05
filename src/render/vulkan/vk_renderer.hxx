@@ -1,6 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#include <vector>
 
 class engine;
 
@@ -29,6 +30,15 @@ protected:
 
 	inline void createSwapchain();
 
+	inline void createImageViews();
+
+	inline void createRenderPass();
+
+	inline void createFramebuffers();
+
+	inline void createCommandPool();
+
+	inline void createCommandBuffers();
 private:
 	engine* _engine;
 
@@ -56,7 +66,21 @@ private:
 
 	VkPresentModeKHR mPresentMode;
 
-	VkExtent2D mExtent2D;
+	VkExtent2D mSwapchainExtent;
 
 	VkSwapchainKHR mSwapchain;
+
+	uint32_t mSwapchainImageCount = 2;
+
+	std::vector<VkImage> mSwapchainImages;
+
+	std::vector<VkImageView> mSwapchainImageViews;
+
+	std::vector<VkFramebuffer> mSwapchainFramebuffers;
+
+	VkRenderPass mRenderPass; 
+
+	VkCommandPool mCommandPool;
+
+	std::vector<VkCommandBuffer> mCommandBuffers;
 };

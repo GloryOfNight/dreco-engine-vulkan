@@ -7,7 +7,6 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include <vector>
 #include <set>
 #include <iostream>
 
@@ -19,13 +18,31 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 	selectPhysicalDevice();
 	createLogicalDevice();
 	createSwapchain();
+	createImageViews();
+	createRenderPass();
+	createFramebuffers();
+	createCommandPool();
+	createCommandBuffers();
 }
 
 vk_renderer::~vk_renderer()
 {
-	glfwDestroyWindow(window);
+	vkFreeCommandBuffers(mDevice, mCommandPool,
+		static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
+	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
+	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
+	for (auto i : mSwapchainFramebuffers)
+	{
+		vkDestroyFramebuffer(mDevice, i, mAllocator);
+	}
+	for (auto i : mSwapchainImageViews)
+	{
+		vkDestroyImageView(mDevice, i, mAllocator);
+	}
+
 	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
 	vkDestroyDevice(mDevice, mAllocator);
+	glfwDestroyWindow(window);
 	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
 	vkDestroyInstance(mInstance, nullptr);
 }
@@ -112,11 +129,11 @@ void vk_renderer::createLogicalDevice()
 {
 	vk_queue_family queueFamily;
 	queueFamily.findQueueFamilies(mGpu, mSurface);
-	
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies {queueFamily.mIdxGraphicsFamily};
 
-	for (auto i : uniqueQueueFamilies) 
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
+	std::set<uint32_t> uniqueQueueFamilies{queueFamily.mIdxGraphicsFamily};
+
+	for (auto i : uniqueQueueFamilies)
 	{
 		float priorities[]{1.0f};
 
@@ -129,10 +146,7 @@ void vk_renderer::createLogicalDevice()
 	}
 
 	const uint32_t deviceExtensionsCount = 1;
-	const char* deviceExtensions[deviceExtensionsCount] 
-	{
-		"VK_KHR_swapchain"
-	};
+	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
 
 	// clang-format off
 	VkDeviceCreateInfo deviceCreateInfo
@@ -161,7 +175,7 @@ void vk_renderer::createSwapchain()
 	mSurfaceCapabilities = swapchain.mCapabilities;
 	mSurfaceFormat = swapchain.getSurfaceFormat();
 	mPresentMode = swapchain.getPresentMode();
-	mExtent2D = swapchain.mCapabilities.currentExtent;
+	mSwapchainExtent = swapchain.mCapabilities.currentExtent;
 
 	const uint32_t mSwapchainImageCount = mSurfaceCapabilities.minImageCount + 1;
 
@@ -178,7 +192,7 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.minImageCount = mSwapchainImageCount;
 	swapchainCreateInfo.imageFormat = mSurfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = mSurfaceFormat.colorSpace;
-	swapchainCreateInfo.imageExtent = mExtent2D;
+	swapchainCreateInfo.imageExtent = mSwapchainExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	swapchainCreateInfo.queueFamilyIndexCount = 2;
@@ -191,4 +205,113 @@ void vk_renderer::createSwapchain()
 
 	vk_checkError(
 		vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
+}
+
+void vk_renderer::createImageViews()
+{
+	mSwapchainImageViews.resize(mSwapchainImageCount);
+
+	for (uint32_t i = 0; i < mSwapchainImageCount; ++i)
+	{
+		VkImageViewCreateInfo imageViewCreateInfo{};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.image = mSwapchainImages[i];
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = mSurfaceFormat.format;
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 1;
+		imageViewCreateInfo.subresourceRange.layerCount = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+
+		vk_checkError(vkCreateImageView(
+			mDevice, &imageViewCreateInfo, mAllocator, &mSwapchainImageViews[i]));
+	}
+}
+
+void vk_renderer::createRenderPass() 
+{
+	VkAttachmentDescription colorAttachment{};
+	colorAttachment.format = mSurfaceFormat.format;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subPass{};
+	subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subPass.colorAttachmentCount = 1;
+	subPass.pColorAttachments = &colorAttachmentRef;
+
+	VkRenderPassCreateInfo renderPassCreateInfo{};
+	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassCreateInfo.attachmentCount = 1;
+	renderPassCreateInfo.pAttachments = &colorAttachment;
+	renderPassCreateInfo.subpassCount = 1;
+	renderPassCreateInfo.pSubpasses = &subPass;
+	renderPassCreateInfo.dependencyCount = 0;
+	renderPassCreateInfo.pDependencies = nullptr;
+
+	vk_checkError(vkCreateRenderPass(mDevice, &renderPassCreateInfo, mAllocator, &mRenderPass));
+}
+
+void vk_renderer::createFramebuffers()
+{
+	mSwapchainFramebuffers.resize(mSwapchainImageViews.size());
+
+	for (uint32_t i = 0; i < mSwapchainImageViews.size(); ++i)
+	{
+		VkImageView attachments[]{mSwapchainImageViews[i]};
+
+		VkFramebufferCreateInfo framebufferCreateInfo{};
+		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferCreateInfo.renderPass = mRenderPass;
+		framebufferCreateInfo.attachmentCount = 1;
+		framebufferCreateInfo.pAttachments = attachments;
+		framebufferCreateInfo.width = mSwapchainExtent.width;
+		framebufferCreateInfo.height = mSwapchainExtent.height;
+		framebufferCreateInfo.layers = 1;
+
+		vk_checkError(vkCreateFramebuffer(
+			mDevice, &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[i]));
+	}
+}
+
+void vk_renderer::createCommandPool()
+{
+	vk_queue_family queueFamily;
+	queueFamily.findQueueFamilies(mGpu, mSurface);
+
+	VkCommandPoolCreateInfo commandPoolCreateInfo{};
+	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandPoolCreateInfo.queueFamilyIndex = queueFamily.mIdxGraphicsFamily;
+	commandPoolCreateInfo.flags = 0;
+
+	vk_checkError(
+		vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mCommandPool));
+}
+
+void vk_renderer::createCommandBuffers()
+{
+	mCommandBuffers.resize(mSwapchainFramebuffers.size());
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = mCommandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = static_cast<uint32_t>(mCommandBuffers.size());
+
+	vk_checkError(vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()));
 }
