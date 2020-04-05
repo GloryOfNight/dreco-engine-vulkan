@@ -24,10 +24,15 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 	createFramebuffers();
 	createCommandPool();
 	createCommandBuffers();
+	createGraphicsPipeline();
+	recordCommandBuffers();
+	createSemaphores();
 }
 
 vk_renderer::~vk_renderer()
 {
+	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
+	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
 	vkFreeCommandBuffers(mDevice, mCommandPool,
 		static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
 	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
@@ -50,6 +55,7 @@ vk_renderer::~vk_renderer()
 
 void vk_renderer::tick(const float& delta_time)
 {
+	//drawFrame();
 }
 
 GLFWwindow* vk_renderer::getWindow() const
@@ -167,6 +173,7 @@ void vk_renderer::createLogicalDevice()
 	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
 
 	vkGetDeviceQueue(mDevice, queueFamily.mIdxGraphicsFamily, 0, &mGraphicsQueue);
+	vkGetDeviceQueue(mDevice, queueFamily.mIdxPresentFamily, 0, &mPresentQueue);
 }
 
 void vk_renderer::createSwapchain()
@@ -178,7 +185,7 @@ void vk_renderer::createSwapchain()
 	mPresentMode = swapchain.getPresentMode();
 	mSwapchainExtent = swapchain.mCapabilities.currentExtent;
 
-	const uint32_t mSwapchainImageCount = mSurfaceCapabilities.minImageCount + 1;
+	mSwapchainImageCount = mSurfaceCapabilities.minImageCount + 1;
 
 	vk_queue_family queueFamily;
 	queueFamily.findQueueFamilies(mGpu, mSurface);
@@ -206,6 +213,10 @@ void vk_renderer::createSwapchain()
 
 	vk_checkError(
 		vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
+	
+	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &mSwapchainImageCount, nullptr);
+	mSwapchainImages.resize(mSwapchainImageCount);
+	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &mSwapchainImageCount, mSwapchainImages.data());
 }
 
 void vk_renderer::createImageViews()
@@ -421,6 +432,40 @@ void vk_renderer::createGraphicsPipeline()
 	colorBlending.blendConstants[1] = 0.0f;
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
+
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = 0;
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = shaderStagesInfo;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasteriazor;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = nullptr;
+	pipelineInfo.layout = mPipelineLayout;
+	pipelineInfo.renderPass = mRenderPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.basePipelineIndex = -1;
+
+	vk_checkError(vkCreateGraphicsPipelines(
+		mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, mAllocator, &mPipeline));
+
+	vkDestroyShaderModule(mDevice, vertShaderModule, mAllocator);
+	vkDestroyShaderModule(mDevice, fragShaderModule, mAllocator);
+
+	delete[] vertShaderCode;
+	delete[] fragShaderCode;
 }
 
 void vk_renderer::createShaderModule(
@@ -433,4 +478,82 @@ void vk_renderer::createShaderModule(
 
 	vk_checkError(vkCreateShaderModule(
 		mDevice, &shaderModuleCreateInfo, mAllocator, &shaderModule));
+}
+
+void vk_renderer::recordCommandBuffers()
+{
+	for (size_t i = 0; i < mCommandBuffers.size(); ++i)
+	{
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		vk_checkError(vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo));
+
+		VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = mRenderPass;
+		renderPassInfo.framebuffer = mSwapchainFramebuffers[i];
+		renderPassInfo.renderArea.offset = {0, 0};
+		renderPassInfo.renderArea.extent = mSwapchainExtent;
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(
+			mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
+		vkCmdDraw(mCommandBuffers[i], 3, 1, 0, 0);
+		vkCmdEndRenderPass(mCommandBuffers[i]);
+
+		vk_checkError(vkEndCommandBuffer(mCommandBuffers[i]));
+	}
+}
+
+void vk_renderer::createSemaphores()
+{
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	vk_checkError(vkCreateSemaphore(
+		mDevice, &semaphoreInfo, mAllocator, &mSepaphore_Image_Avaible));
+	vk_checkError(vkCreateSemaphore(
+		mDevice, &semaphoreInfo, mAllocator, &mSepaphore_Render_Finished));
+}
+
+void vk_renderer::drawFrame()
+{
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(mDevice, mSwapchain, UINT64_MAX, mSepaphore_Image_Avaible,
+		VK_NULL_HANDLE, &imageIndex);
+
+	VkPipelineStageFlags waitStages[]{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	VkSemaphore waitSemaphores[]{mSepaphore_Image_Avaible};
+	VkSemaphore signalSemaphores[]{mSepaphore_Render_Finished};
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	vk_checkError(vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+
+	VkSwapchainKHR swapchains[]{mSwapchain};
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapchains;
+	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pResults = nullptr;
+
+	vkQueuePresentKHR(mPresentQueue, &presentInfo);
 }

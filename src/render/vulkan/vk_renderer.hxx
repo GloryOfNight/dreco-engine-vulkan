@@ -16,7 +16,9 @@ public:
 	GLFWwindow* getWindow() const;
 
 	static bool isSupported();
-
+	
+	void drawFrame();
+	
 protected:
 	inline void createWindow();
 
@@ -43,6 +45,10 @@ protected:
 	inline void createGraphicsPipeline();
 
 	inline void createShaderModule(const char* src, const size_t& src_size, VkShaderModule& shaderModule);
+
+	inline void recordCommandBuffers();
+
+	inline void createSemaphores();
 private:
 	engine* _engine;
 
@@ -62,7 +68,9 @@ private:
 
 	VkDevice mDevice = VK_NULL_HANDLE;
 
-	VkQueue mGraphicsQueue;
+	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+
+	VkQueue mPresentQueue = VK_NULL_HANDLE;
 
 	VkSurfaceCapabilitiesKHR mSurfaceCapabilities;
 
@@ -74,7 +82,7 @@ private:
 
 	VkSwapchainKHR mSwapchain;
 
-	uint32_t mSwapchainImageCount = 2;
+	uint32_t mSwapchainImageCount;
 
 	std::vector<VkImage> mSwapchainImages;
 
@@ -89,6 +97,10 @@ private:
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
 	VkPipelineLayout mPipelineLayout;
-	
+
 	VkPipeline mPipeline;
+
+	VkSemaphore mSepaphore_Image_Avaible;
+
+	VkSemaphore mSepaphore_Render_Finished;
 };
