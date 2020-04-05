@@ -14,6 +14,8 @@ public:
 
 	GLFWwindow* getWindow() const;
 
+	static bool isSupported();
+
 protected:
 	inline void createWindow();
 
@@ -25,16 +27,18 @@ protected:
 
 	inline void createLogicalDevice();
 
+	inline void createSwapchain();
+
 private:
 	engine* _engine;
 
 	GLFWwindow* window;
 
-	VkAllocationCallbacks* allocator;
+	VkAllocationCallbacks* mAllocator;
 
-	VkInstance instance;
+	VkInstance mInstance;
 
-	VkSurfaceKHR surface;
+	VkSurfaceKHR mSurface;
 
 	VkPhysicalDevice mGpu = VK_NULL_HANDLE;
 
@@ -42,7 +46,17 @@ private:
 
 	VkPhysicalDeviceFeatures mGpuFeatures;
 
-	VkDevice device = VK_NULL_HANDLE;
+	VkDevice mDevice = VK_NULL_HANDLE;
 
 	VkQueue mGraphicsQueue;
+
+	VkSurfaceCapabilitiesKHR mSurfaceCapabilities;
+
+	VkSurfaceFormatKHR mSurfaceFormat;
+
+	VkPresentModeKHR mPresentMode;
+
+	VkExtent2D mExtent2D;
+
+	VkSwapchainKHR mSwapchain;
 };

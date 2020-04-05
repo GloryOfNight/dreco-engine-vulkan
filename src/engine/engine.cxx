@@ -3,16 +3,27 @@
 #include "render/vulkan/vk_renderer.hxx"
 
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 engine::engine()
 {
 	glfwInit();
-	renderer = new vk_renderer(this);
+
+	if (vk_renderer::isSupported())
+	{
+		renderer = new vk_renderer(this);
+	}
+	else
+	{
+		std::cerr << "Vulkan is not supported, abording. " << std::endl;
+		return;
+	}
 }
 
 engine::~engine()
 {
-	delete renderer;
+	if (renderer)
+		delete renderer;
 	glfwTerminate();
 }
 
@@ -23,7 +34,7 @@ void engine::runMainLoop()
 	{
 		renderer->tick(0.0f);
 		glfwPollEvents();
-
+	
 		int state = glfwGetKey(renderer->getWindow(), GLFW_KEY_ESCAPE);
 		if (state == GLFW_PRESS)
 		{

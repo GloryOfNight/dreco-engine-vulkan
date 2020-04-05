@@ -2,16 +2,43 @@
 
 #include "vk_check.hxx"
 #include "vk_log.hxx"
+#include "vk_queue_family.hxx"
+#include "vk_swapchain.hxx"
 
+#include <vulkan/vulkan_core.h>
 #include <iostream>
 
-vk_renderer::vk_renderer(engine* eng) : _engine(eng), allocator(nullptr)
+vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 {
 	createWindow();
 	createInstance();
 	createSurface();
 	selectPhysicalDevice();
 	createLogicalDevice();
+	createSwapchain();
+}
+
+vk_renderer::~vk_renderer()
+{
+	glfwDestroyWindow(window);
+	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
+	vkDestroyDevice(mDevice, mAllocator);
+	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
+	vkDestroyInstance(mInstance, nullptr);
+}
+
+void vk_renderer::tick(const float& delta_time)
+{
+}
+
+GLFWwindow* vk_renderer::getWindow() const
+{
+	return window;
+}
+
+bool vk_renderer::isSupported()
+{
+	return glfwVulkanSupported();
 }
 
 void vk_renderer::createWindow()
@@ -26,7 +53,6 @@ void vk_renderer::createInstance()
     VkApplicationInfo app_info
     {
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pNext = nullptr,
         .pApplicationName = "dreco-test",
         .applicationVersion = 0,
         .pEngineName = "dreco-engine",
@@ -47,28 +73,24 @@ void vk_renderer::createInstance()
     };
 	// clang-format on
 
-	vk_checkError(vkCreateInstance(&instance_info, allocator, &instance));
-	if (GL_FALSE == glfwVulkanSupported())
-	{
-		std::cerr << "Vulkan not supported on that device!" << std::endl;
-	}
+	vk_checkError(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
 
 void vk_renderer::createSurface()
 {
-	vk_checkError(glfwCreateWindowSurface(instance, window, allocator, &surface));
+	vk_checkError(glfwCreateWindowSurface(mInstance, window, mAllocator, &mSurface));
 }
 
 void vk_renderer::selectPhysicalDevice()
 {
 	uint32_t gpuCount = 0;
-	vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr);
+	vkEnumeratePhysicalDevices(mInstance, &gpuCount, nullptr);
 	VkPhysicalDevice gpuList[gpuCount];
-	vkEnumeratePhysicalDevices(instance, &gpuCount, &gpuList[0]);
+	vkEnumeratePhysicalDevices(mInstance, &gpuCount, &gpuList[0]);
 
 	for (uint32_t i = 0; i < gpuCount; ++i)
 	{
-		if (glfwGetPhysicalDevicePresentationSupport(instance, gpuList[i], i))
+		if (glfwGetPhysicalDevicePresentationSupport(mInstance, gpuList[i], i))
 		{
 			mGpu = gpuList[i];
 			vkGetPhysicalDeviceProperties(mGpu, &mGpuProperties);
@@ -107,6 +129,7 @@ void vk_renderer::createLogicalDevice()
 	VkDeviceCreateInfo deviceCreateInfo
     {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+		.pNext = nullptr,
 		.queueCreateInfoCount = queueFamilyPropertiesCount,
 		.pQueueCreateInfos = deviceQueueInfos,
 		.enabledLayerCount = 0,
@@ -117,24 +140,46 @@ void vk_renderer::createLogicalDevice()
     };
 	// clang-format on
 
-	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, allocator, &device));
+	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
 
-	vkGetDeviceQueue(device, 0, 0, &mGraphicsQueue);
+	vkGetDeviceQueue(mDevice, 0, 0, &mGraphicsQueue);
 }
 
-vk_renderer::~vk_renderer()
+void vk_renderer::createSwapchain()
 {
-	glfwDestroyWindow(window);
-	vkDestroyDevice(device, allocator);
-	vkDestroySurfaceKHR(instance, surface, allocator);
-	vkDestroyInstance(instance, nullptr);
-}
+	vk_swapchain swapchain{mGpu, mSurface};
 
-GLFWwindow* vk_renderer::getWindow() const
-{
-	return window;
-}
+	mSurfaceCapabilities = swapchain.mCapabilities;
+	mSurfaceFormat = swapchain.getSurfaceFormat();
+	mPresentMode = swapchain.getPresentMode();
+	mExtent2D = swapchain.mCapabilities.currentExtent;
 
-void vk_renderer::tick(const float& delta_time)
-{
+	const uint32_t mSwapchainImageCount = mSurfaceCapabilities.minImageCount + 1;
+
+	vk_queue_family queueFamily;
+	queueFamily.findQueueFamilies(mGpu, mSurface);
+	uint32_t queueFamilyIndexes[2]{
+		queueFamily.mIdxGraphicsFamily, queueFamily.mIdxPresentFamily};
+
+	VkSwapchainCreateInfoKHR swapchainCreateInfo{};
+	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapchainCreateInfo.pNext = nullptr;
+	swapchainCreateInfo.flags = 0;
+	swapchainCreateInfo.surface = mSurface;
+	swapchainCreateInfo.minImageCount = mSwapchainImageCount;
+	swapchainCreateInfo.imageFormat = mSurfaceFormat.format;
+	swapchainCreateInfo.imageColorSpace = mSurfaceFormat.colorSpace;
+	swapchainCreateInfo.imageExtent = mExtent2D;
+	swapchainCreateInfo.imageArrayLayers = 1;
+	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.queueFamilyIndexCount = 2;
+	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
+	swapchainCreateInfo.preTransform = mSurfaceCapabilities.currentTransform;
+	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	swapchainCreateInfo.presentMode = mPresentMode;
+	swapchainCreateInfo.clipped = VK_TRUE;
+	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	vk_checkError(
+		vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
 }
