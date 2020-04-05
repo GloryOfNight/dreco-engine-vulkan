@@ -39,6 +39,10 @@ protected:
 	inline void createCommandPool();
 
 	inline void createCommandBuffers();
+
+	inline void createGraphicsPipeline();
+
+	inline void createShaderModule(const char* src, const size_t& src_size, VkShaderModule& shaderModule);
 private:
 	engine* _engine;
 
@@ -83,4 +87,8 @@ private:
 	VkCommandPool mCommandPool;
 
 	std::vector<VkCommandBuffer> mCommandBuffers;
+
+	VkPipelineLayout mPipelineLayout;
+	
+	VkPipeline mPipeline;
 };
