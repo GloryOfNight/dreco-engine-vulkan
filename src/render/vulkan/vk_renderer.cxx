@@ -55,7 +55,7 @@ vk_renderer::~vk_renderer()
 
 void vk_renderer::tick(const float& delta_time)
 {
-	//drawFrame();
+	drawFrame();
 }
 
 GLFWwindow* vk_renderer::getWindow() const
@@ -213,10 +213,11 @@ void vk_renderer::createSwapchain()
 
 	vk_checkError(
 		vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
-	
+
 	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &mSwapchainImageCount, nullptr);
 	mSwapchainImages.resize(mSwapchainImageCount);
-	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &mSwapchainImageCount, mSwapchainImages.data());
+	vkGetSwapchainImagesKHR(
+		mDevice, mSwapchain, &mSwapchainImageCount, mSwapchainImages.data());
 }
 
 void vk_renderer::createImageViews()
@@ -262,19 +263,27 @@ void vk_renderer::createRenderPass()
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	VkSubpassDescription subPass{};
-	subPass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subPass.colorAttachmentCount = 1;
-	subPass.pColorAttachments = &colorAttachmentRef;
+	VkSubpassDescription subpassDescription{};
+	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDescription.colorAttachmentCount = 1;
+	subpassDescription.pColorAttachments = &colorAttachmentRef;
+
+	VkSubpassDependency subpassDependecy{};
+	subpassDependecy.srcSubpass = VK_SUBPASS_EXTERNAL;
+	subpassDependecy.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDependecy.srcAccessMask = 0;
+	subpassDependecy.dstSubpass = 0;
+	subpassDependecy.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDependecy.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	VkRenderPassCreateInfo renderPassCreateInfo{};
 	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassCreateInfo.attachmentCount = 1;
 	renderPassCreateInfo.pAttachments = &colorAttachment;
 	renderPassCreateInfo.subpassCount = 1;
-	renderPassCreateInfo.pSubpasses = &subPass;
-	renderPassCreateInfo.dependencyCount = 0;
-	renderPassCreateInfo.pDependencies = nullptr;
+	renderPassCreateInfo.pSubpasses = &subpassDescription;
+	renderPassCreateInfo.dependencyCount = 1;
+	renderPassCreateInfo.pDependencies = &subpassDependecy;
 
 	vk_checkError(
 		vkCreateRenderPass(mDevice, &renderPassCreateInfo, mAllocator, &mRenderPass));

@@ -12,7 +12,6 @@ engine::engine()
 	if (vk_renderer::isSupported())
 	{
 		renderer = new vk_renderer(this);
-		renderer->drawFrame();
 	}
 	else
 	{
