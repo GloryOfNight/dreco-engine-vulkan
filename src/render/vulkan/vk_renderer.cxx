@@ -31,11 +31,15 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 
 vk_renderer::~vk_renderer()
 {
+	vkQueueWaitIdle(mGraphicsQueue);
+	vkQueueWaitIdle(mPresentQueue);
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
 	vkFreeCommandBuffers(mDevice, mCommandPool,
 		static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
 	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
+	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
+	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
 	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
 	for (auto i : mSwapchainFramebuffers)
 	{

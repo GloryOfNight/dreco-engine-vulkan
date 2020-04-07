@@ -18,7 +18,7 @@ public:
 	static bool isSupported();
 	
 	void drawFrame();
-	
+
 protected:
 	inline void createWindow();
 
