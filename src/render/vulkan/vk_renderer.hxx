@@ -42,6 +42,8 @@ protected:
 
 	inline void createCommandBuffers();
 
+	inline void createPipelineLayout();
+
 	inline void createGraphicsPipeline();
 
 	inline void createShaderModule(const char* src, const size_t& src_size, VkShaderModule& shaderModule);

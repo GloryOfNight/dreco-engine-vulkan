@@ -1,15 +1,14 @@
 #include "vk_renderer.hxx"
-
+#define VK_USE_VALIDATION
 #include "vk_check.hxx"
 #include "vk_log.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
 
-#include <vulkan/vulkan_core.h>
-
 #include <set>
 #include <iostream>
+#include <vulkan/vulkan_core.h>
 
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 {
@@ -24,6 +23,7 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 	createFramebuffers();
 	createCommandPool();
 	createCommandBuffers();
+	createPipelineLayout();
 	createGraphicsPipeline();
 	recordCommandBuffers();
 	createSemaphores();
@@ -71,7 +71,7 @@ bool vk_renderer::isSupported()
 void vk_renderer::createWindow()
 {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(540, 960, "dreco-test", nullptr, nullptr);
+	window = glfwCreateWindow(720, 720, "dreco-test", nullptr, nullptr);
 }
 
 void vk_renderer::createInstance()
@@ -84,15 +84,25 @@ void vk_renderer::createInstance()
     app_info.engineVersion = 0;
     app_info.apiVersion = VK_API_VERSION_1_1;
     
-    uint32_t extCount;
-    const char** extensions = glfwGetRequiredInstanceExtensions(&extCount);
+	std::vector<const char*> instExtensions(2);
+	instExtensions[0] = "VK_KHR_surface";
+	instExtensions[1] = "VK_KHR_xcb_surface";
+
+	std::vector<const char*> instLayers{};
+
+	#ifdef VK_USE_VALIDATION
+		instExtensions.push_back("VK_EXT_debug_utils");
+		instLayers.push_back("VK_LAYER_KHRONOS_validation");
+	#endif
 
     VkInstanceCreateInfo instance_info{};
     instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instance_info.pNext = nullptr;
     instance_info.flags = 0;
-    instance_info.enabledExtensionCount = extCount;
-    instance_info.ppEnabledExtensionNames = extensions;
+	instance_info.enabledLayerCount = static_cast<uint32_t>(instLayers.size());
+	instance_info.ppEnabledLayerNames = instLayers.data();
+    instance_info.enabledExtensionCount = static_cast<uint32_t>(instExtensions.size());
+    instance_info.ppEnabledExtensionNames = instExtensions.data();
 
 	vk_checkError(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
@@ -133,11 +143,11 @@ void vk_renderer::createLogicalDevice()
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
 	std::set<uint32_t> uniqueQueueFamilies{queueFamily.mIdxGraphicsFamily};
+	
+	float priorities[]{1.0f};
 
 	for (auto i : uniqueQueueFamilies)
 	{
-		float priorities[]{1.0f};
-
 		VkDeviceQueueCreateInfo deviceQueueInfo{};
 		deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		deviceQueueInfo.queueFamilyIndex = i;
@@ -174,7 +184,6 @@ void vk_renderer::createSwapchain()
 	mSurfaceFormat = swapchain.getSurfaceFormat();
 	mPresentMode = swapchain.getPresentMode();
 	mSwapchainExtent = swapchain.mCapabilities.currentExtent;
-
 	mSwapchainImageCount = mSurfaceCapabilities.minImageCount + 1;
 
 	vk_queue_family queueFamily;
@@ -228,8 +237,8 @@ void vk_renderer::createImageViews()
 
 		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.baseMipLevel = 1;
-		imageViewCreateInfo.subresourceRange.layerCount = 0;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 
 		vk_checkError(vkCreateImageView(
@@ -328,6 +337,17 @@ void vk_renderer::createCommandBuffers()
 	vk_checkError(vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()));
 }
 
+void vk_renderer::createPipelineLayout() 
+{
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = 0;
+	vk_checkError(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, mAllocator, &mPipelineLayout));
+}
+
 void vk_renderer::createGraphicsPipeline()
 {
 	VkShaderModule vertShaderModule;
@@ -423,6 +443,7 @@ void vk_renderer::createGraphicsPipeline()
 	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = VK_LOGIC_OP_COPY;
 	colorBlending.attachmentCount = 1;
@@ -431,13 +452,6 @@ void vk_renderer::createGraphicsPipeline()
 	colorBlending.blendConstants[1] = 0.0f;
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
-
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = 0;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -462,7 +476,6 @@ void vk_renderer::createGraphicsPipeline()
 
 	vkDestroyShaderModule(mDevice, vertShaderModule, mAllocator);
 	vkDestroyShaderModule(mDevice, fragShaderModule, mAllocator);
-
 	delete[] vertShaderCode;
 	delete[] fragShaderCode;
 }
