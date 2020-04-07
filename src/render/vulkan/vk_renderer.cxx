@@ -76,29 +76,23 @@ void vk_renderer::createWindow()
 
 void vk_renderer::createInstance()
 {
-	// clang-format off
-    VkApplicationInfo app_info
-    {
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "dreco-test",
-        .applicationVersion = 0,
-        .pEngineName = "dreco-engine",
-        .engineVersion = 0,
-        .apiVersion = VK_API_VERSION_1_1
-    };
+    VkApplicationInfo app_info{};
+    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app_info.pApplicationName = "dreco-test";
+    app_info.applicationVersion = 0;
+    app_info.pEngineName = "dreco-engine";
+    app_info.engineVersion = 0;
+    app_info.apiVersion = VK_API_VERSION_1_1;
     
     uint32_t extCount;
     const char** extensions = glfwGetRequiredInstanceExtensions(&extCount);
 
-    VkInstanceCreateInfo instance_info
-    {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .enabledExtensionCount = extCount,
-        .ppEnabledExtensionNames = extensions
-    };
-	// clang-format on
+    VkInstanceCreateInfo instance_info{};
+    instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    instance_info.pNext = nullptr;
+    instance_info.flags = 0;
+    instance_info.enabledExtensionCount = extCount;
+    instance_info.ppEnabledExtensionNames = extensions;
 
 	vk_checkError(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
@@ -155,20 +149,16 @@ void vk_renderer::createLogicalDevice()
 	const uint32_t deviceExtensionsCount = 1;
 	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
 
-	// clang-format off
-	VkDeviceCreateInfo deviceCreateInfo
-    {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		.pNext = nullptr,
-		.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfoList.size()),
-		.pQueueCreateInfos = queueCreateInfoList.data(),
-		.enabledLayerCount = 0,
-		.ppEnabledLayerNames = nullptr,
-		.enabledExtensionCount = deviceExtensionsCount,
-		.ppEnabledExtensionNames = deviceExtensions,
-		.pEnabledFeatures = &mGpuFeatures
-    };
-	// clang-format on
+	VkDeviceCreateInfo deviceCreateInfo{};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.pNext = nullptr;
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfoList.size());
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfoList.data();
+	deviceCreateInfo.enabledLayerCount = 0;
+	deviceCreateInfo.ppEnabledLayerNames = nullptr;
+	deviceCreateInfo.enabledExtensionCount = deviceExtensionsCount;
+	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
+	deviceCreateInfo.pEnabledFeatures = &mGpuFeatures;
 
 	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
 
