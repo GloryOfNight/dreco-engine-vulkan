@@ -6,9 +6,11 @@
 #include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
 
+#include <vulkan/vulkan_core.h>
 #include <set>
 #include <iostream>
-#include <vulkan/vulkan_core.h>
+#include <stdexcept>
+
 
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 {
@@ -136,7 +138,7 @@ void vk_renderer::selectPhysicalDevice()
 
 	if (VK_NULL_HANDLE == mGpu)
 	{
-		std::cerr << "No supported GPU found!" << std::endl;
+		throw std::runtime_error("No supported GPU found!");
 	}
 }
 
@@ -361,8 +363,12 @@ void vk_renderer::createGraphicsPipeline()
 
 	size_t vertShaderSize;
 	char* vertShaderCode = file_utils::read_file("shaders/vert.spv", &vertShaderSize);
+	if (nullptr == vertShaderCode)
+		throw std::runtime_error("Failed to load binary shader code");
 	size_t fragShaderSize;
 	char* fragShaderCode = file_utils::read_file("shaders/frag.spv", &fragShaderSize);
+	if (nullptr == fragShaderCode)
+		throw std::runtime_error("Failed to load binary shader code");
 
 	createShaderModule(vertShaderCode, vertShaderSize, vertShaderModule);
 	createShaderModule(fragShaderCode, fragShaderSize, fragShaderModule);

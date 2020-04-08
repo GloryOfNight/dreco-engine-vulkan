@@ -6,7 +6,7 @@
         {
             "label": "Build Debug",
             "type": "shell",
-            "command": "cmake -DBUILD_EXAMPLES=True -DCMAKE_EXPORT_COMPILE_COMMANDS=YES -DCMAKE_BUILD_TYPE=Debug -S ${workspaceFolder} -B ${workspaceFolder}/build && /usr/bin/cmake --build /${workspaceFolder}/build --config Debug --target all -j 10",
+            "command": "cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=YES -DCMAKE_BUILD_TYPE=Debug -S ${workspaceFolder} -B ${workspaceFolder}/build && /usr/bin/cmake --build /${workspaceFolder}/build --config Debug --target all",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -24,7 +24,7 @@
         {
             "label": "Build Release",
             "type": "shell",
-            "command": "cmake -DBUILD_EXAMPLES=True -DCMAKE_BUILD_TYPE=Release -S ${workspaceFolder} -B ${workspaceFolder}/build && /usr/bin/cmake --build /${workspaceFolder}/build --config Release --target all -j 10",
+            "command": "cmake -DCMAKE_BUILD_TYPE=Release -S ${workspaceFolder} -B ${workspaceFolder}/build && /usr/bin/cmake --build /${workspaceFolder}/build --config Release --target all",
             "group": "build",
             "presentation": {
                 "echo": true,

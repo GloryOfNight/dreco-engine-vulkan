@@ -8,7 +8,7 @@ src/engine/engine.cxx)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 ")
 
-add_library(${PROJECT_NAME} ${SOURCE_LIST})
+add_library(${PROJECT_NAME} SHARED ${SOURCE_LIST})
 
 find_package(glfw3 REQUIRED)
 

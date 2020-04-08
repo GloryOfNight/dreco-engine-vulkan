@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <iostream>
 
 class file_utils
 {
@@ -21,6 +22,10 @@ public:
 			{
 				*size = len;
 			}
+		}
+		else 
+		{
+			std::cerr << "File not found: " << path << std::endl;
 		}
 
 		file.close();
