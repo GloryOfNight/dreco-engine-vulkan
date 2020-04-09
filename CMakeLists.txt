@@ -19,6 +19,4 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
 ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
-if (BUILD_EXAMPLES) 
 add_subdirectory(examples/window)
-endif()
