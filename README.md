@@ -5,4 +5,4 @@ Rewrite of original [dreco-engine](https://github.com/GloryOfNight/dreco-engine)
 - GLFW instead of SDL2
 
  ## Dependencies
-> sudo apt install libglfw-dev
+> sudo apt install libglfw3-dev
