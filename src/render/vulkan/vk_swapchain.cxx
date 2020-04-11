@@ -3,7 +3,6 @@
 
 vk_swapchain::vk_swapchain(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 {
-	setupCapabilities(gpu, surface);
 	setupSurfaceFormats(gpu, surface);
 	setupPresentModes(gpu, surface);
 }
@@ -33,11 +32,6 @@ VkPresentModeKHR vk_swapchain::getPresentMode() const
 	}
 
 	return mPresentModes[0];
-}
-
-void vk_swapchain::setupCapabilities(VkPhysicalDevice gpu, VkSurfaceKHR surface)
-{
-	vk_checkError(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &mCapabilities));
 }
 
 void vk_swapchain::setupSurfaceFormats(VkPhysicalDevice gpu, VkSurfaceKHR surface)

@@ -30,6 +30,8 @@ protected:
 
 	inline void createLogicalDevice();
 
+	inline void setupSurfaceCapabilities();
+
 	inline void createSwapchain();
 
 	inline void createImageViews();
@@ -51,6 +53,10 @@ protected:
 	inline void recordCommandBuffers();
 
 	inline void createSemaphores();
+
+	inline void cleanupSwapchain();
+
+	inline void recreateSwapchain();
 private:
 	engine* _engine;
 
@@ -61,35 +67,25 @@ private:
 	VkInstance mInstance;
 
 	VkSurfaceKHR mSurface;
+	VkSurfaceCapabilitiesKHR mSurfaceCapabilities;
+	VkSurfaceFormatKHR mSurfaceFormat;
 
 	VkPhysicalDevice mGpu = VK_NULL_HANDLE;
-
 	VkPhysicalDeviceProperties mGpuProperties;
-
 	VkPhysicalDeviceFeatures mGpuFeatures;
 
 	VkDevice mDevice = VK_NULL_HANDLE;
 
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
-
 	VkQueue mPresentQueue = VK_NULL_HANDLE;
-
-	VkSurfaceCapabilitiesKHR mSurfaceCapabilities;
-
-	VkSurfaceFormatKHR mSurfaceFormat;
 
 	VkPresentModeKHR mPresentMode;
 
 	VkExtent2D mSwapchainExtent;
-
 	VkSwapchainKHR mSwapchain;
-
 	uint32_t mSwapchainImageCount;
-
 	std::vector<VkImage> mSwapchainImages;
-
 	std::vector<VkImageView> mSwapchainImageViews;
-
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
 	VkRenderPass mRenderPass; 

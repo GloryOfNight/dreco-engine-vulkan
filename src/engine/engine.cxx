@@ -34,9 +34,8 @@ void engine::runMainLoop()
 	{
 		renderer->tick(0.0f);
 		glfwPollEvents();
-	
-		int state = glfwGetKey(renderer->getWindow(), GLFW_KEY_ESCAPE);
-		if (state == GLFW_PRESS)
+		
+		if (glfwWindowShouldClose(renderer->getWindow()))
 		{
 			keep_main_loop = false;
 		}

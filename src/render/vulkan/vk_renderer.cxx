@@ -14,14 +14,18 @@
 
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 {
+
 	createWindow();
 	createInstance();
 	createSurface();
 	selectPhysicalDevice();
 	createLogicalDevice();
+	setupSurfaceCapabilities();
+
 	createSwapchain();
 	createImageViews();
 	createRenderPass();
+
 	createFramebuffers();
 	createCommandPool();
 	createCommandBuffers();
@@ -33,26 +37,13 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 
 vk_renderer::~vk_renderer()
 {
-	vkQueueWaitIdle(mGraphicsQueue);
-	vkQueueWaitIdle(mPresentQueue);
+	vkDeviceWaitIdle(mDevice);
+	
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
-	vkFreeCommandBuffers(mDevice, mCommandPool,
-		static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
-	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
-	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
-	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
-	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
-	for (auto i : mSwapchainFramebuffers)
-	{
-		vkDestroyFramebuffer(mDevice, i, mAllocator);
-	}
-	for (auto i : mSwapchainImageViews)
-	{
-		vkDestroyImageView(mDevice, i, mAllocator);
-	}
-
-	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
+	
+	cleanupSwapchain();
+	
 	vkDestroyDevice(mDevice, mAllocator);
 	glfwDestroyWindow(window);
 	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
@@ -61,6 +52,14 @@ vk_renderer::~vk_renderer()
 
 void vk_renderer::tick(const float& delta_time)
 {
+	int width;
+	int height;
+	glfwGetWindowSize(window, &width, &height);
+
+	if (mSwapchainExtent.width != width || mSwapchainExtent.height != height) 
+	{
+		recreateSwapchain();
+	}
 	drawFrame();
 }
 
@@ -182,14 +181,18 @@ void vk_renderer::createLogicalDevice()
 	vkGetDeviceQueue(mDevice, queueFamily.mIdxPresentFamily, 0, &mPresentQueue);
 }
 
+void vk_renderer::setupSurfaceCapabilities() 
+{
+	vk_checkError(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mGpu, mSurface, &mSurfaceCapabilities));
+}
+
 void vk_renderer::createSwapchain()
 {
 	vk_swapchain swapchain{mGpu, mSurface};
 
-	mSurfaceCapabilities = swapchain.mCapabilities;
 	mSurfaceFormat = swapchain.getSurfaceFormat();
 	mPresentMode = swapchain.getPresentMode();
-	mSwapchainExtent = swapchain.mCapabilities.currentExtent;
+	mSwapchainExtent = mSurfaceCapabilities.currentExtent;
 	mSwapchainImageCount = mSurfaceCapabilities.minImageCount + 1;
 
 	vk_queue_family queueFamily;
@@ -578,4 +581,48 @@ void vk_renderer::drawFrame()
 	presentInfo.pResults = nullptr;
 
 	vkQueuePresentKHR(mPresentQueue, &presentInfo);
+}
+
+void vk_renderer::cleanupSwapchain() 
+{
+	for (size_t i = 0; i < mSwapchainFramebuffers.size(); ++i) 
+	{
+		vkDestroyFramebuffer(mDevice, mSwapchainFramebuffers[i], mAllocator);
+	}
+	mSwapchainFramebuffers.clear();
+
+	vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
+	mCommandBuffers.clear();
+	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
+	
+	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
+	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
+	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
+
+	for (size_t i = 0; i < mSwapchainImageViews.size(); ++i) 
+	{
+		vkDestroyImageView(mDevice, mSwapchainImageViews[i], mAllocator);
+	}
+	mSwapchainImageViews.clear();
+
+	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
+}
+
+void vk_renderer::recreateSwapchain() 
+{
+	vkDeviceWaitIdle(mDevice);
+	
+	cleanupSwapchain();
+	
+	setupSurfaceCapabilities();
+	createSwapchain();
+	createImageViews();
+	createRenderPass();
+	createFramebuffers();
+
+	createCommandPool();
+	createCommandBuffers();
+	createPipelineLayout();
+	createGraphicsPipeline();
+	recordCommandBuffers();
 }
