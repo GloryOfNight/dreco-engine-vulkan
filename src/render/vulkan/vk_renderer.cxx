@@ -11,10 +11,8 @@
 #include <iostream>
 #include <stdexcept>
 
-
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 {
-
 	createWindow();
 	createInstance();
 	createSurface();
@@ -38,12 +36,12 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 vk_renderer::~vk_renderer()
 {
 	vkDeviceWaitIdle(mDevice);
-	
+
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
-	
+
 	cleanupSwapchain();
-	
+
 	vkDestroyDevice(mDevice, mAllocator);
 	glfwDestroyWindow(window);
 	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
@@ -56,7 +54,7 @@ void vk_renderer::tick(const float& delta_time)
 	int height;
 	glfwGetWindowSize(window, &width, &height);
 
-	if (mSwapchainExtent.width != width || mSwapchainExtent.height != height) 
+	if (mSwapchainExtent.width != width || mSwapchainExtent.height != height)
 	{
 		recreateSwapchain();
 	}
@@ -81,33 +79,33 @@ void vk_renderer::createWindow()
 
 void vk_renderer::createInstance()
 {
-    VkApplicationInfo app_info{};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "dreco-test";
-    app_info.applicationVersion = 0;
-    app_info.pEngineName = "dreco-engine";
-    app_info.engineVersion = 0;
-    app_info.apiVersion = VK_API_VERSION_1_1;
-    
+	VkApplicationInfo app_info{};
+	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	app_info.pApplicationName = "dreco-test";
+	app_info.applicationVersion = 0;
+	app_info.pEngineName = "dreco-engine";
+	app_info.engineVersion = 0;
+	app_info.apiVersion = VK_API_VERSION_1_1;
+
 	std::vector<const char*> instExtensions(2);
 	instExtensions[0] = "VK_KHR_surface";
 	instExtensions[1] = "VK_KHR_xcb_surface";
 
 	std::vector<const char*> instLayers{};
 
-	#ifdef VK_USE_VALIDATION
-		instExtensions.push_back("VK_EXT_debug_utils");
-		instLayers.push_back("VK_LAYER_KHRONOS_validation");
-	#endif
+#ifdef VK_USE_VALIDATION
+	instExtensions.push_back("VK_EXT_debug_utils");
+	instLayers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
 
-    VkInstanceCreateInfo instance_info{};
-    instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instance_info.pNext = nullptr;
-    instance_info.flags = 0;
+	VkInstanceCreateInfo instance_info{};
+	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instance_info.pNext = nullptr;
+	instance_info.flags = 0;
 	instance_info.enabledLayerCount = static_cast<uint32_t>(instLayers.size());
 	instance_info.ppEnabledLayerNames = instLayers.data();
-    instance_info.enabledExtensionCount = static_cast<uint32_t>(instExtensions.size());
-    instance_info.ppEnabledExtensionNames = instExtensions.data();
+	instance_info.enabledExtensionCount = static_cast<uint32_t>(instExtensions.size());
+	instance_info.ppEnabledExtensionNames = instExtensions.data();
 
 	vk_checkError(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
@@ -148,7 +146,7 @@ void vk_renderer::createLogicalDevice()
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
 	std::set<uint32_t> uniqueQueueFamilies{queueFamily.mIdxGraphicsFamily};
-	
+
 	float priorities[]{1.0f};
 
 	for (auto i : uniqueQueueFamilies)
@@ -165,9 +163,10 @@ void vk_renderer::createLogicalDevice()
 	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
 
 	VkDeviceCreateInfo deviceCreateInfo{};
-    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.pNext = nullptr;
-	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfoList.size());
+	deviceCreateInfo.queueCreateInfoCount =
+		static_cast<uint32_t>(queueCreateInfoList.size());
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfoList.data();
 	deviceCreateInfo.enabledLayerCount = 0;
 	deviceCreateInfo.ppEnabledLayerNames = nullptr;
@@ -181,9 +180,10 @@ void vk_renderer::createLogicalDevice()
 	vkGetDeviceQueue(mDevice, queueFamily.mIdxPresentFamily, 0, &mPresentQueue);
 }
 
-void vk_renderer::setupSurfaceCapabilities() 
+void vk_renderer::setupSurfaceCapabilities()
 {
-	vk_checkError(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mGpu, mSurface, &mSurfaceCapabilities));
+	vk_checkError(
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mGpu, mSurface, &mSurfaceCapabilities));
 }
 
 void vk_renderer::createSwapchain()
@@ -346,7 +346,7 @@ void vk_renderer::createCommandBuffers()
 	vk_checkError(vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()));
 }
 
-void vk_renderer::createPipelineLayout() 
+void vk_renderer::createPipelineLayout()
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -354,7 +354,8 @@ void vk_renderer::createPipelineLayout()
 	pipelineLayoutInfo.pSetLayouts = nullptr;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
-	vk_checkError(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, mAllocator, &mPipelineLayout));
+	vk_checkError(vkCreatePipelineLayout(
+		mDevice, &pipelineLayoutInfo, mAllocator, &mPipelineLayout));
 }
 
 void vk_renderer::createGraphicsPipeline()
@@ -554,6 +555,9 @@ void vk_renderer::drawFrame()
 	vkAcquireNextImageKHR(mDevice, mSwapchain, UINT64_MAX, mSepaphore_Image_Avaible,
 		VK_NULL_HANDLE, &imageIndex);
 
+	if (mCommandBuffers.size() < imageIndex)
+		return;
+
 	VkPipelineStageFlags waitStages[]{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	VkSemaphore waitSemaphores[]{mSepaphore_Image_Avaible};
 	VkSemaphore signalSemaphores[]{mSepaphore_Render_Finished};
@@ -583,23 +587,24 @@ void vk_renderer::drawFrame()
 	vkQueuePresentKHR(mPresentQueue, &presentInfo);
 }
 
-void vk_renderer::cleanupSwapchain() 
+void vk_renderer::cleanupSwapchain()
 {
-	for (size_t i = 0; i < mSwapchainFramebuffers.size(); ++i) 
+	for (size_t i = 0; i < mSwapchainFramebuffers.size(); ++i)
 	{
 		vkDestroyFramebuffer(mDevice, mSwapchainFramebuffers[i], mAllocator);
 	}
 	mSwapchainFramebuffers.clear();
 
-	vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
+	vkFreeCommandBuffers(mDevice, mCommandPool,
+		static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
 	mCommandBuffers.clear();
 	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
-	
+
 	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
 	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
 
-	for (size_t i = 0; i < mSwapchainImageViews.size(); ++i) 
+	for (size_t i = 0; i < mSwapchainImageViews.size(); ++i)
 	{
 		vkDestroyImageView(mDevice, mSwapchainImageViews[i], mAllocator);
 	}
@@ -608,12 +613,12 @@ void vk_renderer::cleanupSwapchain()
 	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
 }
 
-void vk_renderer::recreateSwapchain() 
+void vk_renderer::recreateSwapchain()
 {
 	vkDeviceWaitIdle(mDevice);
-	
+
 	cleanupSwapchain();
-	
+
 	setupSurfaceCapabilities();
 	createSwapchain();
 	createImageViews();
