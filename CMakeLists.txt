@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.7)
 project(dreco)
 
 set(SOURCE_LIST 
+src/math/mat3x4.cxx
 src/render/vulkan/vk_swapchain.cxx
 src/render/vulkan/vk_renderer.cxx
 src/engine/engine.cxx)
