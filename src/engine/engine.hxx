@@ -24,6 +24,4 @@ private:
 	vk_renderer* _renderer;
 
 	bool _is_running = false;
-
-	bool _keep_main_loop = false;
 };

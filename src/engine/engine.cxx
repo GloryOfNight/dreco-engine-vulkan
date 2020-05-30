@@ -29,8 +29,6 @@ void engine::run()
 
 	startRenderer();
 	startMainLoop();
-
-	_is_running = true;
 }
 
 void engine::stop()
@@ -71,8 +69,8 @@ void engine::stopRenderer()
 
 void engine::startMainLoop()
 {
-	_keep_main_loop = true;
-	while (_keep_main_loop)
+	_is_running = true;
+	while (_is_running)
 	{
 		_renderer->tick(0.0f);
 		glfwPollEvents();
@@ -86,5 +84,5 @@ void engine::startMainLoop()
 
 void engine::stopMainLoop()
 {
-	_keep_main_loop = false;
+	_is_running = false;
 }
