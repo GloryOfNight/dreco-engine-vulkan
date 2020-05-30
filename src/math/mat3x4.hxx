@@ -1,19 +1,22 @@
 #pragma once
 #include <stddef.h>
 
+struct vec3;
+
 struct mat3x4
 {
 	mat3x4();
 
 	mat3x4(const float m[3][4]);
 
-	static mat3x4 makeIdentityMatrix();
+	static mat3x4 makeTranslation(const vec3& vec);
 
-	/**
-	1 # # #
-	# 1 # #
-	# # 1 #
-	*/
+	static mat3x4 makeRotation(const vec3& vec);
+
+	static mat3x4 makeScale(const vec3& vec);
+	
+	static mat3x4 makeIdentity();
+
 	float _mat[3][4];
 };
 
