@@ -63,7 +63,7 @@ inline void vk_logResult(const VkResult& result)
 			code = "VK_ERROR_FRAGMENTED_POOL";
 			break;
 		default:
-			code = "UNIPLEMENTED CASE, PLEASE IMPLEMENT";
+			code = "UNIPLEMENTED";
 			break;
 	}
 	std::cout << "VkResult: " << code << std::endl;

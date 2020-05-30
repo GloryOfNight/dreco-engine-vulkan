@@ -1,43 +1,90 @@
 #include "engine.hxx"
-
 #include "render/vulkan/vk_renderer.hxx"
-
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-engine::engine()
+engine::engine() : _renderer{nullptr}
 {
-	glfwInit();
-
-	if (vk_renderer::isSupported())
-	{
-		renderer = new vk_renderer(this);
-	}
-	else
-	{
-		std::cerr << "Vulkan is not supported, abording. " << std::endl;
-		return;
-	}
 }
 
 engine::~engine()
 {
-	if (renderer)
-		delete renderer;
+	if (_is_running)
+		stop();
+}
+
+void engine::run()
+{
+	if (_is_running)
+	{
+		std::cerr << "Egnine already running, abording." << std::endl;
+		return;
+	}
+
+	if (auto glfwInitResult{glfwInit()}; GLFW_FALSE == glfwInitResult)
+	{
+		std::runtime_error("GLFW initialization failed. Cannot proceed.");
+		return;
+	}
+
+	startRenderer();
+	startMainLoop();
+
+	_is_running = true;
+}
+
+void engine::stop()
+{
+	if (false == _is_running)
+	{
+		std::cerr << "Engine aren't running, abording." << std::endl;
+		return;
+	}
+
+	stopMainLoop();
+	stopRenderer();
 	glfwTerminate();
 }
 
-void engine::runMainLoop()
+void engine::startRenderer()
 {
-	keep_main_loop = true;
-	while (keep_main_loop)
+	if (false == vk_renderer::isSupported())
 	{
-		renderer->tick(0.0f);
+		std::runtime_error("Vulkan is not supported. Cannot proceed.");
+		return;
+	}
+
+	if (_renderer == nullptr)
+	{
+		_renderer = new vk_renderer(this);
+	}
+}
+
+void engine::stopRenderer()
+{
+	if (_renderer)
+	{
+		delete _renderer;
+		_renderer = nullptr;
+	}
+}
+
+void engine::startMainLoop()
+{
+	_keep_main_loop = true;
+	while (_keep_main_loop)
+	{
+		_renderer->tick(0.0f);
 		glfwPollEvents();
-		
-		if (glfwWindowShouldClose(renderer->getWindow()))
+
+		if (glfwWindowShouldClose(_renderer->getWindow()))
 		{
-			keep_main_loop = false;
+			stop();
 		}
 	}
+}
+
+void engine::stopMainLoop()
+{
+	_keep_main_loop = false;
 }
