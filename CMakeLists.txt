@@ -21,4 +21,4 @@ endif()
 target_include_directories(${PROJECT_NAME} PUBLIC
 ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
-add_subdirectory(examples/window)
+add_subdirectory(examples/triangle)

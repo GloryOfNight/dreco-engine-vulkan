@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(window)
+project(triangle)
 
 set(SOURCES_LIST main.cxx)
 
