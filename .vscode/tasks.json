@@ -41,6 +41,13 @@
             "type": "shell",
             "command": "rm -r ${workspaceFolder}/build",
             "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Compile Current Shader File",
+            "type": "shell",
+            "command": "cd ${fileDirname} && glslangValidator -V ${file}",
+            "group": "none",
+            "problemMatcher": []
         }
     ]
 }
