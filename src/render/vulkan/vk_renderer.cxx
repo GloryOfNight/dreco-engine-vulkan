@@ -54,7 +54,7 @@ void vk_renderer::tick(const float& delta_time)
 	int height;
 	glfwGetWindowSize(window, &width, &height);
 
-	if (mSwapchainExtent.width != width || mSwapchainExtent.height != height)
+	if (mSwapchainExtent.width != static_cast<uint32_t>(width) || mSwapchainExtent.height != static_cast<uint32_t>(height))
 	{
 		recreateSwapchain();
 	}
@@ -79,34 +79,42 @@ void vk_renderer::createWindow()
 
 void vk_renderer::createInstance()
 {
-	VkApplicationInfo app_info{};
-	app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	app_info.pApplicationName = "dreco-test";
-	app_info.applicationVersion = 0;
-	app_info.pEngineName = "dreco-engine";
-	app_info.engineVersion = 0;
-	app_info.apiVersion = VK_API_VERSION_1_1;
-
-	std::vector<const char*> instExtensions(2);
-	instExtensions[0] = "VK_KHR_surface";
-	instExtensions[1] = "VK_KHR_xcb_surface";
-
-	std::vector<const char*> instLayers{};
-
+	std::vector<const char*> instExtensions
+		{
+			"VK_KHR_surface",
+			"VK_KHR_xcb_surface"
+		};
 #ifdef VK_USE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
+#endif
+
+	std::vector<const char*> instLayers{};
+#ifdef VK_USE_VALIDATION
 	instLayers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
 
-	VkInstanceCreateInfo instance_info{};
-	instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instance_info.pNext = nullptr;
-	instance_info.flags = 0;
-	instance_info.enabledLayerCount = static_cast<uint32_t>(instLayers.size());
-	instance_info.ppEnabledLayerNames = instLayers.data();
-	instance_info.enabledExtensionCount = static_cast<uint32_t>(instExtensions.size());
-	instance_info.ppEnabledExtensionNames = instExtensions.data();
+	VkApplicationInfo app_info
+		{
+			VK_STRUCTURE_TYPE_APPLICATION_INFO,
+			nullptr,
+			"dreco-test",
+			0,
+			"dreco",
+			0,
+			VK_API_VERSION_1_1
+		};
 
+	VkInstanceCreateInfo instance_info
+		{
+			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+			nullptr,
+			0,
+			&app_info,
+			static_cast<uint32_t>(instLayers.size()),
+			instLayers.data(),
+			static_cast<uint32_t>(instExtensions.size()),
+			instExtensions.data()
+		};
 	vk_checkError(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
 

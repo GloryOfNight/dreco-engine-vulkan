@@ -8,7 +8,7 @@ src/render/vulkan/vk_swapchain.cxx
 src/render/vulkan/vk_renderer.cxx
 src/engine/engine.cxx)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_LIST})
 
