@@ -5,6 +5,7 @@
 #include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
 
+#include "SDL2/SDL_vulkan.h"
 #include <vulkan/vulkan_core.h>
 #include <set>
 #include <iostream>
@@ -42,9 +43,9 @@ vk_renderer::~vk_renderer()
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
 
 	cleanupSwapchain();
-
+	
 	vkDestroyDevice(mDevice, mAllocator);
-	glfwDestroyWindow(window);
+	SDL_DestroyWindow(window);
 	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
 	vkDestroyInstance(mInstance, nullptr);
 }
@@ -53,35 +54,34 @@ void vk_renderer::tick(const float& delta_time)
 {
 	int width;
 	int height;
-	glfwGetWindowSize(window, &width, &height);
+	SDL_Vulkan_GetDrawableSize(window, &width, &height);
 
 	if (mSurfaceCapabilities.currentExtent.width != static_cast<uint32_t>(width) ||
 		mSurfaceCapabilities.currentExtent.height != static_cast<uint32_t>(height))
 	{
 		recreateSwapchain();
 	}
-	drawFrame();
+	drawFrame();	
 }
 
-GLFWwindow* vk_renderer::getWindow() const
+SDL_Window* vk_renderer::getWindow() const
 {
 	return window;
 }
 
 bool vk_renderer::isSupported()
 {
-	return glfwVulkanSupported();
+	return true;
 }
 
 void vk_renderer::createWindow()
 {
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(720, 720, "dreco-test", nullptr, nullptr);
+	window = SDL_CreateWindow("dreco-test", 0, 0, 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 }
 
 void vk_renderer::createInstance()
 {
-	std::vector<const char*> instExtensions{"VK_KHR_surface", "VK_KHR_xcb_surface"};
+	std::vector<const char*> instExtensions{"VK_KHR_surface", "VK_KHR_xlib_surface"};
 #ifdef VK_USE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
 #endif
@@ -90,7 +90,7 @@ void vk_renderer::createInstance()
 #ifdef VK_USE_VALIDATION
 	instLayers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
-
+	
 	// clang-format off
 	const VkApplicationInfo app_info
 	{
@@ -121,7 +121,7 @@ void vk_renderer::createInstance()
 
 void vk_renderer::createSurface()
 {
-	vk_checkError(glfwCreateWindowSurface(mInstance, window, mAllocator, &mSurface));
+	SDL_Vulkan_CreateSurface(window, mInstance, &mSurface);
 }
 
 void vk_renderer::selectPhysicalDevice()
@@ -133,7 +133,7 @@ void vk_renderer::selectPhysicalDevice()
 
 	for (uint32_t i = 0; i < gpuCount; ++i)
 	{
-		if (glfwGetPhysicalDevicePresentationSupport(mInstance, gpuList[ i ], i))
+		if (true)
 		{
 			mGpu = gpuList[ i ];
 			vkGetPhysicalDeviceProperties(mGpu, &mGpuProperties);
@@ -214,6 +214,7 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.imageExtent = mSurfaceCapabilities.currentExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	swapchainCreateInfo.queueFamilyIndexCount = 2;
 	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
 	swapchainCreateInfo.preTransform = mSurfaceCapabilities.currentTransform;
@@ -603,6 +604,8 @@ void vk_renderer::cleanupSwapchain()
 void vk_renderer::recreateSwapchain()
 {
 	vkDeviceWaitIdle(mDevice);
+	vkQueueWaitIdle(mGraphicsQueue);
+	vkQueueWaitIdle(mPresentQueue);
 
 	cleanupSwapchain();
 

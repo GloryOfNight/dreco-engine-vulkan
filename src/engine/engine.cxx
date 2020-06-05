@@ -1,6 +1,6 @@
 #include "engine.hxx"
 #include "render/vulkan/vk_renderer.hxx"
-#include <GLFW/glfw3.h>
+#include <SDL2/SDL.h>
 #include <iostream>
 
 engine::engine() : _renderer{nullptr}
@@ -21,9 +21,10 @@ void engine::run()
 		return;
 	}
 
-	if (auto glfwInitResult{glfwInit()}; GLFW_FALSE == glfwInitResult)
+	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 1 == sdlInitResult)
 	{
-		std::runtime_error("GLFW initialization failed. Cannot proceed.");
+		std::cout << "SDL Init error: " << SDL_GetError() << std::endl;
+		throw std::runtime_error("SDL initialization failed. Cannot proceed.");
 		return;
 	}
 
@@ -41,7 +42,7 @@ void engine::stop()
 
 	stopMainLoop();
 	stopRenderer();
-	glfwTerminate();
+	SDL_Quit();
 }
 
 void engine::startRenderer()
@@ -73,11 +74,14 @@ void engine::startMainLoop()
 	while (_is_running)
 	{
 		_renderer->tick(0.0f);
-		glfwPollEvents();
 
-		if (glfwWindowShouldClose(_renderer->getWindow()))
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
 		{
-			stop();
+			if (event.type == SDL_QUIT)
+			{
+				stop();
+			}
 		}
 	}
 }

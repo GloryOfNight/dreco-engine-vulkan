@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
+#include <SDL2/SDL.h>
 #include <vector>
 
 class engine;
@@ -13,13 +13,13 @@ public:
 
 	void tick(const float& delta_time);
 
-	GLFWwindow* getWindow() const;
+	SDL_Window* getWindow() const;
 
 	static bool isSupported();
 
+protected:
 	void drawFrame();
 
-protected:
 	inline void createWindow();
 
 	inline void createInstance();
@@ -61,7 +61,7 @@ protected:
 private:
 	engine* _engine;
 
-	GLFWwindow* window;
+	SDL_Window* window;
 
 	VkAllocationCallbacks* mAllocator;
 
@@ -80,7 +80,7 @@ private:
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
 	VkQueue mPresentQueue = VK_NULL_HANDLE;
 
-	VkSwapchainKHR mSwapchain;
+	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
 	std::vector<VkImageView> mSwapchainImageViews;
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 

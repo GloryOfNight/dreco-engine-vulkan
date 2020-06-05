@@ -12,10 +12,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_LIST})
 
-find_package(glfw3 REQUIRED)
+find_package(SDL2 REQUIRED)
 
 if (UNIX)
-target_link_libraries(${PROJECT_NAME} vulkan glfw)
+target_link_libraries(${PROJECT_NAME} SDL2 vulkan)
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
