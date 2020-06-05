@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-inline void vk_logResult(const VkResult& result)
+inline void vk_logResult(const char* message, const VkResult& result)
 {
 	const char* code;
 	switch (result)
@@ -62,9 +62,12 @@ inline void vk_logResult(const VkResult& result)
 		case VK_ERROR_FRAGMENTED_POOL:
 			code = "VK_ERROR_FRAGMENTED_POOL";
 			break;
+		case VK_ERROR_OUT_OF_DATE_KHR:
+			code = "VK_ERROR_OUT_OF_DATE_KHR";
+			break;
 		default:
 			code = "UNIPLEMENTED";
 			break;
 	}
-	std::cout << "VkResult: " << code << std::endl;
+	std::cout << message << code << std::endl;
 }

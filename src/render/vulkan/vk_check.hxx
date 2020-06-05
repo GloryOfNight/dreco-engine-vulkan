@@ -9,7 +9,7 @@ inline void vk_checkError(const VkResult& result)
 	if (VK_SUCCESS != result)
 	{
 		std::cerr << "vk_checkError() assert: ";
-		vk_logResult(result);
+		vk_logResult("VkResult: ", result);
 
 		assert(false);
 	}

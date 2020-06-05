@@ -43,7 +43,9 @@ vk_renderer::~vk_renderer()
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
 
 	cleanupSwapchain();
-	
+	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
+	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
+
 	vkDestroyDevice(mDevice, mAllocator);
 	SDL_DestroyWindow(window);
 	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
@@ -61,7 +63,7 @@ void vk_renderer::tick(const float& delta_time)
 	{
 		recreateSwapchain();
 	}
-	drawFrame();	
+	drawFrame();
 }
 
 SDL_Window* vk_renderer::getWindow() const
@@ -90,7 +92,7 @@ void vk_renderer::createInstance()
 #ifdef VK_USE_VALIDATION
 	instLayers.push_back("VK_LAYER_KHRONOS_validation");
 #endif
-	
+
 	// clang-format off
 	const VkApplicationInfo app_info
 	{
@@ -221,7 +223,7 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.presentMode = swapchain.getPresentMode();
 	swapchainCreateInfo.clipped = VK_TRUE;
-	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+	swapchainCreateInfo.oldSwapchain = mSwapchain;
 
 	vk_checkError(vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
 }
@@ -542,10 +544,12 @@ void vk_renderer::createSemaphores()
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(mDevice, mSwapchain, UINT64_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
-
-	if (mCommandBuffers.size() < imageIndex)
+	if (VkResult result =
+			vkAcquireNextImageKHR(mDevice, mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
+		result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
 		return;
+	}
 
 	VkPipelineStageFlags waitStages[]{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	VkSemaphore waitSemaphores[]{mSepaphore_Image_Avaible};
@@ -557,7 +561,7 @@ void vk_renderer::drawFrame()
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &mCommandBuffers[ imageIndex ];
+	submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -580,13 +584,12 @@ void vk_renderer::cleanupSwapchain()
 {
 	for (size_t i = 0; i < mSwapchainFramebuffers.size(); ++i)
 	{
-		vkDestroyFramebuffer(mDevice, mSwapchainFramebuffers[ i ], mAllocator);
+		vkDestroyFramebuffer(mDevice, mSwapchainFramebuffers[i], mAllocator);
 	}
 	mSwapchainFramebuffers.clear();
 
 	vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
 	mCommandBuffers.clear();
-	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
 
 	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
@@ -594,11 +597,11 @@ void vk_renderer::cleanupSwapchain()
 
 	for (size_t i = 0; i < mSwapchainImageViews.size(); ++i)
 	{
-		vkDestroyImageView(mDevice, mSwapchainImageViews[ i ], mAllocator);
+		vkDestroyImageView(mDevice, mSwapchainImageViews[i], mAllocator);
 	}
 	mSwapchainImageViews.clear();
 
-	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
+	// vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
 }
 
 void vk_renderer::recreateSwapchain()
@@ -615,7 +618,6 @@ void vk_renderer::recreateSwapchain()
 	createRenderPass();
 	createFramebuffers();
 
-	createCommandPool();
 	createCommandBuffers();
 	createPipelineLayout();
 	createGraphicsPipeline();
