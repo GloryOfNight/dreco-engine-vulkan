@@ -16,7 +16,7 @@ public:
 	GLFWwindow* getWindow() const;
 
 	static bool isSupported();
-	
+
 	void drawFrame();
 
 protected:
@@ -57,6 +57,7 @@ protected:
 	inline void cleanupSwapchain();
 
 	inline void recreateSwapchain();
+
 private:
 	engine* _engine;
 
@@ -79,16 +80,11 @@ private:
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
 	VkQueue mPresentQueue = VK_NULL_HANDLE;
 
-	VkPresentModeKHR mPresentMode;
-
-	VkExtent2D mSwapchainExtent;
 	VkSwapchainKHR mSwapchain;
-	uint32_t mSwapchainImageCount;
-	std::vector<VkImage> mSwapchainImages;
 	std::vector<VkImageView> mSwapchainImageViews;
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
-	VkRenderPass mRenderPass; 
+	VkRenderPass mRenderPass;
 
 	VkCommandPool mCommandPool;
 

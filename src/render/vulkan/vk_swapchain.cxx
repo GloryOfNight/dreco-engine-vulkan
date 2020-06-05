@@ -9,15 +9,6 @@ vk_swapchain::vk_swapchain(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 
 VkSurfaceFormatKHR vk_swapchain::getSurfaceFormat() const
 {
-	for (const auto i : mSurfaceFormats)
-	{
-		if (i.format == VK_FORMAT_B8G8R8_UNORM &&
-			i.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-		{
-			return i;
-		}
-	}
-
 	return mSurfaceFormats[0];
 }
 
@@ -25,7 +16,7 @@ VkPresentModeKHR vk_swapchain::getPresentMode() const
 {
 	for (const auto i : mPresentModes)
 	{
-		if (i == VK_PRESENT_MODE_FIFO_KHR)
+		if (i == VK_PRESENT_MODE_IMMEDIATE_KHR)
 		{
 			return i;
 		}
