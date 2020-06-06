@@ -11,7 +11,8 @@
 #include <iostream>
 #include <stdexcept>
 
-#define VK_USE_VALIDATION
+#define VK_ENABLE_VALIDATION
+//#define VK_ENABLE_MESA_OVERLAY
 
 vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 {
@@ -74,13 +75,17 @@ void vk_renderer::createWindow()
 void vk_renderer::createInstance()
 {
 	std::vector<const char*> instExtensions{"VK_KHR_surface", "VK_KHR_xlib_surface"};
-#ifdef VK_USE_VALIDATION
+#ifdef VK_ENABLE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
 #endif
 
 	std::vector<const char*> instLayers{};
-#ifdef VK_USE_VALIDATION
+#ifdef VK_ENABLE_VALIDATION
 	instLayers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+
+#ifdef VK_ENABLE_MESA_OVERLAY
+	instLayers.push_back("VK_LAYER_MESA_overlay");
 #endif
 
 	// clang-format off
@@ -124,16 +129,9 @@ void vk_renderer::selectPhysicalDevice()
 	vkEnumeratePhysicalDevices(mInstance, &gpuCount, &gpuList[0]);
 
 	for (auto& gpu : gpuList)
-	{	
-		//uint32_t count;
-		//vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, nullptr);
-		//VkQueueFamilyProperties properties[count];
-		//vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, &properties[0]);
-		// TODO: Need to find supported queue (if there one), not only 0
-		VkBool32 isSupported;
-		vk_checkError(vkGetPhysicalDeviceSurfaceSupportKHR(gpu, 0, mSurface, &isSupported));
-
-		if (isSupported)
+	{
+		queueFamily = vk_queue_family(gpu, mSurface);
+		if (true == queueFamily.isSupported)
 		{
 			mGpu = gpu;
 			vkGetPhysicalDeviceProperties(mGpu, &mGpuProperties);
@@ -150,11 +148,8 @@ void vk_renderer::selectPhysicalDevice()
 
 void vk_renderer::createLogicalDevice()
 {
-	vk_queue_family queueFamily;
-	queueFamily.findQueueFamilies(mGpu, mSurface);
-
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies{queueFamily.mIdxGraphicsFamily};
+	std::set<uint32_t> uniqueQueueFamilies{queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex};
 
 	float priorities[]{1.0f};
 
@@ -184,8 +179,8 @@ void vk_renderer::createLogicalDevice()
 
 	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
 
-	vkGetDeviceQueue(mDevice, queueFamily.mIdxGraphicsFamily, 0, &mGraphicsQueue);
-	vkGetDeviceQueue(mDevice, queueFamily.mIdxPresentFamily, 0, &mPresentQueue);
+	vkGetDeviceQueue(mDevice, queueFamily.graphicsQueueFamilyIndex, 0, &mGraphicsQueue);
+	vkGetDeviceQueue(mDevice, queueFamily.presentQueueFamilyIndex, 0, &mPresentQueue);
 }
 
 void vk_renderer::setupSurfaceCapabilities()
@@ -199,11 +194,13 @@ void vk_renderer::createSwapchain()
 
 	mSurfaceFormat = swapchain.getSurfaceFormat();
 
-	vk_queue_family queueFamily;
-	queueFamily.findQueueFamilies(mGpu, mSurface);
-	// TODO: if indexex the same, no need to put both in here
-	// if different, imageSharingMode need to be VK_SHARING_MODE_CONCURRENT
-	uint32_t queueFamilyIndexes[2]{queueFamily.mIdxGraphicsFamily, queueFamily.mIdxPresentFamily};
+	VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	std::vector<uint32_t> queueFamilyIndexes(1, queueFamily.graphicsQueueFamilyIndex);
+	if (queueFamily.graphicsQueueFamilyIndex != queueFamily.presentQueueFamilyIndex) 
+	{
+		sharingMode = VK_SHARING_MODE_CONCURRENT;
+		queueFamilyIndexes.push_back(queueFamily.presentQueueFamilyIndex);
+	}
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -216,9 +213,9 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.imageExtent = mSurfaceCapabilities.currentExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	swapchainCreateInfo.queueFamilyIndexCount = 2;
-	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
+	swapchainCreateInfo.imageSharingMode = sharingMode;
+	swapchainCreateInfo.queueFamilyIndexCount = queueFamilyIndexes.size();
+	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
 	swapchainCreateInfo.preTransform = mSurfaceCapabilities.currentTransform;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.presentMode = swapchain.getPresentMode();
@@ -329,12 +326,9 @@ void vk_renderer::createFramebuffers()
 
 void vk_renderer::createCommandPool()
 {
-	vk_queue_family queueFamily;
-	queueFamily.findQueueFamilies(mGpu, mSurface);
-
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.queueFamilyIndex = queueFamily.mIdxGraphicsFamily;
+	commandPoolCreateInfo.queueFamilyIndex = queueFamily.graphicsQueueFamilyIndex;
 	commandPoolCreateInfo.flags = 0;
 
 	vk_checkError(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mCommandPool));

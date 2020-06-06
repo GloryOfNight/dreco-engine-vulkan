@@ -1,4 +1,5 @@
 #pragma once
+#include "vk_queue_family.hxx"
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
 #include <vector>
@@ -62,6 +63,8 @@ private:
 	engine* _engine;
 
 	SDL_Window* window;
+
+	vk_queue_family queueFamily;
 
 	VkAllocationCallbacks* mAllocator;
 
