@@ -20,31 +20,30 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 	createSurface();
 	selectPhysicalDevice();
 	createLogicalDevice();
-	setupSurfaceCapabilities();
 
+	createSemaphores();
+	createCommandPool();
+
+	setupSurfaceCapabilities();
 	createSwapchain();
 	createImageViews();
 	createRenderPass();
-
 	createFramebuffers();
-	createCommandPool();
 	createCommandBuffers();
 	createPipelineLayout();
 	createGraphicsPipeline();
 	recordCommandBuffers();
-	createSemaphores();
 }
 
 vk_renderer::~vk_renderer()
 {
 	vkDeviceWaitIdle(mDevice);
 
+	cleanupSwapchain(mSwapchain);
+
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
-
-	cleanupSwapchain();
 	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
-	vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
 
 	vkDestroyDevice(mDevice, mAllocator);
 	SDL_DestroyWindow(window);
@@ -54,15 +53,6 @@ vk_renderer::~vk_renderer()
 
 void vk_renderer::tick(const float& delta_time)
 {
-	int width;
-	int height;
-	SDL_Vulkan_GetDrawableSize(window, &width, &height);
-
-	if (mSurfaceCapabilities.currentExtent.width != static_cast<uint32_t>(width) ||
-		mSurfaceCapabilities.currentExtent.height != static_cast<uint32_t>(height))
-	{
-		recreateSwapchain();
-	}
 	drawFrame();
 }
 
@@ -116,8 +106,8 @@ void vk_renderer::createInstance()
 		static_cast<uint32_t>(instExtensions.size()),
 		instExtensions.data()
 	};
-	// clang-format on 
-	
+	// clang-format on
+
 	vk_checkError(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
 
@@ -130,14 +120,22 @@ void vk_renderer::selectPhysicalDevice()
 {
 	uint32_t gpuCount = 0;
 	vkEnumeratePhysicalDevices(mInstance, &gpuCount, nullptr);
-	VkPhysicalDevice gpuList[ gpuCount ];
-	vkEnumeratePhysicalDevices(mInstance, &gpuCount, &gpuList[ 0 ]);
+	VkPhysicalDevice gpuList[gpuCount];
+	vkEnumeratePhysicalDevices(mInstance, &gpuCount, &gpuList[0]);
 
-	for (uint32_t i = 0; i < gpuCount; ++i)
-	{
-		if (true)
+	for (auto& gpu : gpuList)
+	{	
+		//uint32_t count;
+		//vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, nullptr);
+		//VkQueueFamilyProperties properties[count];
+		//vkGetPhysicalDeviceQueueFamilyProperties(gpu, &count, &properties[0]);
+		// TODO: Need to find supported queue (if there one), not only 0
+		VkBool32 isSupported;
+		vk_checkError(vkGetPhysicalDeviceSurfaceSupportKHR(gpu, 0, mSurface, &isSupported));
+
+		if (isSupported)
 		{
-			mGpu = gpuList[ i ];
+			mGpu = gpu;
 			vkGetPhysicalDeviceProperties(mGpu, &mGpuProperties);
 			vkGetPhysicalDeviceFeatures(mGpu, &mGpuFeatures);
 			break;
@@ -171,7 +169,7 @@ void vk_renderer::createLogicalDevice()
 	}
 
 	const uint32_t deviceExtensionsCount = 1;
-	const char* deviceExtensions[ deviceExtensionsCount ]{"VK_KHR_swapchain"};
+	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
 
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -203,7 +201,9 @@ void vk_renderer::createSwapchain()
 
 	vk_queue_family queueFamily;
 	queueFamily.findQueueFamilies(mGpu, mSurface);
-	uint32_t queueFamilyIndexes[ 2 ]{queueFamily.mIdxGraphicsFamily, queueFamily.mIdxPresentFamily};
+	// TODO: if indexex the same, no need to put both in here
+	// if different, imageSharingMode need to be VK_SHARING_MODE_CONCURRENT
+	uint32_t queueFamilyIndexes[2]{queueFamily.mIdxGraphicsFamily, queueFamily.mIdxPresentFamily};
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -226,6 +226,11 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.oldSwapchain = mSwapchain;
 
 	vk_checkError(vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
+
+	if (swapchainCreateInfo.oldSwapchain != VK_NULL_HANDLE)
+	{
+		cleanupSwapchain(swapchainCreateInfo.oldSwapchain);
+	}
 }
 
 void vk_renderer::createImageViews()
@@ -242,7 +247,7 @@ void vk_renderer::createImageViews()
 	{
 		VkImageViewCreateInfo imageViewCreateInfo{};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = mSwapchainImages[ i ];
+		imageViewCreateInfo.image = mSwapchainImages[i];
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		imageViewCreateInfo.format = mSurfaceFormat.format;
 		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -256,7 +261,7 @@ void vk_renderer::createImageViews()
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 
-		vk_checkError(vkCreateImageView(mDevice, &imageViewCreateInfo, mAllocator, &mSwapchainImageViews[ i ]));
+		vk_checkError(vkCreateImageView(mDevice, &imageViewCreateInfo, mAllocator, &mSwapchainImageViews[i]));
 	}
 }
 
@@ -307,7 +312,7 @@ void vk_renderer::createFramebuffers()
 
 	for (uint32_t i = 0; i < mSwapchainImageViews.size(); ++i)
 	{
-		VkImageView attachments[]{mSwapchainImageViews[ i ]};
+		VkImageView attachments[]{mSwapchainImageViews[i]};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -318,7 +323,7 @@ void vk_renderer::createFramebuffers()
 		framebufferCreateInfo.height = mSurfaceCapabilities.currentExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		vk_checkError(vkCreateFramebuffer(mDevice, &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[ i ]));
+		vk_checkError(vkCreateFramebuffer(mDevice, &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[i]));
 	}
 }
 
@@ -460,10 +465,10 @@ void vk_renderer::createGraphicsPipeline()
 	colorBlending.logicOp = VK_LOGIC_OP_COPY;
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments = &colorBlendAttachment;
-	colorBlending.blendConstants[ 0 ] = 0.0f;
-	colorBlending.blendConstants[ 1 ] = 0.0f;
-	colorBlending.blendConstants[ 2 ] = 0.0f;
-	colorBlending.blendConstants[ 3 ] = 0.0f;
+	colorBlending.blendConstants[0] = 0.0f;
+	colorBlending.blendConstants[1] = 0.0f;
+	colorBlending.blendConstants[2] = 0.0f;
+	colorBlending.blendConstants[3] = 0.0f;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -510,25 +515,25 @@ void vk_renderer::recordCommandBuffers()
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		vk_checkError(vkBeginCommandBuffer(mCommandBuffers[ i ], &beginInfo));
+		vk_checkError(vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo));
 
 		VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = mRenderPass;
-		renderPassInfo.framebuffer = mSwapchainFramebuffers[ i ];
+		renderPassInfo.framebuffer = mSwapchainFramebuffers[i];
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = mSurfaceCapabilities.currentExtent;
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
-		vkCmdBeginRenderPass(mCommandBuffers[ i ], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(mCommandBuffers[ i ], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
-		vkCmdDraw(mCommandBuffers[ i ], 3, 1, 0, 0);
-		vkCmdEndRenderPass(mCommandBuffers[ i ]);
+		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
+		vkCmdDraw(mCommandBuffers[i], 3, 1, 0, 0);
+		vkCmdEndRenderPass(mCommandBuffers[i]);
 
-		vk_checkError(vkEndCommandBuffer(mCommandBuffers[ i ]));
+		vk_checkError(vkEndCommandBuffer(mCommandBuffers[i]));
 	}
 }
 
@@ -544,10 +549,14 @@ void vk_renderer::createSemaphores()
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	if (VkResult result =
-			vkAcquireNextImageKHR(mDevice, mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
-		result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	if (VkResult result = vkAcquireNextImageKHR(
+			mDevice, mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
+		VK_SUCCESS != result && VK_SUBOPTIMAL_KHR != result)
 	{
+		if (VK_ERROR_OUT_OF_DATE_KHR == result)
+		{
+			recreateSwapchain();
+		}
 		return;
 	}
 
@@ -580,13 +589,9 @@ void vk_renderer::drawFrame()
 	vkQueuePresentKHR(mPresentQueue, &presentInfo);
 }
 
-void vk_renderer::cleanupSwapchain()
+void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
-	for (size_t i = 0; i < mSwapchainFramebuffers.size(); ++i)
-	{
-		vkDestroyFramebuffer(mDevice, mSwapchainFramebuffers[i], mAllocator);
-	}
-	mSwapchainFramebuffers.clear();
+	vkDeviceWaitIdle(mDevice);
 
 	vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
 	mCommandBuffers.clear();
@@ -595,29 +600,28 @@ void vk_renderer::cleanupSwapchain()
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
 	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
 
-	for (size_t i = 0; i < mSwapchainImageViews.size(); ++i)
+	for (auto frameBuffer : mSwapchainFramebuffers)
 	{
-		vkDestroyImageView(mDevice, mSwapchainImageViews[i], mAllocator);
+		vkDestroyFramebuffer(mDevice, frameBuffer, mAllocator);
+	}
+	mSwapchainFramebuffers.clear();
+
+	for (auto imageView : mSwapchainImageViews)
+	{
+		vkDestroyImageView(mDevice, imageView, mAllocator);
 	}
 	mSwapchainImageViews.clear();
 
-	// vkDestroySwapchainKHR(mDevice, mSwapchain, mAllocator);
+	vkDestroySwapchainKHR(mDevice, swapchain, mAllocator);
 }
 
 void vk_renderer::recreateSwapchain()
 {
-	vkDeviceWaitIdle(mDevice);
-	vkQueueWaitIdle(mGraphicsQueue);
-	vkQueueWaitIdle(mPresentQueue);
-
-	cleanupSwapchain();
-
 	setupSurfaceCapabilities();
 	createSwapchain();
 	createImageViews();
 	createRenderPass();
 	createFramebuffers();
-
 	createCommandBuffers();
 	createPipelineLayout();
 	createGraphicsPipeline();

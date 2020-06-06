@@ -54,7 +54,7 @@ protected:
 
 	inline void createSemaphores();
 
-	inline void cleanupSwapchain();
+	inline void cleanupSwapchain(VkSwapchainKHR& swapchain);
 
 	inline void recreateSwapchain();
 
