@@ -7,7 +7,9 @@ public:
 	vk_queue_family()
 		: isSupported{false}
 		, graphicsQueueFamilyIndex{static_cast<uint32_t>(-1)}
+		, transferQueueFamilyIndex{static_cast<uint32_t>(-1)}
 		, presentQueueFamilyIndex{static_cast<uint32_t>(-1)}
+		, sharingMode{VK_SHARING_MODE_CONCURRENT}
 	{
 	}
 
@@ -26,26 +28,54 @@ public:
 			{
 				graphicsQueueFamilyIndex = i;
 			}
-			
+
+			if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+			{
+				if (false == isIndexValid(transferQueueFamilyIndex) ||
+					graphicsQueueFamilyIndex == transferQueueFamilyIndex)
+				{
+					transferQueueFamilyIndex = i;
+				}
+			}
+
 			VkBool32 isQueueFamilySupported;
 			vkGetPhysicalDeviceSurfaceSupportKHR(gpu, i, surface, &isQueueFamilySupported);
 			if (isQueueFamilySupported)
 			{
-				presentQueueFamilyIndex = i;
-			}
-
-			if (graphicsQueueFamilyIndex != static_cast<uint32_t>(-1) &&
-				presentQueueFamilyIndex != static_cast<uint32_t>(-1))
-			{
-				isSupported = true;
-				break;
+				if (false == isIndexValid(presentQueueFamilyIndex) ||
+					graphicsQueueFamilyIndex == presentQueueFamilyIndex ||
+					transferQueueFamilyIndex == presentQueueFamilyIndex)
+				{
+					presentQueueFamilyIndex = i;
+				}
 			}
 		}
+
+		if (isIndexValid(graphicsQueueFamilyIndex) && isIndexValid(transferQueueFamilyIndex) &&
+			isIndexValid(presentQueueFamilyIndex))
+		{
+			isSupported = true;
+		}
+
+		if (graphicsQueueFamilyIndex == transferQueueFamilyIndex && 
+		transferQueueFamilyIndex == presentQueueFamilyIndex)
+		{
+			sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		}
+	}
+
+	bool isIndexValid(uint32_t& index)
+	{
+		return static_cast<uint32_t>(-1) != index;
 	}
 
 	bool isSupported;
 
 	uint32_t graphicsQueueFamilyIndex;
 
+	uint32_t transferQueueFamilyIndex;
+
 	uint32_t presentQueueFamilyIndex;
+
+	VkSharingMode sharingMode;
 };

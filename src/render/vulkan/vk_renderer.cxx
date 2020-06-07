@@ -42,11 +42,12 @@ vk_renderer::~vk_renderer()
 	vkDeviceWaitIdle(mDevice);
 
 	cleanupSwapchain(mSwapchain);
-	destroyBuffer(vertexBuffer, vertexMemoryBuffer);
+	destroyBuffer(vertexBuffer, vertexBufferMemory);
 
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
-	vkDestroyCommandPool(mDevice, mCommandPool, mAllocator);
+	vkDestroyCommandPool(mDevice, mGraphicsCommandPool, mAllocator);
+	vkDestroyCommandPool(mDevice, mTransferCommandPool, mAllocator);
 
 	vkDestroyDevice(mDevice, mAllocator);
 	SDL_DestroyWindow(window);
@@ -146,7 +147,8 @@ void vk_renderer::selectPhysicalDevice()
 void vk_renderer::createLogicalDevice()
 {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies{queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex};
+	std::set<uint32_t> uniqueQueueFamilies{queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex,
+		queueFamily.transferQueueFamilyIndex};
 
 	float priorities[]{1.0f};
 
@@ -177,6 +179,7 @@ void vk_renderer::createLogicalDevice()
 	vk_checkError(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
 
 	vkGetDeviceQueue(mDevice, queueFamily.graphicsQueueFamilyIndex, 0, &mGraphicsQueue);
+	vkGetDeviceQueue(mDevice, queueFamily.transferQueueFamilyIndex, 0, &mTransferQueue);
 	vkGetDeviceQueue(mDevice, queueFamily.presentQueueFamilyIndex, 0, &mPresentQueue);
 }
 
@@ -191,13 +194,9 @@ void vk_renderer::createSwapchain()
 
 	mSurfaceFormat = swapchain.getSurfaceFormat();
 
-	VkSharingMode sharingMode{VK_SHARING_MODE_EXCLUSIVE};
-	std::vector<uint32_t> queueFamilyIndexes(1, queueFamily.graphicsQueueFamilyIndex);
-	if (queueFamily.graphicsQueueFamilyIndex != queueFamily.presentQueueFamilyIndex)
-	{
-		sharingMode = VK_SHARING_MODE_CONCURRENT;
-		queueFamilyIndexes.push_back(queueFamily.presentQueueFamilyIndex);
-	}
+	VkSharingMode sharingMode{queueFamily.sharingMode};
+	std::vector<uint32_t> queueFamilyIndexes{queueFamily.graphicsQueueFamilyIndex, queueFamily.transferQueueFamilyIndex,
+		queueFamily.presentQueueFamilyIndex};
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -328,20 +327,26 @@ void vk_renderer::createCommandPool()
 	commandPoolCreateInfo.queueFamilyIndex = queueFamily.graphicsQueueFamilyIndex;
 	commandPoolCreateInfo.flags = 0;
 
-	vk_checkError(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mCommandPool));
+	vk_checkError(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mGraphicsCommandPool));
+
+	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandPoolCreateInfo.queueFamilyIndex = queueFamily.transferQueueFamilyIndex;
+	commandPoolCreateInfo.flags = 0;
+
+	vk_checkError(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mTransferCommandPool));
 }
 
 void vk_renderer::createCommandBuffers()
 {
-	mCommandBuffers.resize(mSwapchainFramebuffers.size());
+	mGraphicsCommandBuffers.resize(mSwapchainFramebuffers.size());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = mCommandPool;
+	allocInfo.commandPool = mGraphicsCommandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(mCommandBuffers.size());
+	allocInfo.commandBufferCount = static_cast<uint32_t>(mGraphicsCommandBuffers.size());
 
-	vk_checkError(vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data()));
+	vk_checkError(vkAllocateCommandBuffers(mDevice, &allocInfo, mGraphicsCommandBuffers.data()));
 }
 
 void vk_renderer::createPipelineLayout()
@@ -512,9 +517,9 @@ void vk_renderer::createShaderModule(const char* src, const size_t& src_size, Vk
 
 void vk_renderer::recordCommandBuffers()
 {
-	for (size_t i = 0; i < mCommandBuffers.size(); ++i)
+	for (size_t i = 0; i < mGraphicsCommandBuffers.size(); ++i)
 	{
-		VkCommandBuffer& commandBuffer = mCommandBuffers[i];
+		VkCommandBuffer& commandBuffer = mGraphicsCommandBuffers[i];
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -534,7 +539,7 @@ void vk_renderer::recordCommandBuffers()
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);		
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
 		VkBuffer buffers[1]{vertexBuffer};
@@ -580,7 +585,7 @@ void vk_renderer::drawFrame()
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
+	submitInfo.pCommandBuffers = &mGraphicsCommandBuffers[imageIndex];
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -603,8 +608,9 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
 	vkDeviceWaitIdle(mDevice);
 
-	vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
-	mCommandBuffers.clear();
+	vkFreeCommandBuffers(mDevice, mGraphicsCommandPool, static_cast<uint32_t>(mGraphicsCommandBuffers.size()),
+		mGraphicsCommandBuffers.data());
+	mGraphicsCommandBuffers.clear();
 
 	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
@@ -640,18 +646,29 @@ void vk_renderer::recreateSwapchain()
 
 void vk_renderer::createVertexBuffer()
 {
-	const size_t bufferSize {sizeof(vec3) * vertexes.size()};
+	const VkDeviceSize bufferSize{sizeof(vec3) * vertexes.size()};
 
-	createBuffer(bufferSize, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexMemoryBuffer,
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	createBuffer(bufferSize, stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBufferMemory,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	void* data;
-	vkMapMemory(mDevice, vertexMemoryBuffer, 0, VK_WHOLE_SIZE, 0, &data);
+	vkMapMemory(mDevice, stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
 	memcpy(data, vertexes.data(), bufferSize);
-	vkUnmapMemory(mDevice, vertexMemoryBuffer);
+	vkUnmapMemory(mDevice, stagingBufferMemory);
+
+	createBuffer(bufferSize, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		vertexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+	vkDestroyBuffer(mDevice, stagingBuffer, mAllocator);
+	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
 }
 
-void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory) 
+void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
 	vkDestroyBuffer(mDevice, buffer, mAllocator);
 	vkFreeMemory(mDevice, bufferMemory, mAllocator);
@@ -666,13 +683,13 @@ void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsag
 	bufferCreateInfo.flags = 0;
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = bufferUsageFlags;
-	bufferCreateInfo.sharingMode = queueFamily.graphicsQueueFamilyIndex == queueFamily.presentQueueFamilyIndex
-									   ? VK_SHARING_MODE_EXCLUSIVE
-									   : VK_SHARING_MODE_CONCURRENT;
+	bufferCreateInfo.sharingMode = queueFamily.sharingMode;
 	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
 	{
-		uint32_t queueFamilyIndexes[] = {queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex};
-		bufferCreateInfo.queueFamilyIndexCount = 2;
+		uint32_t queueFamilyIndexes[3] = {queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex,
+			queueFamily.transferQueueFamilyIndex};
+
+		bufferCreateInfo.queueFamilyIndexCount = 3;
 		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
 	}
 
@@ -690,6 +707,43 @@ void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsag
 	vk_checkError(vkAllocateMemory(mDevice, &memoryAllocateInfo, mAllocator, &bufferMemory));
 
 	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
+}
+
+void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
+{
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocateInfo.pNext = nullptr;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	commandBufferAllocateInfo.commandBufferCount = 1;
+	commandBufferAllocateInfo.commandPool = mTransferCommandPool;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	commandBufferBeginInfo.pNext = nullptr;
+	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
+
+	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+
+	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+	vkEndCommandBuffer(commandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vkQueueSubmit(mTransferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(mTransferQueue);
+	vkFreeCommandBuffers(mDevice, mTransferCommandPool, 1, &commandBuffer);
 }
 
 uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags)

@@ -65,6 +65,8 @@ protected:
 	void createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
 		VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags);
 
+	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
+
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags);
 
 private:
@@ -86,7 +88,7 @@ private:
 	SDL_Window* window;
 
 	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexMemoryBuffer;
+	VkDeviceMemory vertexBufferMemory;
 
 	vk_queue_family queueFamily;
 
@@ -105,6 +107,7 @@ private:
 	VkDevice mDevice = VK_NULL_HANDLE;
 
 	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+	VkQueue mTransferQueue = VK_NULL_HANDLE;
 	VkQueue mPresentQueue = VK_NULL_HANDLE;
 
 	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
@@ -113,9 +116,10 @@ private:
 
 	VkRenderPass mRenderPass;
 
-	VkCommandPool mCommandPool;
+	VkCommandPool mGraphicsCommandPool;
+	VkCommandPool mTransferCommandPool;
 
-	std::vector<VkCommandBuffer> mCommandBuffers;
+	std::vector<VkCommandBuffer> mGraphicsCommandBuffers;
 
 	VkPipelineLayout mPipelineLayout;
 
