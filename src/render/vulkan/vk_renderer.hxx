@@ -1,5 +1,6 @@
 #pragma once
 #include "vk_queue_family.hxx"
+
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
 #include <vector>
@@ -15,8 +16,6 @@ public:
 	void tick(const float& delta_time);
 
 	SDL_Window* getWindow() const;
-
-	static bool isSupported();
 
 protected:
 	void drawFrame();
@@ -58,6 +57,11 @@ protected:
 	inline void cleanupSwapchain(VkSwapchainKHR& swapchain);
 
 	inline void recreateSwapchain();
+
+	void createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
+		VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags);
+
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags);
 
 private:
 	engine* _engine;

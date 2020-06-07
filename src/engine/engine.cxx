@@ -39,7 +39,7 @@ void engine::stop()
 		std::cerr << "Engine aren't running, abording." << std::endl;
 		return;
 	}
-
+	
 	stopMainLoop();
 	stopRenderer();
 	SDL_Quit();
@@ -47,12 +47,6 @@ void engine::stop()
 
 void engine::startRenderer()
 {
-	if (false == vk_renderer::isSupported())
-	{
-		std::runtime_error("Vulkan is not supported. Cannot proceed.");
-		return;
-	}
-
 	if (_renderer == nullptr)
 	{
 		_renderer = new vk_renderer(this);

@@ -4,8 +4,8 @@
 #include "vk_queue_family.hxx"
 #include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
-
 #include "SDL2/SDL_vulkan.h"
+
 #include <vulkan/vulkan_core.h>
 #include <set>
 #include <iostream>
@@ -60,11 +60,6 @@ void vk_renderer::tick(const float& delta_time)
 SDL_Window* vk_renderer::getWindow() const
 {
 	return window;
-}
-
-bool vk_renderer::isSupported()
-{
-	return true;
 }
 
 void vk_renderer::createWindow()
@@ -194,9 +189,9 @@ void vk_renderer::createSwapchain()
 
 	mSurfaceFormat = swapchain.getSurfaceFormat();
 
-	VkSharingMode sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	VkSharingMode sharingMode{VK_SHARING_MODE_EXCLUSIVE};
 	std::vector<uint32_t> queueFamilyIndexes(1, queueFamily.graphicsQueueFamilyIndex);
-	if (queueFamily.graphicsQueueFamilyIndex != queueFamily.presentQueueFamilyIndex) 
+	if (queueFamily.graphicsQueueFamilyIndex != queueFamily.presentQueueFamilyIndex)
 	{
 		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		queueFamilyIndexes.push_back(queueFamily.presentQueueFamilyIndex);
@@ -620,4 +615,56 @@ void vk_renderer::recreateSwapchain()
 	createPipelineLayout();
 	createGraphicsPipeline();
 	recordCommandBuffers();
+}
+
+void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
+	VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags)
+{
+	VkBufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.pNext = nullptr;
+	bufferCreateInfo.flags = 0;
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = bufferUsageFlags;
+	bufferCreateInfo.sharingMode = queueFamily.graphicsQueueFamilyIndex == queueFamily.presentQueueFamilyIndex
+									   ? VK_SHARING_MODE_EXCLUSIVE
+									   : VK_SHARING_MODE_CONCURRENT;
+	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
+	{
+		uint32_t queueFamilyIndexes[] = {queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex};
+		bufferCreateInfo.queueFamilyIndexCount = 2;
+		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
+	}
+	
+	vk_checkError(vkCreateBuffer(mDevice, &bufferCreateInfo, mAllocator, &buffer));
+
+	VkMemoryRequirements memoryRequirements;
+	vkGetBufferMemoryRequirements(mDevice, buffer, &memoryRequirements);
+
+	VkMemoryAllocateInfo memoryAllocateInfo{};
+	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memoryAllocateInfo.pNext = nullptr;
+	memoryAllocateInfo.allocationSize = memoryRequirements.size;
+	memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, memoryPropertyFlags);
+
+	vk_checkError(vkAllocateMemory(mDevice, &memoryAllocateInfo, mAllocator, &bufferMemory));
+
+	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
+}
+
+uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags)
+{
+	VkPhysicalDeviceMemoryProperties memoryProperties;
+	vkGetPhysicalDeviceMemoryProperties(mGpu, &memoryProperties);
+
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
+	{
+		if ((typeFilter & (1 << i)) &&
+			(memoryProperties.memoryTypes[i].propertyFlags & propertiesFlags) == propertiesFlags)
+		{
+			return i;
+		}
+	}
+	throw std::runtime_error("No suitable memory find!");
+	return 0;
 }
