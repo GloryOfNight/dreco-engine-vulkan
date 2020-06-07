@@ -1,5 +1,6 @@
 #pragma once
 #include "vk_queue_family.hxx"
+#include "math/vec3.hxx"
 
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
@@ -58,15 +59,34 @@ protected:
 
 	inline void recreateSwapchain();
 
+	void createVertexBuffer();
+	void destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
 	void createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
 		VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags);
 
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags);
 
 private:
+	// clang-format off
+	std::vector<vec3> vertexes
+	{
+		vec3(-0.5, 0.5, 0.0),
+		vec3(-0.5, -0.5, 0.0),
+		vec3(0.5, -0.5, 0.0),
+
+		vec3(-0.5, 0.5, 0.0),
+		vec3(0.5, -0.5, 0.0),
+		vec3(0.5, 0.5, 0.0) 
+	};
+	// clang-format on
+
 	engine* _engine;
 
 	SDL_Window* window;
+
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexMemoryBuffer;
 
 	vk_queue_family queueFamily;
 

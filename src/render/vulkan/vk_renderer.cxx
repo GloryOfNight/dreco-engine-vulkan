@@ -24,6 +24,7 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 
 	createSemaphores();
 	createCommandPool();
+	createVertexBuffer();
 
 	setupSurfaceCapabilities();
 	createSwapchain();
@@ -41,6 +42,7 @@ vk_renderer::~vk_renderer()
 	vkDeviceWaitIdle(mDevice);
 
 	cleanupSwapchain(mSwapchain);
+	destroyBuffer(vertexBuffer, vertexMemoryBuffer);
 
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
@@ -385,12 +387,25 @@ void vk_renderer::createGraphicsPipeline()
 
 	VkPipelineShaderStageCreateInfo shaderStagesInfo[]{vertShaderStageInfo, fragShaderStageInfo};
 
+	// TODO: Description should be somewhere else
+	VkVertexInputBindingDescription vertexInputBindingDescription{};
+	vertexInputBindingDescription.binding = 0;
+	vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	vertexInputBindingDescription.stride = sizeof(vec3);
+
+	// TODO: Attributes should be somewhere else
+	VkVertexInputAttributeDescription vertexInputAttributeDescription{};
+	vertexInputAttributeDescription.binding = 0;
+	vertexInputAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertexInputAttributeDescription.location = 0;
+	vertexInputAttributeDescription.offset = 0;
+
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = 1;
+	vertexInputInfo.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -499,12 +514,14 @@ void vk_renderer::recordCommandBuffers()
 {
 	for (size_t i = 0; i < mCommandBuffers.size(); ++i)
 	{
+		VkCommandBuffer& commandBuffer = mCommandBuffers[i];
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		vk_checkError(vkBeginCommandBuffer(mCommandBuffers[i], &beginInfo));
+		vk_checkError(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 		VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -517,12 +534,16 @@ void vk_renderer::recordCommandBuffers()
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
-		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
-		vkCmdDraw(mCommandBuffers[i], 3, 1, 0, 0);
-		vkCmdEndRenderPass(mCommandBuffers[i]);
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);		
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
-		vk_checkError(vkEndCommandBuffer(mCommandBuffers[i]));
+		VkBuffer buffers[1]{vertexBuffer};
+		VkDeviceSize offsets[1]{0};
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+		vkCmdDraw(commandBuffer, vertexes.size(), 1, 0, 0);
+		vkCmdEndRenderPass(commandBuffer);
+
+		vk_checkError(vkEndCommandBuffer(commandBuffer));
 	}
 }
 
@@ -617,6 +638,25 @@ void vk_renderer::recreateSwapchain()
 	recordCommandBuffers();
 }
 
+void vk_renderer::createVertexBuffer()
+{
+	const size_t bufferSize {sizeof(vec3) * vertexes.size()};
+
+	createBuffer(bufferSize, vertexBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexMemoryBuffer,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	void* data;
+	vkMapMemory(mDevice, vertexMemoryBuffer, 0, VK_WHOLE_SIZE, 0, &data);
+	memcpy(data, vertexes.data(), bufferSize);
+	vkUnmapMemory(mDevice, vertexMemoryBuffer);
+}
+
+void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory) 
+{
+	vkDestroyBuffer(mDevice, buffer, mAllocator);
+	vkFreeMemory(mDevice, bufferMemory, mAllocator);
+}
+
 void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
 	VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags)
 {
@@ -635,7 +675,7 @@ void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsag
 		bufferCreateInfo.queueFamilyIndexCount = 2;
 		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
 	}
-	
+
 	vk_checkError(vkCreateBuffer(mDevice, &bufferCreateInfo, mAllocator, &buffer));
 
 	VkMemoryRequirements memoryRequirements;
