@@ -25,6 +25,7 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 	createSemaphores();
 	createCommandPool();
 	createVertexBuffer();
+	createIndexBuffer();
 
 	setupSurfaceCapabilities();
 	createSwapchain();
@@ -43,6 +44,7 @@ vk_renderer::~vk_renderer()
 
 	cleanupSwapchain(mSwapchain);
 	destroyBuffer(vertexBuffer, vertexBufferMemory);
+	destroyBuffer(indexBuffer, indexBufferMemory);
 
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
@@ -545,7 +547,8 @@ void vk_renderer::recordCommandBuffers()
 		VkBuffer buffers[1]{vertexBuffer};
 		VkDeviceSize offsets[1]{0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-		vkCmdDraw(commandBuffer, vertexes.size(), 1, 0, 0);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdDrawIndexed(commandBuffer, mesh._indexes.size(), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
 		vk_checkError(vkEndCommandBuffer(commandBuffer));
@@ -646,7 +649,7 @@ void vk_renderer::recreateSwapchain()
 
 void vk_renderer::createVertexBuffer()
 {
-	const VkDeviceSize bufferSize{sizeof(vec3) * vertexes.size()};
+	const VkDeviceSize bufferSize{sizeof(mesh._vertexes[0]) * mesh._vertexes.size()};
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
@@ -656,7 +659,7 @@ void vk_renderer::createVertexBuffer()
 
 	void* data;
 	vkMapMemory(mDevice, stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
-	memcpy(data, vertexes.data(), bufferSize);
+	memcpy(data, mesh._vertexes.data(), bufferSize);
 	vkUnmapMemory(mDevice, stagingBufferMemory);
 
 	createBuffer(bufferSize, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -668,10 +671,28 @@ void vk_renderer::createVertexBuffer()
 	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
 }
 
-void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+void vk_renderer::createIndexBuffer() 
 {
-	vkDestroyBuffer(mDevice, buffer, mAllocator);
-	vkFreeMemory(mDevice, bufferMemory, mAllocator);
+	const VkDeviceSize bufferSize{sizeof(mesh._indexes[0]) * mesh._indexes.size()};
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+
+	createBuffer(bufferSize, stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBufferMemory,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	void* data;
+	vkMapMemory(mDevice, stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
+	memcpy(data, mesh._indexes.data(), bufferSize);
+	vkUnmapMemory(mDevice, stagingBufferMemory);
+
+	createBuffer(bufferSize, indexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		indexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+	vkDestroyBuffer(mDevice, stagingBuffer, mAllocator);
+	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
 }
 
 void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
@@ -761,4 +782,10 @@ uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags 
 	}
 	throw std::runtime_error("No suitable memory find!");
 	return 0;
+}
+
+void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+{
+	vkDestroyBuffer(mDevice, buffer, mAllocator);
+	vkFreeMemory(mDevice, bufferMemory, mAllocator);
 }

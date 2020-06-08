@@ -1,6 +1,7 @@
 #pragma once
 #include "vk_queue_family.hxx"
 #include "math/vec3.hxx"
+#include "core/data_types/mesh_data.hxx"
 
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
@@ -60,28 +61,21 @@ protected:
 	inline void recreateSwapchain();
 
 	void createVertexBuffer();
-	void destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
+	void createIndexBuffer();
+	
 	void createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
 		VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags);
 
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
+	void destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags);
 
 private:
-	// clang-format off
-	std::vector<vec3> vertexes
-	{
-		vec3(-0.5, 0.5, 0.0),
-		vec3(-0.5, -0.5, 0.0),
-		vec3(0.5, -0.5, 0.0),
 
-		vec3(-0.5, 0.5, 0.0),
-		vec3(0.5, -0.5, 0.0),
-		vec3(0.5, 0.5, 0.0) 
-	};
-	// clang-format on
+	mesh_data mesh = mesh_data::createSprite();
 
 	engine* _engine;
 
@@ -89,6 +83,9 @@ private:
 
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
+
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
 
 	vk_queue_family queueFamily;
 
