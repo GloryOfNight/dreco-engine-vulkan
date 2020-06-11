@@ -4,6 +4,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
+#include "engine/engine.hxx"
 #include "SDL2/SDL_vulkan.h"
 
 #include <vulkan/vulkan_core.h>
@@ -439,7 +440,7 @@ void vk_renderer::createGraphicsPipeline()
 	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizationState.lineWidth = 1.0f;
 	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationState.depthBiasEnable = VK_FALSE;
 	rasterizationState.depthBiasConstantFactor = 0.0f;
 	rasterizationState.depthBiasClamp = 0.0f;
@@ -659,6 +660,8 @@ void vk_renderer::recreateSwapchain()
 
 void vk_renderer::updateUniformBuffers(uint32_t image)
 {
+	ubo._projection._mat[1][1] = -1;
+
 	void* data;
 	vkMapMemory(mDevice, uniformBuffersMemory[image], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));

@@ -1,5 +1,6 @@
 #include "mat4.hxx"
 #include "vec3.hxx"
+#include <cmath>
 
 mat4::mat4() : _mat{0}
 {
@@ -32,18 +33,57 @@ mat4 mat4::makeTranslation(const vec3& vec)
 
 mat4 mat4::makeRotation(const vec3& vec) 
 {
-	// TODO: write a rotation matrix
-	return makeIdentity();
+	float cos_x = std::cos(vec._x);
+	float sin_x = std::sin(vec._x);
+
+	const float matXraw[4][4] = 
+	{
+		{ 1, 0, 0, 0 },
+		{ 0, cos_x, -sin_x, 0 },
+		{ 0, sin_x, cos_x, 0},
+		{ 0, 0, 0, 1 },
+	};
+
+	float cos_y = std::cos(vec._y);
+	float sin_y = std::sin(vec._y);
+
+	const float matYraw[4][4] = 
+	{
+		{ cos_y, 0, sin_y, 0 },
+		{ 0, 1, 0, 0 },
+		{ -sin_y, 0, cos_y, 0},
+		{ 0, 0, 0, 1 },
+	};
+
+	float cos_z = std::cos(vec._z);
+	float sin_z = std::sin(vec._z);
+
+	const float matZraw[4][4] = 
+	{
+		{ cos_z, -sin_z, 0, 0 }, 
+		{ sin_z, cos_z, 0, 0 }, 
+		{ 0, 0, 1, 0 },
+		{ 0, 0, 0, 1 }
+	};
+
+	mat4 matX(matXraw);
+	mat4 matY(matYraw);
+	mat4 matZ(matZraw);
+
+	// Because i didn't figure out yet how other axies are turning,
+	// there will be only z for now
+	return matZ;
 }
 
 mat4 mat4::makeScale(const vec3& vec) 
 {
 	// clang-format off
-	const float mat[3][4] = 
+	const float mat[4][4] = 
 	{
 		{ vec._x, 0, 0, 0 },
 		{ 0, vec._y, 0, 0 },
-		{ 0, 0, vec._z, 0 }
+		{ 0, 0, vec._z, 0 }, 
+		{ 0, 0, 0, 1 }
 	};
 	// clang-format on
 	return mat4(mat);
