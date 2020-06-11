@@ -11,6 +11,11 @@ mat3x4::mat3x4(const float m[3][4])
 {
 }
 
+constexpr float mat3x4::size() noexcept 
+{
+	return 12;
+}
+
 mat3x4 mat3x4::makeTranslation(const vec3& vec) 
 {
 	// clang-format off

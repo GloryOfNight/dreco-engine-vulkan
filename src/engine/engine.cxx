@@ -9,21 +9,23 @@ engine::engine() : _renderer{nullptr}
 
 engine::~engine()
 {
-	if (_is_running)
+	if (isRunning)
+	{
 		stop();
+	}
 }
 
 void engine::run()
 {
-	if (_is_running)
+	if (isRunning)
 	{
-		std::cerr << "Egnine already running, abording." << std::endl;
+		std::cerr << "Egnine already running, abording. \n";
 		return;
 	}
 
-	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 1 == sdlInitResult)
+	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
-		std::cout << "SDL Init error: " << SDL_GetError() << std::endl;
+		std::cerr << "SDL Initialization error: " << SDL_GetError() << "\n";
 		throw std::runtime_error("SDL initialization failed. Cannot proceed.");
 		return;
 	}
@@ -34,12 +36,12 @@ void engine::run()
 
 void engine::stop()
 {
-	if (false == _is_running)
+	if (false == isRunning)
 	{
-		std::cerr << "Engine aren't running, abording." << std::endl;
+		std::cerr << "Engine aren't running, abording. \n";
 		return;
 	}
-	
+
 	stopMainLoop();
 	stopRenderer();
 	SDL_Quit();
@@ -64,8 +66,8 @@ void engine::stopRenderer()
 
 void engine::startMainLoop()
 {
-	_is_running = true;
-	while (_is_running)
+	isRunning = true;
+	while (isRunning)
 	{
 		_renderer->tick(0.0f);
 
@@ -82,5 +84,5 @@ void engine::startMainLoop()
 
 void engine::stopMainLoop()
 {
-	_is_running = false;
+	isRunning = false;
 }

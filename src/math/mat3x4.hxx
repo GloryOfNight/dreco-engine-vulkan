@@ -9,6 +9,8 @@ struct mat3x4
 
 	mat3x4(const float m[3][4]);
 
+	static constexpr float size() noexcept;
+
 	static mat3x4 makeTranslation(const vec3& vec);
 
 	static mat3x4 makeRotation(const vec3& vec);

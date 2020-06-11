@@ -25,7 +25,7 @@ public:
 		}
 		else 
 		{
-			std::cerr << "File not found: " << path << std::endl;
+			std::cerr << "File not found: " << path << "\n";
 		}
 
 		file.close();
