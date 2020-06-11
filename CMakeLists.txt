@@ -3,7 +3,7 @@ project(dreco)
 
 set(SOURCE_LIST 
 src/math/vec3.cxx
-src/math/mat3x4.cxx
+src/math/mat4.cxx
 src/render/vulkan/vk_swapchain.cxx
 src/render/vulkan/vk_renderer.cxx
 src/engine/engine.cxx)

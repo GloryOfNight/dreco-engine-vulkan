@@ -26,16 +26,9 @@ vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
 	createCommandPool();
 	createVertexBuffer();
 	createIndexBuffer();
+	createDescriptorSetLayout();
 
-	setupSurfaceCapabilities();
-	createSwapchain();
-	createImageViews();
-	createRenderPass();
-	createFramebuffers();
-	createCommandBuffers();
-	createPipelineLayout();
-	createGraphicsPipeline();
-	recordCommandBuffers();
+	recreateSwapchain();
 }
 
 vk_renderer::~vk_renderer()
@@ -46,6 +39,7 @@ vk_renderer::~vk_renderer()
 	destroyBuffer(vertexBuffer, vertexBufferMemory);
 	destroyBuffer(indexBuffer, indexBufferMemory);
 
+	vkDestroyDescriptorSetLayout(mDevice, descriptorSetLayout, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
 	vkDestroyCommandPool(mDevice, mGraphicsCommandPool, mAllocator);
@@ -355,8 +349,8 @@ void vk_renderer::createPipelineLayout()
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
 	vk_checkError(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, mAllocator, &mPipelineLayout));
@@ -548,6 +542,8 @@ void vk_renderer::recordCommandBuffers()
 		VkDeviceSize offsets[1]{0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(
+			commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, mesh._indexes.size(), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
@@ -582,6 +578,8 @@ void vk_renderer::drawFrame()
 	VkSemaphore waitSemaphores[]{mSepaphore_Image_Avaible};
 	VkSemaphore signalSemaphores[]{mSepaphore_Render_Finished};
 
+	updateUniformBuffers(imageIndex);
+
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
@@ -611,6 +609,13 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
 	vkDeviceWaitIdle(mDevice);
 
+	for (uint32_t i = 0; i < uniformBuffers.size(); ++i)
+	{
+		destroyBuffer(uniformBuffers[i], uniformBuffersMemory[i]);
+	}
+
+	vkDestroyDescriptorPool(mDevice, mDescriptorPool, mAllocator);
+
 	vkFreeCommandBuffers(mDevice, mGraphicsCommandPool, static_cast<uint32_t>(mGraphicsCommandBuffers.size()),
 		mGraphicsCommandBuffers.data());
 	mGraphicsCommandBuffers.clear();
@@ -639,12 +644,82 @@ void vk_renderer::recreateSwapchain()
 	setupSurfaceCapabilities();
 	createSwapchain();
 	createImageViews();
+
+	createDescriptorPool();
+	createUniformBuffers();
+	createDescriptorSets();
+	
 	createRenderPass();
 	createFramebuffers();
 	createCommandBuffers();
 	createPipelineLayout();
 	createGraphicsPipeline();
 	recordCommandBuffers();
+}
+
+void vk_renderer::updateUniformBuffers(uint32_t image)
+{
+	void* data;
+	vkMapMemory(mDevice, uniformBuffersMemory[image], 0, sizeof(ubo), 0, &data);
+	memcpy(data, &ubo, sizeof(ubo));
+	vkUnmapMemory(mDevice, uniformBuffersMemory[image]);
+}
+
+void vk_renderer::createDescriptorSetLayout()
+{
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.pImmutableSamplers = VK_NULL_HANDLE;
+
+	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.pNext = nullptr;
+	layoutCreateInfo.flags = 0;
+	layoutCreateInfo.bindingCount = 1;
+	layoutCreateInfo.pBindings = &uboLayoutBinding;
+
+	vk_checkError(vkCreateDescriptorSetLayout(mDevice, &layoutCreateInfo, mAllocator, &descriptorSetLayout));
+}
+
+void vk_renderer::createDescriptorSets()
+{
+	const uint32_t imageSize = mSwapchainImageViews.size();
+	std::vector<VkDescriptorSetLayout> layouts(imageSize, descriptorSetLayout);
+	mDescriptorSets.resize(imageSize);
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.pNext = nullptr;
+	allocInfo.descriptorPool = mDescriptorPool;
+	allocInfo.descriptorSetCount = imageSize;
+	allocInfo.pSetLayouts = layouts.data();
+
+	vk_checkError(vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()));
+
+	for (uint32_t i = 0; i < imageSize; ++i)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.pNext = nullptr;
+		descriptorWrite.dstSet = mDescriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pImageInfo = nullptr;
+		descriptorWrite.pTexelBufferView = nullptr;
+
+		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+	}
 }
 
 void vk_renderer::createVertexBuffer()
@@ -671,7 +746,7 @@ void vk_renderer::createVertexBuffer()
 	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
 }
 
-void vk_renderer::createIndexBuffer() 
+void vk_renderer::createIndexBuffer()
 {
 	const VkDeviceSize bufferSize{sizeof(mesh._indexes[0]) * mesh._indexes.size()};
 
@@ -693,6 +768,38 @@ void vk_renderer::createIndexBuffer()
 
 	vkDestroyBuffer(mDevice, stagingBuffer, mAllocator);
 	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
+}
+
+void vk_renderer::createDescriptorPool()
+{
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = mSwapchainImageViews.size();
+
+	VkDescriptorPoolCreateInfo poolCreateInfo{};
+	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolCreateInfo.pNext = nullptr;
+	poolCreateInfo.flags = 0;
+	poolCreateInfo.poolSizeCount = 1;
+	poolCreateInfo.pPoolSizes = &poolSize;
+	poolCreateInfo.maxSets = mSwapchainImageViews.size();
+
+	vk_checkError(vkCreateDescriptorPool(mDevice, &poolCreateInfo, mAllocator, &mDescriptorPool));
+}
+
+void vk_renderer::createUniformBuffers()
+{
+	const VkDeviceSize size = sizeof(UniformBufferObject);
+	const size_t imageCount{mSwapchainImageViews.size()};
+
+	uniformBuffers.resize(imageCount);
+	uniformBuffersMemory.resize(imageCount);
+
+	for (uint32_t i = 0; i < imageCount; ++i)
+	{
+		createBuffer(size, uniformBuffers[i], VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, uniformBuffersMemory[i],
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	}
 }
 
 void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,

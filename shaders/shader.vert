@@ -3,12 +3,12 @@
 
 layout(location = 0) in vec3 inPosition;
 
-mat4 matrix = mat4(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0
-    );
+layout(binding = 0) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+
 void main() {
-    gl_Position = matrix * vec4(inPosition, 1.0);
+    gl_Position = ubo.model * ubo.view * ubo.proj  * vec4(inPosition, 1.0);
 }

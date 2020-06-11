@@ -2,6 +2,7 @@
 #include "vk_queue_family.hxx"
 #include "math/vec3.hxx"
 #include "core/data_types/mesh_data.hxx"
+#include "core/data_types/uniform_buffer_object.hxx"
 
 #include <vulkan/vulkan.h>
 #include <SDL2/SDL.h>
@@ -60,10 +61,21 @@ protected:
 
 	inline void recreateSwapchain();
 
+	void createDescriptorPool();
+
+	void createDescriptorSets();
+
+	void updateUniformBuffers(uint32_t image);
+
+	// should be called before createPipelineLayout()
+	void createDescriptorSetLayout();
+
 	void createVertexBuffer();
 
 	void createIndexBuffer();
 	
+	void createUniformBuffers();
+
 	void createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
 		VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags);
 
@@ -76,6 +88,7 @@ protected:
 private:
 
 	mesh_data mesh = mesh_data::createSprite();
+	UniformBufferObject ubo{};
 
 	engine* _engine;
 
@@ -86,6 +99,9 @@ private:
 
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
+
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
 
 	vk_queue_family queueFamily;
 
@@ -113,12 +129,16 @@ private:
 
 	VkRenderPass mRenderPass;
 
+	VkDescriptorPool mDescriptorPool;
+	std::vector<VkDescriptorSet> mDescriptorSets;
+
 	VkCommandPool mGraphicsCommandPool;
 	VkCommandPool mTransferCommandPool;
 
 	std::vector<VkCommandBuffer> mGraphicsCommandBuffers;
 
 	VkPipelineLayout mPipelineLayout;
+	VkDescriptorSetLayout descriptorSetLayout;
 
 	VkPipeline mPipeline;
 
