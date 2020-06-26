@@ -1,4 +1,6 @@
 #pragma once
+#include "math/vec3.hxx"
+#include <stdint.h>
 
 class vk_renderer;
 
@@ -12,6 +14,8 @@ public:
 
 	void stop();
 
+	vec3 shapeTranslation{0, 0, 0.0f};
+
 private:
 	void startRenderer();
 
@@ -21,7 +25,13 @@ private:
 	
 	void stopMainLoop();
 
+	void calculateNewDeltaTime(float& NewDeltaTime);
+
+	
+
 	vk_renderer* _renderer;
 
-	bool isRunning = false;
+	bool isRunning{false};
+
+	uint64_t lastTickTime{0};
 };

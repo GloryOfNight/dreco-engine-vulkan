@@ -69,7 +69,10 @@ void engine::startMainLoop()
 	isRunning = true;
 	while (isRunning)
 	{
-		_renderer->tick(0.0f);
+		float DeltaTime;
+		calculateNewDeltaTime(DeltaTime);
+		
+		_renderer->tick(DeltaTime);
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -78,6 +81,36 @@ void engine::startMainLoop()
 			{
 				stop();
 			}
+			else if(event.type == SDL_KEYDOWN) 
+			{
+				const float speed = 100.f;
+				if (event.key.keysym.sym == SDLK_w) 
+				{
+					shapeTranslation._y += DeltaTime * speed;
+				}
+				else if (event.key.keysym.sym == SDLK_s) 
+				{
+					shapeTranslation._y -= DeltaTime * speed;
+				}
+
+				if (event.key.keysym.sym == SDLK_d) 
+				{
+					shapeTranslation._x += DeltaTime * speed;
+				}
+				else if (event.key.keysym.sym == SDLK_a) 
+				{
+					shapeTranslation._x -= DeltaTime * speed;
+				}
+
+				if (event.key.keysym.sym == SDLK_e) 
+				{
+					shapeTranslation._z += DeltaTime * speed;
+				}
+				else if (event.key.keysym.sym == SDLK_q) 
+				{
+					shapeTranslation._z -= DeltaTime * speed;
+				}
+			}
 		}
 	}
 }
@@ -85,4 +118,13 @@ void engine::startMainLoop()
 void engine::stopMainLoop()
 {
 	isRunning = false;
+}
+
+void engine::calculateNewDeltaTime(float& NewDeltaTime)
+{
+	const uint64_t now{SDL_GetPerformanceCounter()};
+
+	NewDeltaTime = static_cast<float>(now - lastTickTime) / static_cast<float>(SDL_GetPerformanceFrequency());
+
+	lastTickTime = now;
 }

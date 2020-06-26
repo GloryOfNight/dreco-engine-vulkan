@@ -70,9 +70,7 @@ mat4 mat4::makeRotation(const vec3& vec)
 	mat4 matY(matYraw);
 	mat4 matZ(matZraw);
 
-	// Because i didn't figure out yet how other axies are turning,
-	// there will be only z for now
-	return matZ;
+	return matX * matY * matZ;
 }
 
 mat4 mat4::makeScale(const vec3& vec) 
@@ -101,6 +99,20 @@ mat4 mat4::makeIdentity()
 	};
 	// clang-format on
 	return mat4(mat);
+}
+
+mat4 mat4::makeProjection(const float near, const float far, const float aspect, const float fov)
+{
+	// clang-format off
+	const float mat[4][4] = 
+	{
+		{ 1, 0, 0, 0 }, 
+		{ 0, -1, 0, 0 }, 
+		{ 0, 0, 1.0f / 2.0f, 1.0f / 2.0f },
+		{ 0, 0, 0, 1 }
+	};
+	// clang-format on
+	return mat;
 }
 
 mat4 operator*(const mat4& a, const mat4& b)

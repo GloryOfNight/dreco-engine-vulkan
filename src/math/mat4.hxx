@@ -19,6 +19,8 @@ struct mat4
 	
 	static mat4 makeIdentity();
 
+	static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
+
 	float _mat[4][4];
 };
 

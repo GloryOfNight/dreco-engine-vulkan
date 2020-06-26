@@ -456,6 +456,7 @@ void vk_renderer::createGraphicsPipeline()
 	multisampleState.alphaToOneEnable = VK_FALSE;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.blendEnable = VK_FALSE;
 	colorBlendAttachment.colorWriteMask =
 		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -660,7 +661,12 @@ void vk_renderer::recreateSwapchain()
 
 void vk_renderer::updateUniformBuffers(uint32_t image)
 {
-	ubo._projection._mat[1][1] = -1;
+	ubo._model = mat4::makeRotation(_engine->shapeTranslation) ;
+	ubo._view = mat4::makeTranslation(vec3{0,0,1.3f});
+	int w, h;
+	SDL_GetWindowSize(window, &w, &h);
+	ubo._projection = mat4::makeProjection(-1,1, static_cast<float>(w) / static_cast<float>(h), 75.f);
+	//ubo._projection._mat[1][1] = -1;
 
 	void* data;
 	vkMapMemory(mDevice, uniformBuffersMemory[image], 0, sizeof(ubo), 0, &data);
