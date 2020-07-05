@@ -1,5 +1,6 @@
 #pragma once
 #include "math/vec3.hxx"
+
 #include <stdint.h>
 
 class vk_renderer;

@@ -5,7 +5,7 @@
 #include "core/data_types/uniform_buffer_object.hxx"
 
 #include <vulkan/vulkan.h>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <vector>
 
 class engine;

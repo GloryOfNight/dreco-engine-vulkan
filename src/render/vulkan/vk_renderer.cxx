@@ -4,9 +4,10 @@
 #include "vk_queue_family.hxx"
 #include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
+#include "core/platform.h"
 #include "engine/engine.hxx"
-#include "SDL2/SDL_vulkan.h"
 
+#include <SDL_vulkan.h>
 #include <vulkan/vulkan_core.h>
 #include <set>
 #include <iostream>
@@ -69,7 +70,12 @@ void vk_renderer::createWindow()
 
 void vk_renderer::createInstance()
 {
-	std::vector<const char*> instExtensions{"VK_KHR_surface", "VK_KHR_xlib_surface"};
+	std::vector<const char*> instExtensions{"VK_KHR_surface"};
+
+#ifdef PLATFORM_LINUX
+	instExtensions.push_back("VK_KHR_xlib_surface");
+#endif
+
 #ifdef VK_ENABLE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
 #endif

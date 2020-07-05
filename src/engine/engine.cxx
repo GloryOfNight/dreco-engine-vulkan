@@ -1,6 +1,7 @@
 #include "engine.hxx"
 #include "render/vulkan/vk_renderer.hxx"
-#include <SDL2/SDL.h>
+
+#include <SDL.h>
 #include <iostream>
 
 engine::engine() : _renderer{nullptr}
