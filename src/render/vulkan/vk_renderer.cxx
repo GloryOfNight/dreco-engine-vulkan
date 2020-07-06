@@ -72,9 +72,12 @@ void vk_renderer::createInstance()
 {
 	std::vector<const char*> instExtensions{"VK_KHR_surface"};
 
-#ifdef PLATFORM_LINUX
+#if PLATFORM_LINUX
 	instExtensions.push_back("VK_KHR_xlib_surface");
+#elif PLATFORM_WINDOWS
+	instExtensions.push_back("VK_KHR_win32_surface");
 #endif
+
 
 #ifdef VK_ENABLE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
@@ -126,8 +129,8 @@ void vk_renderer::selectPhysicalDevice()
 {
 	uint32_t gpuCount = 0;
 	vkEnumeratePhysicalDevices(mInstance, &gpuCount, nullptr);
-	VkPhysicalDevice gpuList[gpuCount];
-	vkEnumeratePhysicalDevices(mInstance, &gpuCount, &gpuList[0]);
+	std::vector<VkPhysicalDevice> gpuList(gpuCount);
+	vkEnumeratePhysicalDevices(mInstance, &gpuCount, gpuList.data());
 
 	for (auto& gpu : gpuList)
 	{

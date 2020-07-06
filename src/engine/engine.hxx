@@ -3,9 +3,13 @@
 
 #include <stdint.h>
 
+#ifndef DRECO_DECLSPEC
+#define DRECO_DECLSPEC
+#endif
+
 class vk_renderer;
 
-class engine
+class DRECO_DECLSPEC engine
 {
 public:
 	engine();

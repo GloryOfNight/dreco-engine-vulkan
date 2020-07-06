@@ -1,6 +1,8 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 
+#include <vector>
+
 class vk_queue_family
 {
 public:
@@ -17,8 +19,8 @@ public:
 	{
 		uint32_t queueFamilyCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
-		VkQueueFamilyProperties queueFamilyProperties[queueFamilyCount];
-		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilyProperties);
+		std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilyProperties.data());
 
 		for (uint32_t i = 0; i < queueFamilyCount; ++i)
 		{

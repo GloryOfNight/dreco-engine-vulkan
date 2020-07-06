@@ -1,6 +1,7 @@
 #pragma once
 #include <fstream>
 #include <iostream>
+#include <stdint.h>
 
 class file_utils
 {
@@ -12,12 +13,12 @@ public:
 
 		if (file.is_open())
 		{
-			const long int len{file.tellg()};
+			const size_t len{static_cast<size_t>(file.tellg())};
 			file.seekg(0, file.beg);
-			buff = new char[len + 1];
+			buff = new char[len];
 
 			file.read(buff, len);
-			buff[len + 1] = '\0';
+			//buff[len + 1] = '\0';
 			if (size)
 			{
 				*size = len;
