@@ -1,11 +1,8 @@
 #pragma once
 #include "math/vec3.hxx"
+#include "dreco.h"
 
 #include <stdint.h>
-
-#ifndef DRECO_DECLSPEC
-#define DRECO_DECLSPEC
-#endif
 
 class vk_renderer;
 

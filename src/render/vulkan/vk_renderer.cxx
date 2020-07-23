@@ -65,7 +65,8 @@ SDL_Window* vk_renderer::getWindow() const
 
 void vk_renderer::createWindow()
 {
-	window = SDL_CreateWindow("dreco-test", 0, 0, 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	window = SDL_CreateWindow("dreco-test", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 720, 720,
+		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 }
 
 void vk_renderer::createInstance()
@@ -216,7 +217,7 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	swapchainCreateInfo.imageSharingMode = sharingMode;
-	swapchainCreateInfo.queueFamilyIndexCount = queueFamilyIndexes.size();
+	swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
 	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
 	swapchainCreateInfo.preTransform = mSurfaceCapabilities.currentTransform;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -555,7 +556,7 @@ void vk_renderer::recordCommandBuffers()
 		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		vkCmdBindDescriptorSets(
 			commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
-		vkCmdDrawIndexed(commandBuffer, mesh._indexes.size(), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh._indexes.size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
 
 		vk_checkError(vkEndCommandBuffer(commandBuffer));
@@ -704,7 +705,7 @@ void vk_renderer::createDescriptorSetLayout()
 
 void vk_renderer::createDescriptorSets()
 {
-	const uint32_t imageSize = mSwapchainImageViews.size();
+	const size_t imageSize = mSwapchainImageViews.size();
 	std::vector<VkDescriptorSetLayout> layouts(imageSize, descriptorSetLayout);
 	mDescriptorSets.resize(imageSize);
 
@@ -712,7 +713,7 @@ void vk_renderer::createDescriptorSets()
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.pNext = nullptr;
 	allocInfo.descriptorPool = mDescriptorPool;
-	allocInfo.descriptorSetCount = imageSize;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(imageSize);
 	allocInfo.pSetLayouts = layouts.data();
 
 	vk_checkError(vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()));
@@ -792,7 +793,7 @@ void vk_renderer::createDescriptorPool()
 {
 	VkDescriptorPoolSize poolSize{};
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = mSwapchainImageViews.size();
+	poolSize.descriptorCount = static_cast<uint32_t>(mSwapchainImageViews.size());
 
 	VkDescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -800,7 +801,7 @@ void vk_renderer::createDescriptorPool()
 	poolCreateInfo.flags = 0;
 	poolCreateInfo.poolSizeCount = 1;
 	poolCreateInfo.pPoolSizes = &poolSize;
-	poolCreateInfo.maxSets = mSwapchainImageViews.size();
+	poolCreateInfo.maxSets = static_cast<uint32_t>(mSwapchainImageViews.size());
 
 	vk_checkError(vkCreateDescriptorPool(mDevice, &poolCreateInfo, mAllocator, &mDescriptorPool));
 }
