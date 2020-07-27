@@ -1,5 +1,5 @@
 #include "vk_swapchain.hxx"
-#include "vk_check.hxx"
+#include "vk_utils.hxx"
 
 #include <vector>
 
@@ -24,7 +24,7 @@ void vk_swapchain::setupSurfaceFormats(VkPhysicalDevice gpu, VkSurfaceKHR surfac
 	uint32_t formatCount;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, nullptr);
 	std::vector<VkSurfaceFormatKHR> mSurfaceFormats(formatCount);
-	vk_checkError(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, mSurfaceFormats.data()));
+	VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &formatCount, mSurfaceFormats.data()));
 
 	for (auto& surfaceFormat : mSurfaceFormats) 
 	{
@@ -41,7 +41,7 @@ void vk_swapchain::setupPresentModes(VkPhysicalDevice gpu, VkSurfaceKHR surface)
 	uint32_t presentCount;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, nullptr);
 	std::vector<VkPresentModeKHR> mPresentModes(presentCount);
-	vk_checkError(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, mPresentModes.data()));
+	VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &presentCount, mPresentModes.data()));
 
 	for (auto& presentMode : mPresentModes) 
 	{
