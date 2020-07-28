@@ -122,7 +122,10 @@ void vk_renderer::createInstance()
 
 void vk_renderer::createSurface()
 {
-	SDL_Vulkan_CreateSurface(window, mInstance, &mSurface);
+	if (SDL_Vulkan_CreateSurface(window, mInstance, &mSurface) != SDL_TRUE) 
+	{
+		throw std::runtime_error(std::string("Failed create surface with error: ") + SDL_GetError());
+	}
 }
 
 void vk_renderer::selectPhysicalDevice()
@@ -398,13 +401,11 @@ void vk_renderer::createGraphicsPipeline()
 
 	VkPipelineShaderStageCreateInfo shaderStagesInfo[]{vertShaderStageInfo, fragShaderStageInfo};
 
-	// TODO: Description should be somewhere else
 	VkVertexInputBindingDescription vertexInputBindingDescription{};
 	vertexInputBindingDescription.binding = 0;
 	vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	vertexInputBindingDescription.stride = sizeof(vec3);
 
-	// TODO: Attributes should be somewhere else
 	VkVertexInputAttributeDescription vertexInputAttributeDescription{};
 	vertexInputAttributeDescription.binding = 0;
 	vertexInputAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -581,6 +582,10 @@ void vk_renderer::drawFrame()
 		if (VK_ERROR_OUT_OF_DATE_KHR == result)
 		{
 			recreateSwapchain();
+		}
+		else 
+		{
+			VK_CHECK(result);
 		}
 		return;
 	}
