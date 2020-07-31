@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.16.2)
 project(dreco)
 
 set(DRECO_SOURCE_LIST 
+src/engine/engine.cxx
 src/math/vec3.cxx
 src/math/mat4.cxx
-src/render/vulkan/vk_swapchain.cxx
-src/render/vulkan/vk_renderer.cxx
-src/engine/engine.cxx)
+src/renderer/vulkan/vk_swapchain.cxx
+src/renderer/vulkan/vk_renderer.cxx
+src/renderer/vulkan/vk_mesh.cxx)
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 

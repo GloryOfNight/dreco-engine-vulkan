@@ -727,7 +727,7 @@ void vk_renderer::createDescriptorSets()
 		VkDescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = uniformBuffers[i];
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
+		bufferInfo.range = sizeof(uniform_buffer);
 
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -812,7 +812,7 @@ void vk_renderer::createDescriptorPool()
 
 void vk_renderer::createUniformBuffers()
 {
-	const VkDeviceSize size = sizeof(UniformBufferObject);
+	const VkDeviceSize size = sizeof(uniform_buffer);
 	const size_t imageCount{mSwapchainImageViews.size()};
 
 	uniformBuffers.resize(imageCount);

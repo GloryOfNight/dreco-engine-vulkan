@@ -1,8 +1,8 @@
 #pragma once
 #include "vk_queue_family.hxx"
 #include "math/vec3.hxx"
-#include "core/data_types/mesh_data.hxx"
-#include "core/data_types/uniform_buffer_object.hxx"
+#include "renderer/containers/mesh_data.hxx"
+#include "renderer/containers/uniform_buffer.hxx"
 
 #include <vulkan/vulkan.h>
 #include <SDL.h>
@@ -88,7 +88,7 @@ protected:
 private:
 
 	mesh_data mesh = mesh_data::createSprite();
-	UniformBufferObject ubo{};
+	uniform_buffer ubo{};
 
 	engine* _engine;
 
