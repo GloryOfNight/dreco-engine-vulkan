@@ -15,12 +15,17 @@ public:
 	{
 	}
 
-	vk_queue_family(const VkPhysicalDevice& gpu, const VkSurfaceKHR& surface) : vk_queue_family()
+	vk_queue_family(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface) : vk_queue_family()
+	{
+		setup(vkPhysicalDevice, vkSurface);
+	}
+
+	void setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface)
 	{
 		uint32_t queueFamilyCount;
-		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, nullptr);
+		vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamilyCount, nullptr);
 		std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueFamilyCount, queueFamilyProperties.data());
+		vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamilyCount, queueFamilyProperties.data());
 
 		for (uint32_t i = 0; i < queueFamilyCount; ++i)
 		{
@@ -41,7 +46,7 @@ public:
 			}
 
 			VkBool32 isQueueFamilySupported;
-			vkGetPhysicalDeviceSurfaceSupportKHR(gpu, i, surface, &isQueueFamilySupported);
+			vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &isQueueFamilySupported);
 			if (isQueueFamilySupported)
 			{
 				if (false == isIndexValid(presentQueueFamilyIndex) ||
@@ -59,8 +64,7 @@ public:
 			isSupported = true;
 		}
 
-		if (graphicsQueueFamilyIndex == transferQueueFamilyIndex && 
-		transferQueueFamilyIndex == presentQueueFamilyIndex)
+		if (graphicsQueueFamilyIndex == transferQueueFamilyIndex && transferQueueFamilyIndex == presentQueueFamilyIndex)
 		{
 			sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}

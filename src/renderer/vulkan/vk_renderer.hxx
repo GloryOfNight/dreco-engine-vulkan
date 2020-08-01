@@ -1,5 +1,8 @@
 #pragma once
 #include "vk_queue_family.hxx"
+#include "vk_surface.hxx"
+#include "vk_physical_device.hxx"
+
 #include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniform_buffer.hxx"
@@ -27,13 +30,7 @@ protected:
 
 	inline void createInstance();
 
-	inline void createSurface();
-
-	inline void selectPhysicalDevice();
-
 	inline void createLogicalDevice();
-
-	inline void setupSurfaceCapabilities();
 
 	inline void createSwapchain();
 
@@ -94,6 +91,12 @@ private:
 
 	SDL_Window* window;
 
+	vk_surface surface;
+
+	vk_physical_device physical_device;
+
+	vk_queue_family queueFamily;
+
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 
@@ -103,19 +106,9 @@ private:
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 
-	vk_queue_family queueFamily;
-
 	VkAllocationCallbacks* mAllocator;
 
 	VkInstance mInstance;
-
-	VkSurfaceKHR mSurface;
-	VkSurfaceCapabilitiesKHR mSurfaceCapabilities;
-	VkSurfaceFormatKHR mSurfaceFormat;
-
-	VkPhysicalDevice mGpu = VK_NULL_HANDLE;
-	VkPhysicalDeviceProperties mGpuProperties;
-	VkPhysicalDeviceFeatures mGpuFeatures;
 
 	VkDevice mDevice = VK_NULL_HANDLE;
 

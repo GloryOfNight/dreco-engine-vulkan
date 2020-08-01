@@ -1,7 +1,6 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 #include "vk_queue_family.hxx"
-#include "vk_swapchain.hxx"
 #include "core/utils/file_utils.hxx"
 #include "core/platform.h"
 #include "engine/engine.hxx"
@@ -15,12 +14,19 @@
 #define VK_ENABLE_VALIDATION
 //#define VK_ENABLE_MESA_OVERLAY
 
-vk_renderer::vk_renderer(engine* eng) : _engine(eng), mAllocator(nullptr)
+vk_renderer::vk_renderer(engine* eng)
+	: _engine(eng)
+	, mAllocator(nullptr)
+	, surface(&mInstance)
+	, physical_device(&mInstance)
 {
 	createWindow();
 	createInstance();
-	createSurface();
-	selectPhysicalDevice();
+	surface.setup(getWindow());
+	physical_device.setup(surface.get());
+	surface.setup(physical_device.get());
+	queueFamily.setup(physical_device.get(), surface.get());
+
 	createLogicalDevice();
 
 	createSemaphores();
@@ -48,7 +54,7 @@ vk_renderer::~vk_renderer()
 
 	vkDestroyDevice(mDevice, mAllocator);
 	SDL_DestroyWindow(window);
-	vkDestroySurfaceKHR(mInstance, mSurface, mAllocator);
+	surface.destroy();
 	vkDestroyInstance(mInstance, nullptr);
 }
 
@@ -120,39 +126,6 @@ void vk_renderer::createInstance()
 		VK_CHECK(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
 
-void vk_renderer::createSurface()
-{
-	if (SDL_Vulkan_CreateSurface(window, mInstance, &mSurface) != SDL_TRUE) 
-	{
-		throw std::runtime_error(std::string("Failed create surface with error: ") + SDL_GetError());
-	}
-}
-
-void vk_renderer::selectPhysicalDevice()
-{
-	uint32_t gpuCount = 0;
-	vkEnumeratePhysicalDevices(mInstance, &gpuCount, nullptr);
-	std::vector<VkPhysicalDevice> gpuList(gpuCount);
-	vkEnumeratePhysicalDevices(mInstance, &gpuCount, gpuList.data());
-
-	for (auto& gpu : gpuList)
-	{
-		queueFamily = vk_queue_family(gpu, mSurface);
-		if (true == queueFamily.isSupported)
-		{
-			mGpu = gpu;
-			vkGetPhysicalDeviceProperties(mGpu, &mGpuProperties);
-			vkGetPhysicalDeviceFeatures(mGpu, &mGpuFeatures);
-			break;
-		}
-	}
-
-	if (VK_NULL_HANDLE == mGpu)
-	{
-		throw std::runtime_error("No supported GPU found!");
-	}
-}
-
 void vk_renderer::createLogicalDevice()
 {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
@@ -183,47 +156,41 @@ void vk_renderer::createLogicalDevice()
 	deviceCreateInfo.ppEnabledLayerNames = nullptr;
 	deviceCreateInfo.enabledExtensionCount = deviceExtensionsCount;
 	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
-	deviceCreateInfo.pEnabledFeatures = &mGpuFeatures;
+	deviceCreateInfo.pEnabledFeatures = &physical_device.getFeatures();
 
-	VK_CHECK(vkCreateDevice(mGpu, &deviceCreateInfo, mAllocator, &mDevice));
+	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, mAllocator, &mDevice));
 
 	vkGetDeviceQueue(mDevice, queueFamily.graphicsQueueFamilyIndex, 0, &mGraphicsQueue);
 	vkGetDeviceQueue(mDevice, queueFamily.transferQueueFamilyIndex, 0, &mTransferQueue);
 	vkGetDeviceQueue(mDevice, queueFamily.presentQueueFamilyIndex, 0, &mPresentQueue);
 }
 
-void vk_renderer::setupSurfaceCapabilities()
-{
-	VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mGpu, mSurface, &mSurfaceCapabilities));
-}
-
 void vk_renderer::createSwapchain()
 {
-	vk_swapchain swapchain{mGpu, mSurface};
-
-	mSurfaceFormat = swapchain.getSurfaceFormat();
-
 	VkSharingMode sharingMode{queueFamily.sharingMode};
 	std::vector<uint32_t> queueFamilyIndexes{queueFamily.graphicsQueueFamilyIndex, queueFamily.transferQueueFamilyIndex,
 		queueFamily.presentQueueFamilyIndex};
+
+	const VkSurfaceFormatKHR& surfaceFormat{surface.getFormat()};
+	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{surface.getCapabilities()};
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	swapchainCreateInfo.pNext = nullptr;
 	swapchainCreateInfo.flags = 0;
-	swapchainCreateInfo.surface = mSurface;
-	swapchainCreateInfo.minImageCount = mSurfaceCapabilities.minImageCount;
-	swapchainCreateInfo.imageFormat = mSurfaceFormat.format;
-	swapchainCreateInfo.imageColorSpace = mSurfaceFormat.colorSpace;
-	swapchainCreateInfo.imageExtent = mSurfaceCapabilities.currentExtent;
+	swapchainCreateInfo.surface = surface.get();
+	swapchainCreateInfo.minImageCount = surfaceCapabilities.minImageCount;
+	swapchainCreateInfo.imageFormat = surfaceFormat.format;
+	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
+	swapchainCreateInfo.imageExtent = surfaceCapabilities.currentExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	swapchainCreateInfo.imageSharingMode = sharingMode;
 	swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
 	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
-	swapchainCreateInfo.preTransform = mSurfaceCapabilities.currentTransform;
+	swapchainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	swapchainCreateInfo.presentMode = swapchain.getPresentMode();
+	swapchainCreateInfo.presentMode = surface.getPresentMode();
 	swapchainCreateInfo.clipped = VK_TRUE;
 	swapchainCreateInfo.oldSwapchain = mSwapchain;
 
@@ -251,7 +218,7 @@ void vk_renderer::createImageViews()
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.image = mSwapchainImages[i];
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = mSurfaceFormat.format;
+		imageViewCreateInfo.format = surface.getFormat().format;
 		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -270,7 +237,7 @@ void vk_renderer::createImageViews()
 void vk_renderer::createRenderPass()
 {
 	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = mSurfaceFormat.format;
+	colorAttachment.format = surface.getFormat().format;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -312,6 +279,8 @@ void vk_renderer::createFramebuffers()
 {
 	mSwapchainFramebuffers.resize(mSwapchainImageViews.size());
 
+	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{surface.getCapabilities()};
+
 	for (uint32_t i = 0; i < mSwapchainImageViews.size(); ++i)
 	{
 		VkImageView attachments[]{mSwapchainImageViews[i]};
@@ -321,8 +290,8 @@ void vk_renderer::createFramebuffers()
 		framebufferCreateInfo.renderPass = mRenderPass;
 		framebufferCreateInfo.attachmentCount = 1;
 		framebufferCreateInfo.pAttachments = attachments;
-		framebufferCreateInfo.width = mSurfaceCapabilities.currentExtent.width;
-		framebufferCreateInfo.height = mSurfaceCapabilities.currentExtent.height;
+		framebufferCreateInfo.width = surfaceCapabilities.currentExtent.width;
+		framebufferCreateInfo.height = surfaceCapabilities.currentExtent.height;
 		framebufferCreateInfo.layers = 1;
 
 		VK_CHECK(vkCreateFramebuffer(mDevice, &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[i]));
@@ -427,14 +396,14 @@ void vk_renderer::createGraphicsPipeline()
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(mSurfaceCapabilities.currentExtent.width);
-	viewport.height = static_cast<float>(mSurfaceCapabilities.currentExtent.height);
+	viewport.width = static_cast<float>(surface.getCapabilities().currentExtent.width);
+	viewport.height = static_cast<float>(surface.getCapabilities().currentExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	VkRect2D scissors{};
 	scissors.offset = {0, 0};
-	scissors.extent = mSurfaceCapabilities.currentExtent;
+	scissors.extent = surface.getCapabilities().currentExtent;
 
 	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -543,7 +512,7 @@ void vk_renderer::recordCommandBuffers()
 		renderPassInfo.renderPass = mRenderPass;
 		renderPassInfo.framebuffer = mSwapchainFramebuffers[i];
 		renderPassInfo.renderArea.offset = {0, 0};
-		renderPassInfo.renderArea.extent = mSurfaceCapabilities.currentExtent;
+		renderPassInfo.renderArea.extent = surface.getCapabilities().currentExtent;
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
@@ -657,7 +626,8 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 
 void vk_renderer::recreateSwapchain()
 {
-	setupSurfaceCapabilities();
+	surface.setup(physical_device.get());
+
 	createSwapchain();
 	createImageViews();
 
@@ -900,7 +870,7 @@ void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceS
 uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags)
 {
 	VkPhysicalDeviceMemoryProperties memoryProperties;
-	vkGetPhysicalDeviceMemoryProperties(mGpu, &memoryProperties);
+	vkGetPhysicalDeviceMemoryProperties(physical_device.get(), &memoryProperties);
 
 	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
 	{

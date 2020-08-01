@@ -11,10 +11,10 @@ inline const char* vk_resultToChar(VkResult& result);
 
 #define VK_CHECK(op)																			\
 {																								\
-	const VkResult result = op;																	\
-	if (VK_SUCCESS != result)																	\
+	const VkResult vkResult = op;																\
+	if (VK_SUCCESS != vkResult)																	\
 	{																							\
-		const std::string error_message = "VK_CHECK: " + std::string(vk_resultToChar(result));	\
+		const std::string error_message = "VK_CHECK: " + std::string(vk_resultToChar(vkResult));\
 		throw std::runtime_error(error_message);												\
 	}																							\
 }
