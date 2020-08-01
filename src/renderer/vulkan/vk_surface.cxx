@@ -19,7 +19,7 @@ vk_surface::~vk_surface()
 	destroy();
 }
 
-void vk_surface::setup(SDL_Window* window)
+void vk_surface::create(SDL_Window* window)
 {
 	if (SDL_Vulkan_CreateSurface(window, *_vkInstance, &_vkSurface) != SDL_TRUE)
 	{

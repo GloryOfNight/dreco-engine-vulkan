@@ -19,15 +19,16 @@ vk_renderer::vk_renderer(engine* eng)
 	, mAllocator(nullptr)
 	, surface(&mInstance)
 	, physical_device(&mInstance)
+	, device()
 {
 	createWindow();
 	createInstance();
-	surface.setup(getWindow());
+	surface.create(getWindow());
 	physical_device.setup(surface.get());
 	surface.setup(physical_device.get());
 	queueFamily.setup(physical_device.get(), surface.get());
+	device.create(physical_device, queueFamily);
 
-	createLogicalDevice();
 
 	createSemaphores();
 	createCommandPool();
@@ -40,19 +41,19 @@ vk_renderer::vk_renderer(engine* eng)
 
 vk_renderer::~vk_renderer()
 {
-	vkDeviceWaitIdle(mDevice);
+	device.waitIdle();
 
 	cleanupSwapchain(mSwapchain);
 	destroyBuffer(vertexBuffer, vertexBufferMemory);
 	destroyBuffer(indexBuffer, indexBufferMemory);
 
-	vkDestroyDescriptorSetLayout(mDevice, descriptorSetLayout, mAllocator);
-	vkDestroySemaphore(mDevice, mSepaphore_Image_Avaible, mAllocator);
-	vkDestroySemaphore(mDevice, mSepaphore_Render_Finished, mAllocator);
-	vkDestroyCommandPool(mDevice, mGraphicsCommandPool, mAllocator);
-	vkDestroyCommandPool(mDevice, mTransferCommandPool, mAllocator);
+	vkDestroyDescriptorSetLayout(device.get(), descriptorSetLayout, mAllocator);
+	vkDestroySemaphore(device.get(), mSepaphore_Image_Avaible, mAllocator);
+	vkDestroySemaphore(device.get(), mSepaphore_Render_Finished, mAllocator);
+	vkDestroyCommandPool(device.get(), mGraphicsCommandPool, mAllocator);
+	vkDestroyCommandPool(device.get(), mTransferCommandPool, mAllocator);
 
-	vkDestroyDevice(mDevice, mAllocator);
+	device.destroy();
 	SDL_DestroyWindow(window);
 	surface.destroy();
 	vkDestroyInstance(mInstance, nullptr);
@@ -123,53 +124,18 @@ void vk_renderer::createInstance()
 	};
 	// clang-format on
 
-		VK_CHECK(vkCreateInstance(&instance_info, mAllocator, &mInstance));
-}
-
-void vk_renderer::createLogicalDevice()
-{
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies{queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex,
-		queueFamily.transferQueueFamilyIndex};
-
-	float priorities[]{1.0f};
-
-	for (auto i : uniqueQueueFamilies)
-	{
-		VkDeviceQueueCreateInfo deviceQueueInfo{};
-		deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		deviceQueueInfo.queueFamilyIndex = i;
-		deviceQueueInfo.queueCount = 1;
-		deviceQueueInfo.pQueuePriorities = priorities;
-		queueCreateInfoList.push_back(deviceQueueInfo);
-	}
-
-	const uint32_t deviceExtensionsCount = 1;
-	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
-
-	VkDeviceCreateInfo deviceCreateInfo{};
-	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.pNext = nullptr;
-	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfoList.size());
-	deviceCreateInfo.pQueueCreateInfos = queueCreateInfoList.data();
-	deviceCreateInfo.enabledLayerCount = 0;
-	deviceCreateInfo.ppEnabledLayerNames = nullptr;
-	deviceCreateInfo.enabledExtensionCount = deviceExtensionsCount;
-	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
-	deviceCreateInfo.pEnabledFeatures = &physical_device.getFeatures();
-
-	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, mAllocator, &mDevice));
-
-	vkGetDeviceQueue(mDevice, queueFamily.graphicsQueueFamilyIndex, 0, &mGraphicsQueue);
-	vkGetDeviceQueue(mDevice, queueFamily.transferQueueFamilyIndex, 0, &mTransferQueue);
-	vkGetDeviceQueue(mDevice, queueFamily.presentQueueFamilyIndex, 0, &mPresentQueue);
+	VK_CHECK(vkCreateInstance(&instance_info, mAllocator, &mInstance));
 }
 
 void vk_renderer::createSwapchain()
 {
-	VkSharingMode sharingMode{queueFamily.sharingMode};
-	std::vector<uint32_t> queueFamilyIndexes{queueFamily.graphicsQueueFamilyIndex, queueFamily.transferQueueFamilyIndex,
-		queueFamily.presentQueueFamilyIndex};
+	VkSharingMode sharingMode{queueFamily.getSharingMode()};
+	std::vector<uint32_t> queueFamilyIndexes
+	{
+		queueFamily.getGraphicsIndex(),
+		queueFamily.getTransferIndex(),
+		queueFamily.getPresentIndex()
+	};
 
 	const VkSurfaceFormatKHR& surfaceFormat{surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{surface.getCapabilities()};
@@ -194,7 +160,7 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.clipped = VK_TRUE;
 	swapchainCreateInfo.oldSwapchain = mSwapchain;
 
-	VK_CHECK(vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, mAllocator, &mSwapchain));
+	VK_CHECK(vkCreateSwapchainKHR(device.get(), &swapchainCreateInfo, mAllocator, &mSwapchain));
 
 	if (swapchainCreateInfo.oldSwapchain != VK_NULL_HANDLE)
 	{
@@ -205,11 +171,11 @@ void vk_renderer::createSwapchain()
 void vk_renderer::createImageViews()
 {
 	uint32_t imageCount;
-	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(device.get(), mSwapchain, &imageCount, nullptr);
 
 	std::vector<VkImage> mSwapchainImages;
 	mSwapchainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &imageCount, mSwapchainImages.data());
+	vkGetSwapchainImagesKHR(device.get(), mSwapchain, &imageCount, mSwapchainImages.data());
 
 	mSwapchainImageViews.resize(imageCount);
 	for (uint32_t i = 0; i < imageCount; ++i)
@@ -230,7 +196,7 @@ void vk_renderer::createImageViews()
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 
-		VK_CHECK(vkCreateImageView(mDevice, &imageViewCreateInfo, mAllocator, &mSwapchainImageViews[i]));
+		VK_CHECK(vkCreateImageView(device.get(), &imageViewCreateInfo, mAllocator, &mSwapchainImageViews[i]));
 	}
 }
 
@@ -272,7 +238,7 @@ void vk_renderer::createRenderPass()
 	renderPassCreateInfo.dependencyCount = 1;
 	renderPassCreateInfo.pDependencies = &subpassDependecy;
 
-	VK_CHECK(vkCreateRenderPass(mDevice, &renderPassCreateInfo, mAllocator, &mRenderPass));
+	VK_CHECK(vkCreateRenderPass(device.get(), &renderPassCreateInfo, mAllocator, &mRenderPass));
 }
 
 void vk_renderer::createFramebuffers()
@@ -294,7 +260,7 @@ void vk_renderer::createFramebuffers()
 		framebufferCreateInfo.height = surfaceCapabilities.currentExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		VK_CHECK(vkCreateFramebuffer(mDevice, &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[i]));
+		VK_CHECK(vkCreateFramebuffer(device.get(), &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[i]));
 	}
 }
 
@@ -302,16 +268,16 @@ void vk_renderer::createCommandPool()
 {
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.queueFamilyIndex = queueFamily.graphicsQueueFamilyIndex;
+	commandPoolCreateInfo.queueFamilyIndex = queueFamily.getGraphicsIndex();
 	commandPoolCreateInfo.flags = 0;
 
-	VK_CHECK(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mGraphicsCommandPool));
+	VK_CHECK(vkCreateCommandPool(device.get(), &commandPoolCreateInfo, mAllocator, &mGraphicsCommandPool));
 
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.queueFamilyIndex = queueFamily.transferQueueFamilyIndex;
+	commandPoolCreateInfo.queueFamilyIndex = queueFamily.getTransferIndex();
 	commandPoolCreateInfo.flags = 0;
 
-	VK_CHECK(vkCreateCommandPool(mDevice, &commandPoolCreateInfo, mAllocator, &mTransferCommandPool));
+	VK_CHECK(vkCreateCommandPool(device.get(), &commandPoolCreateInfo, mAllocator, &mTransferCommandPool));
 }
 
 void vk_renderer::createCommandBuffers()
@@ -324,7 +290,7 @@ void vk_renderer::createCommandBuffers()
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = static_cast<uint32_t>(mGraphicsCommandBuffers.size());
 
-	VK_CHECK(vkAllocateCommandBuffers(mDevice, &allocInfo, mGraphicsCommandBuffers.data()));
+	VK_CHECK(vkAllocateCommandBuffers(device.get(), &allocInfo, mGraphicsCommandBuffers.data()));
 }
 
 void vk_renderer::createPipelineLayout()
@@ -335,7 +301,7 @@ void vk_renderer::createPipelineLayout()
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = 0;
-	VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, mAllocator, &mPipelineLayout));
+	VK_CHECK(vkCreatePipelineLayout(device.get(), &pipelineLayoutInfo, mAllocator, &mPipelineLayout));
 }
 
 void vk_renderer::createGraphicsPipeline()
@@ -474,10 +440,10 @@ void vk_renderer::createGraphicsPipeline()
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex = -1;
 
-	VK_CHECK(vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &pipelineInfo, mAllocator, &mPipeline));
+	VK_CHECK(vkCreateGraphicsPipelines(device.get(), VK_NULL_HANDLE, 1, &pipelineInfo, mAllocator, &mPipeline));
 
-	vkDestroyShaderModule(mDevice, vertShaderModule, mAllocator);
-	vkDestroyShaderModule(mDevice, fragShaderModule, mAllocator);
+	vkDestroyShaderModule(device.get(), vertShaderModule, mAllocator);
+	vkDestroyShaderModule(device.get(), fragShaderModule, mAllocator);
 	delete[] vertShaderCode;
 	delete[] fragShaderCode;
 }
@@ -489,7 +455,7 @@ void vk_renderer::createShaderModule(const char* src, const size_t& src_size, Vk
 	shaderModuleCreateInfo.codeSize = src_size;
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(src);
 
-	VK_CHECK(vkCreateShaderModule(mDevice, &shaderModuleCreateInfo, mAllocator, &shaderModule));
+	VK_CHECK(vkCreateShaderModule(device.get(), &shaderModuleCreateInfo, mAllocator, &shaderModule));
 }
 
 void vk_renderer::recordCommandBuffers()
@@ -537,15 +503,14 @@ void vk_renderer::createSemaphores()
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, mAllocator, &mSepaphore_Image_Avaible));
-	VK_CHECK(vkCreateSemaphore(mDevice, &semaphoreInfo, mAllocator, &mSepaphore_Render_Finished));
+	VK_CHECK(vkCreateSemaphore(device.get(), &semaphoreInfo, mAllocator, &mSepaphore_Image_Avaible));
+	VK_CHECK(vkCreateSemaphore(device.get(), &semaphoreInfo, mAllocator, &mSepaphore_Render_Finished));
 }
 
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	if (VkResult result = vkAcquireNextImageKHR(
-			mDevice, mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
+	if (VkResult result = vkAcquireNextImageKHR(device.get(), mSwapchain, UINT32_MAX,mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
 		VK_SUCCESS != result && VK_SUBOPTIMAL_KHR != result)
 	{
 		if (VK_ERROR_OUT_OF_DATE_KHR == result)
@@ -575,7 +540,7 @@ void vk_renderer::drawFrame()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VK_CHECK(vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE));
+	VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
 
 	VkSwapchainKHR swapchains[]{mSwapchain};
 	VkPresentInfoKHR presentInfo{};
@@ -587,41 +552,41 @@ void vk_renderer::drawFrame()
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
-	vkQueuePresentKHR(mPresentQueue, &presentInfo);
+	vkQueuePresentKHR(device.getPresentQueue(), &presentInfo);
 }
 
 void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
-	vkDeviceWaitIdle(mDevice);
+	device.waitIdle();
 
 	for (uint32_t i = 0; i < uniformBuffers.size(); ++i)
 	{
 		destroyBuffer(uniformBuffers[i], uniformBuffersMemory[i]);
 	}
 
-	vkDestroyDescriptorPool(mDevice, mDescriptorPool, mAllocator);
+	vkDestroyDescriptorPool(device.get(), mDescriptorPool, mAllocator);
 
-	vkFreeCommandBuffers(mDevice, mGraphicsCommandPool, static_cast<uint32_t>(mGraphicsCommandBuffers.size()),
+	vkFreeCommandBuffers(device.get(), mGraphicsCommandPool, static_cast<uint32_t>(mGraphicsCommandBuffers.size()),
 		mGraphicsCommandBuffers.data());
 	mGraphicsCommandBuffers.clear();
 
-	vkDestroyPipeline(mDevice, mPipeline, mAllocator);
-	vkDestroyPipelineLayout(mDevice, mPipelineLayout, mAllocator);
-	vkDestroyRenderPass(mDevice, mRenderPass, mAllocator);
+	vkDestroyPipeline(device.get(), mPipeline, mAllocator);
+	vkDestroyPipelineLayout(device.get(), mPipelineLayout, mAllocator);
+	vkDestroyRenderPass(device.get(), mRenderPass, mAllocator);
 
 	for (auto frameBuffer : mSwapchainFramebuffers)
 	{
-		vkDestroyFramebuffer(mDevice, frameBuffer, mAllocator);
+		vkDestroyFramebuffer(device.get(), frameBuffer, mAllocator);
 	}
 	mSwapchainFramebuffers.clear();
 
 	for (auto imageView : mSwapchainImageViews)
 	{
-		vkDestroyImageView(mDevice, imageView, mAllocator);
+		vkDestroyImageView(device.get(), imageView, mAllocator);
 	}
 	mSwapchainImageViews.clear();
 
-	vkDestroySwapchainKHR(mDevice, swapchain, mAllocator);
+	vkDestroySwapchainKHR(device.get(), swapchain, mAllocator);
 }
 
 void vk_renderer::recreateSwapchain()
@@ -653,9 +618,9 @@ void vk_renderer::updateUniformBuffers(uint32_t image)
 	//ubo._projection._mat[1][1] = -1;
 
 	void* data;
-	vkMapMemory(mDevice, uniformBuffersMemory[image], 0, sizeof(ubo), 0, &data);
+	vkMapMemory(device.get(), uniformBuffersMemory[image], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(mDevice, uniformBuffersMemory[image]);
+	vkUnmapMemory(device.get(), uniformBuffersMemory[image]);
 }
 
 void vk_renderer::createDescriptorSetLayout()
@@ -674,7 +639,7 @@ void vk_renderer::createDescriptorSetLayout()
 	layoutCreateInfo.bindingCount = 1;
 	layoutCreateInfo.pBindings = &uboLayoutBinding;
 
-	VK_CHECK(vkCreateDescriptorSetLayout(mDevice, &layoutCreateInfo, mAllocator, &descriptorSetLayout));
+	VK_CHECK(vkCreateDescriptorSetLayout(device.get(), &layoutCreateInfo, mAllocator, &descriptorSetLayout));
 }
 
 void vk_renderer::createDescriptorSets()
@@ -690,7 +655,7 @@ void vk_renderer::createDescriptorSets()
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(imageSize);
 	allocInfo.pSetLayouts = layouts.data();
 
-	VK_CHECK(vkAllocateDescriptorSets(mDevice, &allocInfo, mDescriptorSets.data()));
+	VK_CHECK(vkAllocateDescriptorSets(device.get(), &allocInfo, mDescriptorSets.data()));
 
 	for (uint32_t i = 0; i < imageSize; ++i)
 	{
@@ -711,7 +676,7 @@ void vk_renderer::createDescriptorSets()
 		descriptorWrite.pImageInfo = nullptr;
 		descriptorWrite.pTexelBufferView = nullptr;
 
-		vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
+		vkUpdateDescriptorSets(device.get(), 1, &descriptorWrite, 0, nullptr);
 	}
 }
 
@@ -726,17 +691,17 @@ void vk_renderer::createVertexBuffer()
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	void* data;
-	vkMapMemory(mDevice, stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
+	vkMapMemory(device.get(), stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
 	memcpy(data, mesh._vertexes.data(), bufferSize);
-	vkUnmapMemory(mDevice, stagingBufferMemory);
+	vkUnmapMemory(device.get(), stagingBufferMemory);
 
 	createBuffer(bufferSize, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		vertexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-	vkDestroyBuffer(mDevice, stagingBuffer, mAllocator);
-	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
+	vkDestroyBuffer(device.get(), stagingBuffer, mAllocator);
+	vkFreeMemory(device.get(), stagingBufferMemory, mAllocator);
 }
 
 void vk_renderer::createIndexBuffer()
@@ -750,17 +715,17 @@ void vk_renderer::createIndexBuffer()
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	void* data;
-	vkMapMemory(mDevice, stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
+	vkMapMemory(device.get(), stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
 	memcpy(data, mesh._indexes.data(), bufferSize);
-	vkUnmapMemory(mDevice, stagingBufferMemory);
+	vkUnmapMemory(device.get(), stagingBufferMemory);
 
 	createBuffer(bufferSize, indexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		indexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
-	vkDestroyBuffer(mDevice, stagingBuffer, mAllocator);
-	vkFreeMemory(mDevice, stagingBufferMemory, mAllocator);
+	vkDestroyBuffer(device.get(), stagingBuffer, mAllocator);
+	vkFreeMemory(device.get(), stagingBufferMemory, mAllocator);
 }
 
 void vk_renderer::createDescriptorPool()
@@ -777,7 +742,7 @@ void vk_renderer::createDescriptorPool()
 	poolCreateInfo.pPoolSizes = &poolSize;
 	poolCreateInfo.maxSets = static_cast<uint32_t>(mSwapchainImageViews.size());
 
-	VK_CHECK(vkCreateDescriptorPool(mDevice, &poolCreateInfo, mAllocator, &mDescriptorPool));
+	VK_CHECK(vkCreateDescriptorPool(device.get(), &poolCreateInfo, mAllocator, &mDescriptorPool));
 }
 
 void vk_renderer::createUniformBuffers()
@@ -804,20 +769,24 @@ void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsag
 	bufferCreateInfo.flags = 0;
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = bufferUsageFlags;
-	bufferCreateInfo.sharingMode = queueFamily.sharingMode;
+	bufferCreateInfo.sharingMode = queueFamily.getSharingMode();
 	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
 	{
-		uint32_t queueFamilyIndexes[3] = {queueFamily.graphicsQueueFamilyIndex, queueFamily.presentQueueFamilyIndex,
-			queueFamily.transferQueueFamilyIndex};
+		uint32_t queueFamilyIndexes[3] = 
+		{
+			queueFamily.getGraphicsIndex(),
+			queueFamily.getPresentIndex(),
+			queueFamily.getTransferIndex()
+		};
 
 		bufferCreateInfo.queueFamilyIndexCount = 3;
 		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
 	}
 
-	VK_CHECK(vkCreateBuffer(mDevice, &bufferCreateInfo, mAllocator, &buffer));
+	VK_CHECK(vkCreateBuffer(device.get(), &bufferCreateInfo, mAllocator, &buffer));
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(mDevice, buffer, &memoryRequirements);
+	vkGetBufferMemoryRequirements(device.get(), buffer, &memoryRequirements);
 
 	VkMemoryAllocateInfo memoryAllocateInfo{};
 	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -825,9 +794,9 @@ void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsag
 	memoryAllocateInfo.allocationSize = memoryRequirements.size;
 	memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, memoryPropertyFlags);
 
-	VK_CHECK(vkAllocateMemory(mDevice, &memoryAllocateInfo, mAllocator, &bufferMemory));
+	VK_CHECK(vkAllocateMemory(device.get(), &memoryAllocateInfo, mAllocator, &bufferMemory));
 
-	vkBindBufferMemory(mDevice, buffer, bufferMemory, 0);
+	vkBindBufferMemory(device.get(), buffer, bufferMemory, 0);
 }
 
 void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
@@ -840,7 +809,7 @@ void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceS
 	commandBufferAllocateInfo.commandPool = mTransferCommandPool;
 
 	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(mDevice, &commandBufferAllocateInfo, &commandBuffer);
+	vkAllocateCommandBuffers(device.get(), &commandBufferAllocateInfo, &commandBuffer);
 
 	VkCommandBufferBeginInfo commandBufferBeginInfo{};
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -862,9 +831,9 @@ void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceS
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	vkQueueSubmit(mTransferQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(mTransferQueue);
-	vkFreeCommandBuffers(mDevice, mTransferCommandPool, 1, &commandBuffer);
+	vkQueueSubmit(device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(device.getTransferQueue());
+	vkFreeCommandBuffers(device.get(), mTransferCommandPool, 1, &commandBuffer);
 }
 
 uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags)
@@ -886,6 +855,6 @@ uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags 
 
 void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
-	vkDestroyBuffer(mDevice, buffer, mAllocator);
-	vkFreeMemory(mDevice, bufferMemory, mAllocator);
+	vkDestroyBuffer(device.get(), buffer, mAllocator);
+	vkFreeMemory(device.get(), bufferMemory, mAllocator);
 }

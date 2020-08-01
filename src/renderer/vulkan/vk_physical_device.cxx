@@ -21,7 +21,7 @@ void vk_physical_device::setup(VkSurfaceKHR vkSurface)
 
 	for (auto& gpu : gpuList)
 	{
-		if (vk_queue_family(gpu, vkSurface).isSupported)
+		if (vk_queue_family(gpu, vkSurface).getIsSupported())
 		{
 			_vkPhysicalDevice = gpu;
 			vkGetPhysicalDeviceProperties(gpu, &_vkPhysicalDeviceProperties);

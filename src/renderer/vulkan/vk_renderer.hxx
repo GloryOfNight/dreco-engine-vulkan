@@ -2,6 +2,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
 #include "vk_physical_device.hxx"
+#include "vk_device.hxx"
 
 #include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
@@ -29,8 +30,6 @@ protected:
 	inline void createWindow();
 
 	inline void createInstance();
-
-	inline void createLogicalDevice();
 
 	inline void createSwapchain();
 
@@ -97,6 +96,8 @@ private:
 
 	vk_queue_family queueFamily;
 
+	vk_device device;
+
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
 
@@ -109,12 +110,6 @@ private:
 	VkAllocationCallbacks* mAllocator;
 
 	VkInstance mInstance;
-
-	VkDevice mDevice = VK_NULL_HANDLE;
-
-	VkQueue mGraphicsQueue = VK_NULL_HANDLE;
-	VkQueue mTransferQueue = VK_NULL_HANDLE;
-	VkQueue mPresentQueue = VK_NULL_HANDLE;
 
 	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
 	std::vector<VkImageView> mSwapchainImageViews;

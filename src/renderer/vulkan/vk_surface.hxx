@@ -9,7 +9,7 @@ public:
 	vk_surface(const VkInstance* vkInstance);
 	~vk_surface();
 
-	void setup(SDL_Window* window);
+	void create(SDL_Window* window);
 
 	void setup(VkPhysicalDevice vkPhysicalDevice);	
 
