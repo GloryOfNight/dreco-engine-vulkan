@@ -308,11 +308,11 @@ void vk_renderer::createPipelineLayout()
 
 void vk_renderer::createGraphicsPipeline()
 {
-	size_t vertShaderSize;
+	size_t vertShaderSize{0};
 	char* vertShaderCode = file_utils::read_file("shaders/vert.spv", &vertShaderSize);
 	if (nullptr == vertShaderCode)
 		throw std::runtime_error("Failed to load binary shader code");
-	size_t fragShaderSize;
+	size_t fragShaderSize{0};
 	char* fragShaderCode = file_utils::read_file("shaders/frag.spv", &fragShaderSize);
 	if (nullptr == fragShaderCode)
 		throw std::runtime_error("Failed to load binary shader code");

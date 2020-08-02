@@ -83,10 +83,12 @@ private:
 
 	engine* _engine;
 
+	VkAllocationCallbacks* mAllocator;
+	
 	SDL_Window* window;
 
 	vk_surface surface;
-
+	
 	vk_physical_device physical_device;
 
 	vk_queue_family queueFamily;
@@ -98,8 +100,6 @@ private:
 	vk_buffer index_buffer;
 
 	std::vector<vk_buffer> uniform_buffers;
-
-	VkAllocationCallbacks* mAllocator;
 
 	VkInstance mInstance;
 

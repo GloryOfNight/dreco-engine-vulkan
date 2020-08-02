@@ -8,8 +8,8 @@
 
 vk_device::vk_device()
 	: _vkDevice{VK_NULL_HANDLE}
-	, _vkPresentQueue{VK_NULL_HANDLE}
 	, _vkGraphicsQueue{VK_NULL_HANDLE}
+	, _vkPresentQueue{VK_NULL_HANDLE}
 	, _vkTransferQueue{VK_NULL_HANDLE}
 {
 }
