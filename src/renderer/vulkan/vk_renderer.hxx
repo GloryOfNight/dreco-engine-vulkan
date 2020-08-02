@@ -3,10 +3,11 @@
 #include "vk_surface.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_device.hxx"
+#include "vk_buffer.hxx"
 
 #include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
-#include "renderer/containers/uniform_buffer.hxx"
+#include "renderer/containers/uniforms.hxx"
 
 #include <vulkan/vulkan.h>
 #include <SDL.h>
@@ -72,19 +73,13 @@ protected:
 	
 	void createUniformBuffers();
 
-	void createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
-		VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags);
-
+	// TODO: should be probably moved or deleted entirely
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
-
-	void destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags);
 
 private:
 
 	mesh_data mesh = mesh_data::createSprite();
-	uniform_buffer ubo{};
+	uniforms ubo{};
 
 	engine* _engine;
 
@@ -97,15 +92,12 @@ private:
 	vk_queue_family queueFamily;
 
 	vk_device device;
+	
+	vk_buffer vertex_buffer;
 
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
+	vk_buffer index_buffer;
 
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	std::vector<vk_buffer> uniform_buffers;
 
 	VkAllocationCallbacks* mAllocator;
 

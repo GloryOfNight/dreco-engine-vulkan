@@ -12,7 +12,7 @@ public:
 
 	void setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface);
 
-	bool getIsSupported() const;
+	bool isVulkanSupported() const;
 
 	uint32_t getGraphicsIndex() const;
 

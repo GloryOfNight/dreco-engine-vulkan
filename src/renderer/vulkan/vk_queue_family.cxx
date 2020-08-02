@@ -61,7 +61,7 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	}
 }
 
-bool vk_queue_family::getIsSupported() const
+bool vk_queue_family::isVulkanSupported() const
 {
 	return isSupported;
 }

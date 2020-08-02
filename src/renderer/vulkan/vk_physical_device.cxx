@@ -9,6 +9,7 @@ vk_physical_device::vk_physical_device(const VkInstance* vkInstance)
 	, _vkPhysicalDevice{VK_NULL_HANDLE}
 	, _vkPhysicalDeviceProperties{}
 	, _vkPhysicalDeviceFeatures{}
+	, _vkPhysicalDeviceMemoryProperties{}
 {
 }
 
@@ -21,11 +22,12 @@ void vk_physical_device::setup(VkSurfaceKHR vkSurface)
 
 	for (auto& gpu : gpuList)
 	{
-		if (vk_queue_family(gpu, vkSurface).getIsSupported())
+		if (vk_queue_family(gpu, vkSurface).isVulkanSupported())
 		{
 			_vkPhysicalDevice = gpu;
 			vkGetPhysicalDeviceProperties(gpu, &_vkPhysicalDeviceProperties);
 			vkGetPhysicalDeviceFeatures(gpu, &_vkPhysicalDeviceFeatures);
+			vkGetPhysicalDeviceMemoryProperties(_vkPhysicalDevice, &_vkPhysicalDeviceMemoryProperties);
 			break;
 		}
 	}
@@ -49,4 +51,9 @@ const VkPhysicalDeviceProperties& vk_physical_device::getProperties() const
 const VkPhysicalDeviceFeatures& vk_physical_device::getFeatures() const
 {
 	return _vkPhysicalDeviceFeatures;
+}
+
+const VkPhysicalDeviceMemoryProperties& vk_physical_device::getMemoryProperties() const
+{
+	return _vkPhysicalDeviceMemoryProperties;
 }

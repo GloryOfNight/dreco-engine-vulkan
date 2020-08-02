@@ -1,6 +1,6 @@
 #pragma once
 #include "renderer/containers/mesh_data.hxx"
-#include "renderer/containers/uniform_buffer.hxx"
+#include "renderer/containers/uniforms.hxx"
 
 class vk_renderer;
 

@@ -44,8 +44,10 @@ vk_renderer::~vk_renderer()
 	device.waitIdle();
 
 	cleanupSwapchain(mSwapchain);
-	destroyBuffer(vertexBuffer, vertexBufferMemory);
-	destroyBuffer(indexBuffer, indexBufferMemory);
+
+	vertex_buffer.destroy();
+	index_buffer.destroy();
+	uniform_buffers.clear();
 
 	vkDestroyDescriptorSetLayout(device.get(), descriptorSetLayout, mAllocator);
 	vkDestroySemaphore(device.get(), mSepaphore_Image_Avaible, mAllocator);
@@ -485,10 +487,10 @@ void vk_renderer::recordCommandBuffers()
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
-		VkBuffer buffers[1]{vertexBuffer};
+		VkBuffer buffers[1]{vertex_buffer.get()};
 		VkDeviceSize offsets[1]{0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
 		vkCmdBindDescriptorSets(
 			commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh._indexes.size()), 1, 0, 0, 0);
@@ -559,10 +561,7 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
 	device.waitIdle();
 
-	for (uint32_t i = 0; i < uniformBuffers.size(); ++i)
-	{
-		destroyBuffer(uniformBuffers[i], uniformBuffersMemory[i]);
-	}
+	uniform_buffers.clear();
 
 	vkDestroyDescriptorPool(device.get(), mDescriptorPool, mAllocator);
 
@@ -617,10 +616,7 @@ void vk_renderer::updateUniformBuffers(uint32_t image)
 	ubo._projection = mat4::makeProjection(-1,1, static_cast<float>(w) / static_cast<float>(h), 75.f);
 	//ubo._projection._mat[1][1] = -1;
 
-	void* data;
-	vkMapMemory(device.get(), uniformBuffersMemory[image], 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(device.get(), uniformBuffersMemory[image]);
+	uniform_buffers[image].map(&ubo, sizeof(ubo));
 }
 
 void vk_renderer::createDescriptorSetLayout()
@@ -660,9 +656,9 @@ void vk_renderer::createDescriptorSets()
 	for (uint32_t i = 0; i < imageSize; ++i)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.buffer = uniform_buffers[i].get();
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(uniform_buffer);
+		bufferInfo.range = sizeof(uniforms);
 
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -682,50 +678,44 @@ void vk_renderer::createDescriptorSets()
 
 void vk_renderer::createVertexBuffer()
 {
-	const VkDeviceSize bufferSize{sizeof(mesh._vertexes[0]) * mesh._vertexes.size()};
+	vk_buffer_create_info buffer_create_info{};
+	buffer_create_info.usage = vk_buffer_usage::VERTEX;
+	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
+	buffer_create_info.queue_family = &queueFamily;
+	buffer_create_info.physical_device = &physical_device;
+	buffer_create_info.size = sizeof(mesh._vertexes[0]) * mesh._vertexes.size();
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-
-	createBuffer(bufferSize, stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBufferMemory,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	void* data;
-	vkMapMemory(device.get(), stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
-	memcpy(data, mesh._vertexes.data(), bufferSize);
-	vkUnmapMemory(device.get(), stagingBufferMemory);
-
-	createBuffer(bufferSize, vertexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		vertexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-	vkDestroyBuffer(device.get(), stagingBuffer, mAllocator);
-	vkFreeMemory(device.get(), stagingBufferMemory, mAllocator);
+	vertex_buffer.create(device, buffer_create_info);
+	vertex_buffer.map(mesh._vertexes.data(), buffer_create_info.size);
 }
 
 void vk_renderer::createIndexBuffer()
 {
-	const VkDeviceSize bufferSize{sizeof(mesh._indexes[0]) * mesh._indexes.size()};
+	vk_buffer_create_info buffer_create_info{};
+	buffer_create_info.usage = vk_buffer_usage::INDEX;
+	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
+	buffer_create_info.queue_family = &queueFamily;
+	buffer_create_info.physical_device = &physical_device;
+	buffer_create_info.size = sizeof(mesh._indexes[0]) * mesh._indexes.size();
 
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	index_buffer.create(device, buffer_create_info);
+	index_buffer.map(mesh._indexes.data(), buffer_create_info.size);
+}
 
-	createBuffer(bufferSize, stagingBuffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, stagingBufferMemory,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+void vk_renderer::createUniformBuffers()
+{
+	vk_buffer_create_info buffer_create_info{};
+	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
+	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
+	buffer_create_info.queue_family = &queueFamily;
+	buffer_create_info.physical_device = &physical_device;
+	buffer_create_info.size = sizeof(uniforms);
 
-	void* data;
-	vkMapMemory(device.get(), stagingBufferMemory, 0, VK_WHOLE_SIZE, 0, &data);
-	memcpy(data, mesh._indexes.data(), bufferSize);
-	vkUnmapMemory(device.get(), stagingBufferMemory);
-
-	createBuffer(bufferSize, indexBuffer, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-		indexBufferMemory, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-	vkDestroyBuffer(device.get(), stagingBuffer, mAllocator);
-	vkFreeMemory(device.get(), stagingBufferMemory, mAllocator);
+	uniform_buffers.resize(mSwapchainImageViews.size());
+	for (auto& buffer : uniform_buffers)
+	{
+		buffer.create(device, buffer_create_info);
+	}
 }
 
 void vk_renderer::createDescriptorPool()
@@ -743,60 +733,6 @@ void vk_renderer::createDescriptorPool()
 	poolCreateInfo.maxSets = static_cast<uint32_t>(mSwapchainImageViews.size());
 
 	VK_CHECK(vkCreateDescriptorPool(device.get(), &poolCreateInfo, mAllocator, &mDescriptorPool));
-}
-
-void vk_renderer::createUniformBuffers()
-{
-	const VkDeviceSize size = sizeof(uniform_buffer);
-	const size_t imageCount{mSwapchainImageViews.size()};
-
-	uniformBuffers.resize(imageCount);
-	uniformBuffersMemory.resize(imageCount);
-
-	for (uint32_t i = 0; i < imageCount; ++i)
-	{
-		createBuffer(size, uniformBuffers[i], VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, uniformBuffersMemory[i],
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	}
-}
-
-void vk_renderer::createBuffer(VkDeviceSize size, VkBuffer& buffer, VkBufferUsageFlags bufferUsageFlags,
-	VkDeviceMemory& bufferMemory, VkMemoryPropertyFlags memoryPropertyFlags)
-{
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.pNext = nullptr;
-	bufferCreateInfo.flags = 0;
-	bufferCreateInfo.size = size;
-	bufferCreateInfo.usage = bufferUsageFlags;
-	bufferCreateInfo.sharingMode = queueFamily.getSharingMode();
-	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
-	{
-		uint32_t queueFamilyIndexes[3] = 
-		{
-			queueFamily.getGraphicsIndex(),
-			queueFamily.getPresentIndex(),
-			queueFamily.getTransferIndex()
-		};
-
-		bufferCreateInfo.queueFamilyIndexCount = 3;
-		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
-	}
-
-	VK_CHECK(vkCreateBuffer(device.get(), &bufferCreateInfo, mAllocator, &buffer));
-
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(device.get(), buffer, &memoryRequirements);
-
-	VkMemoryAllocateInfo memoryAllocateInfo{};
-	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	memoryAllocateInfo.pNext = nullptr;
-	memoryAllocateInfo.allocationSize = memoryRequirements.size;
-	memoryAllocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, memoryPropertyFlags);
-
-	VK_CHECK(vkAllocateMemory(device.get(), &memoryAllocateInfo, mAllocator, &bufferMemory));
-
-	vkBindBufferMemory(device.get(), buffer, bufferMemory, 0);
 }
 
 void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
@@ -834,27 +770,4 @@ void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceS
 	vkQueueSubmit(device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(device.getTransferQueue());
 	vkFreeCommandBuffers(device.get(), mTransferCommandPool, 1, &commandBuffer);
-}
-
-uint32_t vk_renderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertiesFlags)
-{
-	VkPhysicalDeviceMemoryProperties memoryProperties;
-	vkGetPhysicalDeviceMemoryProperties(physical_device.get(), &memoryProperties);
-
-	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
-	{
-		if ((typeFilter & (1 << i)) &&
-			(memoryProperties.memoryTypes[i].propertyFlags & propertiesFlags) == propertiesFlags)
-		{
-			return i;
-		}
-	}
-	throw std::runtime_error("No suitable memory find!");
-	return 0;
-}
-
-void vk_renderer::destroyBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory)
-{
-	vkDestroyBuffer(device.get(), buffer, mAllocator);
-	vkFreeMemory(device.get(), bufferMemory, mAllocator);
 }

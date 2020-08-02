@@ -14,6 +14,8 @@ public:
 
 	const VkPhysicalDeviceFeatures& getFeatures() const;
 
+	const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const;
+
 private:
 	const VkInstance* _vkInstance;
 
@@ -22,4 +24,6 @@ private:
 	VkPhysicalDeviceProperties _vkPhysicalDeviceProperties;
 	
 	VkPhysicalDeviceFeatures _vkPhysicalDeviceFeatures;
+
+	VkPhysicalDeviceMemoryProperties _vkPhysicalDeviceMemoryProperties;
 };
