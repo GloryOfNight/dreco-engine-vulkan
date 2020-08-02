@@ -17,9 +17,9 @@ vk_buffer::~vk_buffer()
 	destroy();
 }
 
-void vk_buffer::create(const vk_device& device, const vk_buffer_create_info& create_info)
+void vk_buffer::create(const vk_device* device, const vk_buffer_create_info& create_info)
 {
-	_device = &device;
+	_device = device;
 	createBuffer(create_info, _vkBuffer, _device->get(), _vkDeviceMemory);
 }
 

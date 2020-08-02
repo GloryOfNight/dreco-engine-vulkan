@@ -245,7 +245,7 @@ void vk_renderer::createRenderPass()
 
 void vk_renderer::createFramebuffers()
 {
-	mSwapchainFramebuffers.resize(mSwapchainImageViews.size());
+	mFramebuffers.resize(mSwapchainImageViews.size());
 
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{surface.getCapabilities()};
 
@@ -262,7 +262,7 @@ void vk_renderer::createFramebuffers()
 		framebufferCreateInfo.height = surfaceCapabilities.currentExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		VK_CHECK(vkCreateFramebuffer(device.get(), &framebufferCreateInfo, mAllocator, &mSwapchainFramebuffers[i]));
+		VK_CHECK(vkCreateFramebuffer(device.get(), &framebufferCreateInfo, mAllocator, &mFramebuffers[i]));
 	}
 }
 
@@ -284,7 +284,7 @@ void vk_renderer::createCommandPool()
 
 void vk_renderer::createCommandBuffers()
 {
-	mGraphicsCommandBuffers.resize(mSwapchainFramebuffers.size());
+	mGraphicsCommandBuffers.resize(mFramebuffers.size());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -478,7 +478,7 @@ void vk_renderer::recordCommandBuffers()
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = mRenderPass;
-		renderPassInfo.framebuffer = mSwapchainFramebuffers[i];
+		renderPassInfo.framebuffer = mFramebuffers[i];
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = surface.getCapabilities().currentExtent;
 		renderPassInfo.clearValueCount = 1;
@@ -495,6 +495,9 @@ void vk_renderer::recordCommandBuffers()
 			commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh._indexes.size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
 		VK_CHECK(vkEndCommandBuffer(commandBuffer));
 	}
@@ -573,11 +576,11 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 	vkDestroyPipelineLayout(device.get(), mPipelineLayout, mAllocator);
 	vkDestroyRenderPass(device.get(), mRenderPass, mAllocator);
 
-	for (auto frameBuffer : mSwapchainFramebuffers)
+	for (auto frameBuffer : mFramebuffers)
 	{
 		vkDestroyFramebuffer(device.get(), frameBuffer, mAllocator);
 	}
-	mSwapchainFramebuffers.clear();
+	mFramebuffers.clear();
 
 	for (auto imageView : mSwapchainImageViews)
 	{
@@ -685,7 +688,7 @@ void vk_renderer::createVertexBuffer()
 	buffer_create_info.physical_device = &physical_device;
 	buffer_create_info.size = sizeof(mesh._vertexes[0]) * mesh._vertexes.size();
 
-	vertex_buffer.create(device, buffer_create_info);
+	vertex_buffer.create(&device, buffer_create_info);
 	vertex_buffer.map(mesh._vertexes.data(), buffer_create_info.size);
 }
 
@@ -698,7 +701,7 @@ void vk_renderer::createIndexBuffer()
 	buffer_create_info.physical_device = &physical_device;
 	buffer_create_info.size = sizeof(mesh._indexes[0]) * mesh._indexes.size();
 
-	index_buffer.create(device, buffer_create_info);
+	index_buffer.create(&device, buffer_create_info);
 	index_buffer.map(mesh._indexes.data(), buffer_create_info.size);
 }
 
@@ -714,7 +717,7 @@ void vk_renderer::createUniformBuffers()
 	uniform_buffers.resize(mSwapchainImageViews.size());
 	for (auto& buffer : uniform_buffers)
 	{
-		buffer.create(device, buffer_create_info);
+		buffer.create(&device, buffer_create_info);
 	}
 }
 

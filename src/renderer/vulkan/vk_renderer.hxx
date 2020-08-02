@@ -105,7 +105,8 @@ private:
 
 	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
 	std::vector<VkImageView> mSwapchainImageViews;
-	std::vector<VkFramebuffer> mSwapchainFramebuffers;
+
+	std::vector<VkFramebuffer> mFramebuffers;
 
 	VkRenderPass mRenderPass;
 

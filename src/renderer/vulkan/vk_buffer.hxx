@@ -23,8 +23,8 @@ struct vk_buffer_create_info
 {
 	vk_buffer_usage usage;
 	vk_buffer_memory_properties memory_properties;
-	vk_queue_family* queue_family;
-	vk_physical_device* physical_device;
+	const vk_queue_family* queue_family;
+	const vk_physical_device* physical_device;
 	VkDeviceSize size;
 };
 
@@ -34,7 +34,7 @@ public:
 	vk_buffer();
 	~vk_buffer();
 
-	void create(const vk_device& device, const vk_buffer_create_info& create_info);
+	void create(const vk_device* device, const vk_buffer_create_info& create_info);
 
 	void destroy();
 
