@@ -3,6 +3,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_utils.hxx"
+#include <cstring>
 
 vk_buffer::vk_buffer()
 	: _device{nullptr}
@@ -50,13 +51,14 @@ void vk_buffer::destroy(VkDevice vkDevice, VkBuffer& vkBuffer, VkDeviceMemory& v
 		if (VK_NULL_HANDLE != vkBuffer)
 		{
 			vkDestroyBuffer(vkDevice, vkBuffer, VK_NULL_HANDLE);
-			vkBuffer == VK_NULL_HANDLE;
+			vkBuffer = VK_NULL_HANDLE;
 		}
 		if (VK_NULL_HANDLE != vkDeviceMemery)
 		{
 			vkFreeMemory(vkDevice, vkDeviceMemery, VK_NULL_HANDLE);
 			vkDeviceMemery = VK_NULL_HANDLE;
 		}
+		vkDevice = VK_NULL_HANDLE;
 	}
 }
 
