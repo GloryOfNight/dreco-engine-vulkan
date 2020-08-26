@@ -495,10 +495,7 @@ void vk_renderer::recordCommandBuffers()
 			commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh._indexes.size()), 1, 0, 0, 0);
 		vkCmdEndRenderPass(commandBuffer);
-
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
-
+		
 		VK_CHECK(vkEndCommandBuffer(commandBuffer));
 	}
 }
