@@ -25,9 +25,9 @@ void vk_mesh::create(const vk_mesh_create_info& create_info)
 	_mesh = mesh_data::createSprite(); 
 	_vkDevice = create_info.device->get();
 
-	createVertexBuffer(create_info.device, create_info.queue_family, create_info.physical_device);
-	createIndexBuffer(create_info.device, create_info.queue_family, create_info.physical_device);
-	createUniformBuffers(create_info.device, create_info.queue_family, create_info.physical_device, create_info.imageCount);
+	createVertexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
+	createIndexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
+	createUniformBuffers(create_info.device, create_info.queueFamily, create_info.physicalDevice, create_info.imageCount);
 
 	createDescriptorPool(create_info.imageCount);
 	createDescriptorSetLayot();
@@ -47,9 +47,9 @@ void vk_mesh::destroy()
 		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, VK_NULL_HANDLE);
 		vkDestroyPipelineLayout(_vkDevice, _vkPipelineLayout, VK_NULL_HANDLE);
 
-		_vertex_buffer.destroy();
-		_index_buffer.destroy();
-		_uniform_buffers.clear();
+		_vertexBuffer.destroy();
+		_indexBuffer.destroy();
+		_uniformBuffers.clear();
 
 		_vkDevice = VK_NULL_HANDLE;
 	}
@@ -59,10 +59,10 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 {
 	vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkGraphicsPipeline);
 
-	VkBuffer buffers[1]{_vertex_buffer.get()};
+	VkBuffer buffers[1]{_vertexBuffer.get()};
 	VkDeviceSize offsets[1]{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers, offsets);
-	vkCmdBindIndexBuffer(vkCommandBuffer, _index_buffer.get(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
 	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1,&_vkDescriptorSets[imageIndex], 0, nullptr);
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
 }
@@ -75,7 +75,7 @@ void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.f);
 	// ubo._projection._mat[1][1] = -1;
 
-	_uniform_buffers[imageIndex].map(&_ubo, sizeof(_ubo));
+	_uniformBuffers[imageIndex].map(&_ubo, sizeof(_ubo));
 }
 
 void vk_mesh::createDescriptorPool(const uint32_t imageCount)
@@ -131,7 +131,7 @@ void vk_mesh::createDescriptorSets(const uint32_t imageCount)
 	for (uint32_t i = 0; i < imageCount; ++i)
 	{
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = _uniform_buffers[i].get();
+		bufferInfo.buffer = _uniformBuffers[i].get();
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(uniforms);
 
@@ -318,44 +318,44 @@ void vk_mesh::createShaderModule(
 }
 
 void vk_mesh::createVertexBuffer(
-	const vk_device* device, const vk_queue_family* queue_family, const vk_physical_device* physical_device)
+	const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::VERTEX;
 	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
-	buffer_create_info.queue_family = queue_family;
-	buffer_create_info.physical_device = physical_device;
+	buffer_create_info.queueFamily = queueFamily;
+	buffer_create_info.physicalDevice = physicalDevice;
 	buffer_create_info.size = sizeof(_mesh._vertexes[0]) * _mesh._vertexes.size();
 
-	_vertex_buffer.create(device, buffer_create_info);
-	_vertex_buffer.map(_mesh._vertexes.data(), buffer_create_info.size);
+	_vertexBuffer.create(device, buffer_create_info);
+	_vertexBuffer.map(_mesh._vertexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* queue_family, const vk_physical_device* physical_device)
+void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::INDEX;
 	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
-	buffer_create_info.queue_family = queue_family;
-	buffer_create_info.physical_device = physical_device;
+	buffer_create_info.queueFamily = queueFamily;
+	buffer_create_info.physicalDevice = physicalDevice;
 	buffer_create_info.size = sizeof(_mesh._indexes[0]) * _mesh._indexes.size();
 
-	_index_buffer.create(device, buffer_create_info);
-	_index_buffer.map(_mesh._indexes.data(), buffer_create_info.size);
+	_indexBuffer.create(device, buffer_create_info);
+	_indexBuffer.map(_mesh._indexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queue_family,
-	const vk_physical_device* physical_device, uint32_t imageCount)
+void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily,
+	const vk_physical_device* physicalDevice, uint32_t imageCount)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
 	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
-	buffer_create_info.queue_family = queue_family;
-	buffer_create_info.physical_device = physical_device;
+	buffer_create_info.queueFamily = queueFamily;
+	buffer_create_info.physicalDevice = physicalDevice;
 	buffer_create_info.size = sizeof(uniforms);
 
-	_uniform_buffers.resize(imageCount);
-	for (auto& buffer : _uniform_buffers)
+	_uniformBuffers.resize(imageCount);
+	for (auto& buffer : _uniformBuffers)
 	{
 		buffer.create(device, buffer_create_info);
 	}

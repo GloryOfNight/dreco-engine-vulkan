@@ -13,8 +13,8 @@ class vk_physical_device;
 struct vk_mesh_create_info
 {
 	const vk_device* device;
-	const vk_queue_family* queue_family;
-	const vk_physical_device* physical_device;
+	const vk_queue_family* queueFamily;
+	const vk_physical_device* physicalDevice;
 	const VkRenderPass vkRenderPass;
 	const VkExtent2D vkExtent;
 	const uint32_t imageCount;
@@ -48,12 +48,12 @@ protected:
 
 	void createShaderModule(const VkDevice vkDevice, const char* src, const size_t& src_size, VkShaderModule& shaderModule);
 
-	void createVertexBuffer(const vk_device* device, const vk_queue_family* queue_family, const vk_physical_device* physical_device);
+	void createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createIndexBuffer(const vk_device* device, const vk_queue_family* queue_family, const vk_physical_device* physical_device);
+	void createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createUniformBuffers(const vk_device* device, const vk_queue_family* queue_family,
-		const vk_physical_device* physical_device, uint32_t imageCount);
+	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily,
+		const vk_physical_device* physicalDevice, uint32_t imageCount);
 
 private:
 
@@ -61,11 +61,11 @@ private:
 
 	uniforms _ubo;
 
-	vk_buffer _vertex_buffer;
+	vk_buffer _vertexBuffer;
 
-	vk_buffer _index_buffer;
+	vk_buffer _indexBuffer;
 
-	std::vector<vk_buffer> _uniform_buffers;
+	std::vector<vk_buffer> _uniformBuffers;
 
 	VkDevice _vkDevice;
 

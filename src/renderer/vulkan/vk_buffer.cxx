@@ -71,14 +71,14 @@ void vk_buffer::createBuffer(
 	bufferCreateInfo.flags = 0;
 	bufferCreateInfo.size = create_info.size;
 	bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(create_info.usage);
-	bufferCreateInfo.sharingMode = create_info.queue_family->getSharingMode();
+	bufferCreateInfo.sharingMode = create_info.queueFamily->getSharingMode();
 	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
 	{
 		uint32_t queueFamilyIndexes[3] =
 		{
-			create_info.queue_family->getGraphicsIndex(), 
-			create_info.queue_family->getPresentIndex(),
-			create_info.queue_family->getTransferIndex()
+			create_info.queueFamily->getGraphicsIndex(), 
+			create_info.queueFamily->getPresentIndex(),
+			create_info.queueFamily->getTransferIndex()
 		};
 
 		bufferCreateInfo.queueFamilyIndexCount = 3;
@@ -92,7 +92,7 @@ void vk_buffer::createBuffer(
 
 	const int32_t memoryTypeIndex = findMemoryTypeIndex
 	(
-		create_info.physical_device->getMemoryProperties(),
+		create_info.physicalDevice->getMemoryProperties(),
 		memoryRequirements.memoryTypeBits,
 		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties)
 	);

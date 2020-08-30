@@ -45,12 +45,6 @@ protected:
 
 	inline void createCommandBuffers();
 
-	inline void createGraphicsPipelineLayout();
-
-	inline void createGraphicsPipeline();
-
-	inline void createShaderModule(const char* src, const size_t& src_size, VkShaderModule& shaderModule);
-
 	inline void recordCommandBuffers();
 
 	inline void createSemaphores();
@@ -59,30 +53,12 @@ protected:
 
 	inline void recreateSwapchain();
 
-	void createDescriptorPool();
-
-	void createDescriptorSets();
-
-	void updateUniformBuffers(uint32_t image);
-
-	// should be called before createGraphicsPipelineLayout()
-	void createDescriptorSetLayout();
-
-	void createVertexBuffer();
-
-	void createIndexBuffer();
-	
-	void createUniformBuffers();
-
 	// TODO: should be probably moved or deleted entirely
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
 
 	vk_mesh vkMesh;
-
-	mesh_data mesh = mesh_data::createSprite();
-	uniforms ubo{};
 
 	engine* _engine;
 
@@ -92,39 +68,26 @@ private:
 
 	vk_surface surface;
 	
-	vk_physical_device physical_device;
+	vk_physical_device physicalDevice;
 
 	vk_queue_family queueFamily;
 
 	vk_device device;
-	
-	vk_buffer vertex_buffer;
-
-	vk_buffer index_buffer;
-
-	std::vector<vk_buffer> uniform_buffers;
 
 	VkInstance mInstance;
 
 	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
+
 	std::vector<VkImageView> mSwapchainImageViews;
 
 	std::vector<VkFramebuffer> mFramebuffers;
 
 	VkRenderPass mRenderPass;
 
-	VkDescriptorPool mDescriptorPool;
-	std::vector<VkDescriptorSet> mDescriptorSets;
-
 	VkCommandPool mGraphicsCommandPool;
 	VkCommandPool mTransferCommandPool;
 
 	std::vector<VkCommandBuffer> mGraphicsCommandBuffers;
-
-	VkPipelineLayout mPipelineLayout;
-	VkDescriptorSetLayout descriptorSetLayout;
-
-	VkPipeline mPipeline;
 
 	VkSemaphore mSepaphore_Image_Avaible;
 

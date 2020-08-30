@@ -23,8 +23,8 @@ struct vk_buffer_create_info
 {
 	vk_buffer_usage usage;
 	vk_buffer_memory_properties memory_properties;
-	const vk_queue_family* queue_family;
-	const vk_physical_device* physical_device;
+	const vk_queue_family* queueFamily;
+	const vk_physical_device* physicalDevice;
 	VkDeviceSize size;
 };
 
