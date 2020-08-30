@@ -1,5 +1,6 @@
 #pragma once
 #include "vertex.hxx"
+#include <stdint.h>
 #include <vector>
 
 struct mesh_data

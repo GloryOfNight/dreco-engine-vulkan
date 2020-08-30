@@ -1,9 +1,9 @@
 #pragma once
 #include "math/mat4.hxx"
 
-struct UniformBufferObject 
+struct uniforms
 {
-    UniformBufferObject() 
+    uniforms() 
     : _model(mat4::makeIdentity())
     , _view(mat4::makeIdentity())
     , _projection(mat4::makeIdentity())

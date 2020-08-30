@@ -16,7 +16,7 @@ public:
 
 	void stop();
 
-	vec3 shapeTranslation{0, 0, 0.0f};
+	vec3 shapeTranslation{0, 0, 0};
 
 private:
 	void startRenderer();
@@ -28,8 +28,6 @@ private:
 	void stopMainLoop();
 
 	void calculateNewDeltaTime(float& NewDeltaTime);
-
-	
 
 	vk_renderer* _renderer;
 

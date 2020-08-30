@@ -2,11 +2,16 @@ cmake_minimum_required(VERSION 3.16.2)
 project(dreco)
 
 set(DRECO_SOURCE_LIST 
-src/math/vec3.cxx
-src/math/mat4.cxx
-src/render/vulkan/vk_swapchain.cxx
-src/render/vulkan/vk_renderer.cxx
-src/engine/engine.cxx)
+"src/engine/engine.cxx"
+"src/math/vec3.cxx"
+"src/math/mat4.cxx"
+"src/renderer/vulkan/vk_surface.cxx"
+"src/renderer/vulkan/vk_physical_device.cxx"
+"src/renderer/vulkan/vk_renderer.cxx"
+"src/renderer/vulkan/vk_mesh.cxx"
+"src/renderer/vulkan/vk_device.cxx"
+"src/renderer/vulkan/vk_queue_family.cxx"
+"src/renderer/vulkan/vk_buffer.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 
