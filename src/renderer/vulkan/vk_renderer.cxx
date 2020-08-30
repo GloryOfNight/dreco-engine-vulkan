@@ -49,6 +49,8 @@ vk_renderer::~vk_renderer()
 	index_buffer.destroy();
 	uniform_buffers.clear();
 
+	vkMesh.destroy();
+
 	vkDestroyDescriptorSetLayout(device.get(), descriptorSetLayout, mAllocator);
 	vkDestroySemaphore(device.get(), mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(device.get(), mSepaphore_Render_Finished, mAllocator);
@@ -295,7 +297,7 @@ void vk_renderer::createCommandBuffers()
 	VK_CHECK(vkAllocateCommandBuffers(device.get(), &allocInfo, mGraphicsCommandBuffers.data()));
 }
 
-void vk_renderer::createPipelineLayout()
+void vk_renderer::createGraphicsPipelineLayout()
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -494,6 +496,9 @@ void vk_renderer::recordCommandBuffers()
 		vkCmdBindDescriptorSets(
 			commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh._indexes.size()), 1, 0, 0, 0);
+
+		vkMesh.bindToCmdBuffer(commandBuffer, i);
+
 		vkCmdEndRenderPass(commandBuffer);
 		
 		VK_CHECK(vkEndCommandBuffer(commandBuffer));
@@ -531,6 +536,7 @@ void vk_renderer::drawFrame()
 	VkSemaphore signalSemaphores[]{mSepaphore_Render_Finished};
 
 	updateUniformBuffers(imageIndex);
+	vkMesh.beforeSubmitUpdate(imageIndex);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -602,8 +608,21 @@ void vk_renderer::recreateSwapchain()
 	createRenderPass();
 	createFramebuffers();
 	createCommandBuffers();
-	createPipelineLayout();
+	createGraphicsPipelineLayout();
 	createGraphicsPipeline();
+
+	vk_mesh_create_info mesh_create_info
+	{
+		&device, 
+		&queueFamily,
+		&physical_device,
+		mRenderPass,
+		surface.getCapabilities().currentExtent,
+		mSwapchainImageViews.size()
+	};
+	vkMesh.destroy();
+	vkMesh.create(mesh_create_info);
+
 	recordCommandBuffers();
 }
 
@@ -730,7 +749,7 @@ void vk_renderer::createDescriptorPool()
 	poolCreateInfo.flags = 0;
 	poolCreateInfo.poolSizeCount = 1;
 	poolCreateInfo.pPoolSizes = &poolSize;
-	poolCreateInfo.maxSets = static_cast<uint32_t>(mSwapchainImageViews.size());
+	poolCreateInfo.maxSets = mSwapchainImageViews.size();
 
 	VK_CHECK(vkCreateDescriptorPool(device.get(), &poolCreateInfo, mAllocator, &mDescriptorPool));
 }

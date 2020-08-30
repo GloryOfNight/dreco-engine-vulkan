@@ -4,6 +4,7 @@
 #include "vk_physical_device.hxx"
 #include "vk_device.hxx"
 #include "vk_buffer.hxx"
+#include "vk_mesh.hxx"
 
 #include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
@@ -44,7 +45,7 @@ protected:
 
 	inline void createCommandBuffers();
 
-	inline void createPipelineLayout();
+	inline void createGraphicsPipelineLayout();
 
 	inline void createGraphicsPipeline();
 
@@ -64,7 +65,7 @@ protected:
 
 	void updateUniformBuffers(uint32_t image);
 
-	// should be called before createPipelineLayout()
+	// should be called before createGraphicsPipelineLayout()
 	void createDescriptorSetLayout();
 
 	void createVertexBuffer();
@@ -77,6 +78,8 @@ protected:
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
+
+	vk_mesh vkMesh;
 
 	mesh_data mesh = mesh_data::createSprite();
 	uniforms ubo{};
