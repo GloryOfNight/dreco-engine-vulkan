@@ -309,7 +309,7 @@ void vk_renderer::recordCommandBuffers()
 		renderPassInfo.framebuffer = mFramebuffers[i];
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = surface.getCapabilities().currentExtent;
-		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.clearValueCount = 4;
 		renderPassInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);

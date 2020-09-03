@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 #include <vulkan/vulkan_core.h>
 
 inline const char* vk_resultToChar(VkResult& result);
@@ -15,6 +16,7 @@ inline const char* vk_resultToChar(VkResult& result);
 	if (VK_SUCCESS != vkResult)																	\
 	{																							\
 		const std::string error_message = "VK_CHECK: " + std::string(vk_resultToChar(vkResult));\
+		std::cerr << error_message; 															\
 		throw std::runtime_error(error_message);												\
 	}																							\
 }
