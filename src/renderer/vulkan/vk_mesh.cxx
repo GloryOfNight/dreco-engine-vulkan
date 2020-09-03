@@ -3,6 +3,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_utils.hxx"
+#include "vk_shader_module.hxx"
 #include "core/utils/file_utils.hxx"
 
 vk_mesh::vk_mesh()
@@ -173,22 +174,23 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	if (nullptr == fragShaderCode)
 		throw std::runtime_error("Failed to load binary shader code");
 
-	VkShaderModule vertShaderModule;
-	createShaderModule(_vkDevice, vertShaderCode, vertShaderSize, vertShaderModule);
-	VkShaderModule fragShaderModule;
-	createShaderModule(_vkDevice, fragShaderCode, fragShaderSize, fragShaderModule);
+	vk_shader_module vertShaderStage;
+	vertShaderStage.create(_vkDevice, vertShaderCode, vertShaderSize);
+
+	vk_shader_module fragShaderStage;
+	fragShaderStage.create(_vkDevice, fragShaderCode, fragShaderSize);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.module = vertShaderStage.get();
 	vertShaderStageInfo.pName = "main";
 	vertShaderStageInfo.pSpecializationInfo = nullptr;
 
 	VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.module = fragShaderStage.get();
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
@@ -300,21 +302,8 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 
 	VK_CHECK(vkCreateGraphicsPipelines(_vkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, VK_NULL_HANDLE, &_vkGraphicsPipeline));
 
-	vkDestroyShaderModule(_vkDevice, vertShaderModule, VK_NULL_HANDLE);
-	vkDestroyShaderModule(_vkDevice, fragShaderModule, VK_NULL_HANDLE);
 	delete[] vertShaderCode;
 	delete[] fragShaderCode;
-}
-
-void vk_mesh::createShaderModule(
-	const VkDevice vkDevice, const char* src, const size_t& src_size, VkShaderModule& shaderModule)
-{
-	VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	shaderModuleCreateInfo.codeSize = src_size;
-	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(src);
-
-	VK_CHECK(vkCreateShaderModule(vkDevice, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shaderModule));
 }
 
 void vk_mesh::createVertexBuffer(

@@ -46,8 +46,6 @@ protected:
 
 	void createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
 
-	void createShaderModule(const VkDevice vkDevice, const char* src, const size_t& src_size, VkShaderModule& shaderModule);
-
 	void createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);

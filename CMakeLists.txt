@@ -11,7 +11,8 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_mesh.cxx"
 "src/renderer/vulkan/vk_device.cxx"
 "src/renderer/vulkan/vk_queue_family.cxx"
-"src/renderer/vulkan/vk_buffer.cxx")
+"src/renderer/vulkan/vk_buffer.cxx"
+"src/renderer/vulkan/vk_shader_module.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 
