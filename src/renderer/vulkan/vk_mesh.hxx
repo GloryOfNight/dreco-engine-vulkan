@@ -29,6 +29,8 @@ public:
 
 	void create(const vk_mesh_create_info& create_info);
 
+	void recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
+
 	void destroy();
 
 	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex);
@@ -50,10 +52,11 @@ protected:
 
 	void createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily,
-		const vk_physical_device* physicalDevice, uint32_t imageCount);
+	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount);
 
 private:
+	vec3 translation;
+
 	mesh_data _mesh;
 
 	uniforms _ubo;

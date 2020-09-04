@@ -5,7 +5,6 @@
 
 #include "vk_buffer.hxx"
 #include "vk_device.hxx"
-#include "vk_mesh.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
@@ -15,6 +14,7 @@
 #include <vulkan/vulkan.h>
 
 class engine;
+class vk_mesh;
 
 class vk_renderer
 {
@@ -23,6 +23,8 @@ public:
 	~vk_renderer();
 
 	void tick(const float& delta_time);
+
+	void createMesh();
 
 	SDL_Window* getWindow() const;
 
@@ -57,7 +59,7 @@ protected:
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
-	vk_mesh vkMesh;
+	std::vector<vk_mesh*> meshes;
 
 	engine* _engine;
 
@@ -81,7 +83,7 @@ private:
 
 	std::vector<VkFramebuffer> mFramebuffers;
 
-	VkRenderPass mRenderPass;
+	VkRenderPass _vkRenderPass;
 
 	VkCommandPool mGraphicsCommandPool;
 	VkCommandPool mTransferCommandPool;

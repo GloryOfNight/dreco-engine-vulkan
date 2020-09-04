@@ -105,6 +105,7 @@ mat4 mat4::makeIdentity()
 
 mat4 mat4::makeProjection(const float near, const float far, const float aspect, const float fov)
 {
+	// not a actual projection, for now
 	// clang-format off
 	const float mat[4][4] = 
 	{

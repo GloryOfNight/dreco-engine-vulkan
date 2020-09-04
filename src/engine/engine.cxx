@@ -55,6 +55,9 @@ void engine::startRenderer()
 	if (_renderer == nullptr)
 	{
 		_renderer = new vk_renderer(this);
+		_renderer->createMesh();
+		_renderer->createMesh();
+		_renderer->createMesh();
 	}
 }
 

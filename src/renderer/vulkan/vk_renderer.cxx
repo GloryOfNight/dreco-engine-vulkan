@@ -4,6 +4,7 @@
 #include "core/utils/file_utils.hxx"
 #include "engine/engine.hxx"
 
+#include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
@@ -43,7 +44,11 @@ vk_renderer::~vk_renderer()
 
 	cleanupSwapchain(mSwapchain);
 
-	vkMesh.destroy();
+	for (vk_mesh* mesh : meshes)
+	{
+		delete mesh;
+	}
+	meshes.clear();
 
 	vkDestroySemaphore(device.get(), mSepaphore_Image_Avaible, mAllocator);
 	vkDestroySemaphore(device.get(), mSepaphore_Render_Finished, mAllocator);
@@ -59,6 +64,23 @@ vk_renderer::~vk_renderer()
 void vk_renderer::tick(const float& delta_time)
 {
 	drawFrame();
+}
+
+void vk_renderer::createMesh()
+{
+	meshes.push_back(new vk_mesh());
+	// cland-format off
+	vk_mesh_create_info mesh_create_info{
+		&device,
+		&queueFamily,
+		&physicalDevice,
+		_vkRenderPass,
+		surface.getCapabilities().currentExtent,
+		static_cast<uint32_t>(mSwapchainImageViews.size())};
+	// clang-format on
+	meshes.back()->create(mesh_create_info);
+
+	recordCommandBuffers();
 }
 
 SDL_Window* vk_renderer::getWindow() const
@@ -232,7 +254,7 @@ void vk_renderer::createRenderPass()
 	renderPassCreateInfo.dependencyCount = 1;
 	renderPassCreateInfo.pDependencies = &subpassDependecy;
 
-	VK_CHECK(vkCreateRenderPass(device.get(), &renderPassCreateInfo, mAllocator, &mRenderPass));
+	VK_CHECK(vkCreateRenderPass(device.get(), &renderPassCreateInfo, mAllocator, &_vkRenderPass));
 }
 
 void vk_renderer::createFramebuffers()
@@ -247,7 +269,7 @@ void vk_renderer::createFramebuffers()
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferCreateInfo.renderPass = mRenderPass;
+		framebufferCreateInfo.renderPass = _vkRenderPass;
 		framebufferCreateInfo.attachmentCount = 1;
 		framebufferCreateInfo.pAttachments = attachments;
 		framebufferCreateInfo.width = surfaceCapabilities.currentExtent.width;
@@ -263,7 +285,7 @@ void vk_renderer::createCommandPool()
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolCreateInfo.queueFamilyIndex = queueFamily.getGraphicsIndex();
-	commandPoolCreateInfo.flags = 0;
+	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 	VK_CHECK(vkCreateCommandPool(device.get(), &commandPoolCreateInfo, mAllocator, &mGraphicsCommandPool));
 
@@ -304,7 +326,7 @@ void vk_renderer::recordCommandBuffers()
 
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = mRenderPass;
+		renderPassInfo.renderPass = _vkRenderPass;
 		renderPassInfo.framebuffer = mFramebuffers[i];
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = surface.getCapabilities().currentExtent;
@@ -312,7 +334,10 @@ void vk_renderer::recordCommandBuffers()
 		renderPassInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkMesh.bindToCmdBuffer(commandBuffer, i);
+		for (vk_mesh* mesh : meshes)
+		{
+			mesh->bindToCmdBuffer(commandBuffer, i);
+		}
 		vkCmdEndRenderPass(commandBuffer);
 
 		VK_CHECK(vkEndCommandBuffer(commandBuffer));
@@ -349,7 +374,10 @@ void vk_renderer::drawFrame()
 	VkSemaphore waitSemaphores[]{mSepaphore_Image_Avaible};
 	VkSemaphore signalSemaphores[]{mSepaphore_Render_Finished};
 
-	vkMesh.beforeSubmitUpdate(imageIndex);
+	for (vk_mesh* mesh : meshes)
+	{
+		mesh->beforeSubmitUpdate(imageIndex);
+	}
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -384,7 +412,7 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 		mGraphicsCommandBuffers.data());
 	mGraphicsCommandBuffers.clear();
 
-	vkDestroyRenderPass(device.get(), mRenderPass, mAllocator);
+	vkDestroyRenderPass(device.get(), _vkRenderPass, mAllocator);
 
 	for (auto frameBuffer : mFramebuffers)
 	{
@@ -412,16 +440,10 @@ void vk_renderer::recreateSwapchain()
 	createFramebuffers();
 	createCommandBuffers();
 
-	vk_mesh_create_info mesh_create_info{
-		&device,
-		&queueFamily,
-		&physicalDevice,
-		mRenderPass,
-		surface.getCapabilities().currentExtent,
-		static_cast<uint32_t>(mSwapchainImageViews.size())};
-	vkMesh.destroy();
-	vkMesh.create(mesh_create_info);
-
+	for (vk_mesh* mesh : meshes)
+	{
+		mesh->recreatePipeline(_vkRenderPass, surface.getCapabilities().currentExtent);
+	}
 	recordCommandBuffers();
 }
 

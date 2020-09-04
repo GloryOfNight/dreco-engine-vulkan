@@ -16,6 +16,7 @@ vk_mesh::vk_mesh()
 	, _vkGraphicsPipeline{VK_NULL_HANDLE}
 
 {
+	translation = vec3(rand() % 2, rand() % 2, rand() % 2);
 }
 
 vk_mesh::~vk_mesh()
@@ -38,6 +39,15 @@ void vk_mesh::create(const vk_mesh_create_info& create_info)
 
 	createGraphicsPipelineLayout();
 	createGraphicsPipeline(create_info.vkRenderPass, create_info.vkExtent);
+}
+
+void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
+{
+	if (VK_NULL_HANDLE != _vkDevice && VK_NULL_HANDLE != _vkPipelineLayout)
+	{
+		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, VK_NULL_HANDLE);
+		createGraphicsPipeline(vkRenderPass, vkExtent);
+	}
 }
 
 void vk_mesh::destroy()
@@ -72,11 +82,9 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
-	_ubo._model = mat4::makeRotation(vec3(0, 0, 0));
+	_ubo._model = mat4::makeTranslation(translation);
 	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3f});
-	int w, h;
 	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.f);
-	// ubo._projection._mat[1][1] = -1;
 
 	_uniformBuffers[imageIndex].map(&_ubo, sizeof(_ubo));
 }
@@ -335,8 +343,7 @@ void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* 
 	_indexBuffer.map(_mesh._indexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily,
-	const vk_physical_device* physicalDevice, uint32_t imageCount)
+void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
