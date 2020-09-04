@@ -1,15 +1,17 @@
 #include "vk_renderer.hxx"
-#include "vk_utils.hxx"
-#include "vk_queue_family.hxx"
-#include "core/utils/file_utils.hxx"
+
 #include "core/platform.h"
+#include "core/utils/file_utils.hxx"
 #include "engine/engine.hxx"
 
+#include "vk_queue_family.hxx"
+#include "vk_utils.hxx"
+
 #include <SDL_vulkan.h>
-#include <vulkan/vulkan_core.h>
-#include <set>
 #include <iostream>
+#include <set>
 #include <stdexcept>
+#include <vulkan/vulkan_core.h>
 
 #define VK_ENABLE_VALIDATION
 //#define VK_ENABLE_MESA_OVERLAY
@@ -80,7 +82,6 @@ void vk_renderer::createInstance()
 	instExtensions.push_back("VK_KHR_win32_surface");
 #endif
 
-
 #ifdef VK_ENABLE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
 #endif
@@ -125,12 +126,10 @@ void vk_renderer::createInstance()
 void vk_renderer::createSwapchain()
 {
 	VkSharingMode sharingMode{queueFamily.getSharingMode()};
-	std::vector<uint32_t> queueFamilyIndexes
-	{
+	std::vector<uint32_t> queueFamilyIndexes{
 		queueFamily.getGraphicsIndex(),
 		queueFamily.getTransferIndex(),
-		queueFamily.getPresentIndex()
-	};
+		queueFamily.getPresentIndex()};
 
 	const VkSurfaceFormatKHR& surfaceFormat{surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{surface.getCapabilities()};
@@ -315,7 +314,7 @@ void vk_renderer::recordCommandBuffers()
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkMesh.bindToCmdBuffer(commandBuffer, i);
 		vkCmdEndRenderPass(commandBuffer);
-		
+
 		VK_CHECK(vkEndCommandBuffer(commandBuffer));
 	}
 }
@@ -332,14 +331,14 @@ void vk_renderer::createSemaphores()
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	if (VkResult result = vkAcquireNextImageKHR(device.get(), mSwapchain, UINT32_MAX,mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
+	if (VkResult result = vkAcquireNextImageKHR(device.get(), mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
 		VK_SUCCESS != result && VK_SUBOPTIMAL_KHR != result)
 	{
 		if (VK_ERROR_OUT_OF_DATE_KHR == result)
 		{
 			recreateSwapchain();
 		}
-		else 
+		else
 		{
 			VK_CHECK(result);
 		}
@@ -408,20 +407,18 @@ void vk_renderer::recreateSwapchain()
 
 	createSwapchain();
 	createImageViews();
-	
+
 	createRenderPass();
 	createFramebuffers();
 	createCommandBuffers();
 
-	vk_mesh_create_info mesh_create_info
-	{
+	vk_mesh_create_info mesh_create_info{
 		&device,
 		&queueFamily,
 		&physicalDevice,
 		mRenderPass,
 		surface.getCapabilities().currentExtent,
-		static_cast<uint32_t>(mSwapchainImageViews.size())
-	};
+		static_cast<uint32_t>(mSwapchainImageViews.size())};
 	vkMesh.destroy();
 	vkMesh.create(mesh_create_info);
 

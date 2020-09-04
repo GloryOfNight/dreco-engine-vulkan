@@ -1,8 +1,11 @@
 #include "mat4.hxx"
+
 #include "vec3.hxx"
+
 #include <cmath>
 
-mat4::mat4() : _mat{0}
+mat4::mat4()
+	: _mat{0}
 {
 }
 
@@ -12,12 +15,12 @@ mat4::mat4(const float m[4][4])
 {
 }
 
-constexpr float mat4::size() noexcept 
+constexpr float mat4::size() noexcept
 {
 	return 16;
 }
 
-mat4 mat4::makeTranslation(const vec3& vec) 
+mat4 mat4::makeTranslation(const vec3& vec)
 {
 	// clang-format off
 	const float mat[4][4] = 
@@ -31,40 +34,39 @@ mat4 mat4::makeTranslation(const vec3& vec)
 	return mat4(mat);
 }
 
-mat4 mat4::makeRotation(const vec3& vec) 
+mat4 mat4::makeRotation(const vec3& vec)
 {
 	float cos_x = std::cos(vec._x);
 	float sin_x = std::sin(vec._x);
 
-	const float matXraw[4][4] = 
-	{
-		{ 1, 0, 0, 0 },
-		{ 0, cos_x, -sin_x, 0 },
-		{ 0, sin_x, cos_x, 0},
-		{ 0, 0, 0, 1 },
-	};
+	const float matXraw[4][4] =
+		{
+			{1, 0, 0, 0},
+			{0, cos_x, -sin_x, 0},
+			{0, sin_x, cos_x, 0},
+			{0, 0, 0, 1},
+		};
 
 	float cos_y = std::cos(vec._y);
 	float sin_y = std::sin(vec._y);
 
-	const float matYraw[4][4] = 
-	{
-		{ cos_y, 0, sin_y, 0 },
-		{ 0, 1, 0, 0 },
-		{ -sin_y, 0, cos_y, 0},
-		{ 0, 0, 0, 1 },
-	};
+	const float matYraw[4][4] =
+		{
+			{cos_y, 0, sin_y, 0},
+			{0, 1, 0, 0},
+			{-sin_y, 0, cos_y, 0},
+			{0, 0, 0, 1},
+		};
 
 	float cos_z = std::cos(vec._z);
 	float sin_z = std::sin(vec._z);
 
-	const float matZraw[4][4] = 
-	{
-		{ cos_z, -sin_z, 0, 0 }, 
-		{ sin_z, cos_z, 0, 0 }, 
-		{ 0, 0, 1, 0 },
-		{ 0, 0, 0, 1 }
-	};
+	const float matZraw[4][4] =
+		{
+			{cos_z, -sin_z, 0, 0},
+			{sin_z, cos_z, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1}};
 
 	mat4 matX(matXraw);
 	mat4 matY(matYraw);
@@ -73,7 +75,7 @@ mat4 mat4::makeRotation(const vec3& vec)
 	return matX * matY * matZ;
 }
 
-mat4 mat4::makeScale(const vec3& vec) 
+mat4 mat4::makeScale(const vec3& vec)
 {
 	// clang-format off
 	const float mat[4][4] = 

@@ -1,10 +1,12 @@
 #include "engine.hxx"
+
 #include "renderer/vulkan/vk_renderer.hxx"
 
 #include <SDL.h>
 #include <iostream>
 
-engine::engine() : _renderer{nullptr}
+engine::engine()
+	: _renderer{nullptr}
 {
 }
 
@@ -72,7 +74,7 @@ void engine::startMainLoop()
 	{
 		float DeltaTime;
 		calculateNewDeltaTime(DeltaTime);
-		
+
 		_renderer->tick(DeltaTime);
 
 		SDL_Event event;
@@ -82,32 +84,32 @@ void engine::startMainLoop()
 			{
 				stop();
 			}
-			else if(event.type == SDL_KEYDOWN) 
+			else if (event.type == SDL_KEYDOWN)
 			{
 				const float speed = 100.f;
-				if (event.key.keysym.sym == SDLK_w) 
+				if (event.key.keysym.sym == SDLK_w)
 				{
 					shapeTranslation._y += DeltaTime * speed;
 				}
-				else if (event.key.keysym.sym == SDLK_s) 
+				else if (event.key.keysym.sym == SDLK_s)
 				{
 					shapeTranslation._y -= DeltaTime * speed;
 				}
 
-				if (event.key.keysym.sym == SDLK_d) 
+				if (event.key.keysym.sym == SDLK_d)
 				{
 					shapeTranslation._x += DeltaTime * speed;
 				}
-				else if (event.key.keysym.sym == SDLK_a) 
+				else if (event.key.keysym.sym == SDLK_a)
 				{
 					shapeTranslation._x -= DeltaTime * speed;
 				}
 
-				if (event.key.keysym.sym == SDLK_e) 
+				if (event.key.keysym.sym == SDLK_e)
 				{
 					shapeTranslation._z += DeltaTime * speed;
 				}
-				else if (event.key.keysym.sym == SDLK_q) 
+				else if (event.key.keysym.sym == SDLK_q)
 				{
 					shapeTranslation._z -= DeltaTime * speed;
 				}

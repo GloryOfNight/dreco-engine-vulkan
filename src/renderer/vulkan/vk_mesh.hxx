@@ -1,10 +1,11 @@
 #pragma once
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
+
 #include "vk_buffer.hxx"
 
-#include <vulkan/vulkan.h>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 class vk_device;
 class vk_queue_family;
@@ -35,7 +36,6 @@ public:
 	void beforeSubmitUpdate(const uint32_t imageIndex);
 
 protected:
-
 	void createDescriptorPool(const uint32_t imageCount);
 
 	void createDescriptorSetLayot();
@@ -54,7 +54,6 @@ protected:
 		const vk_physical_device* physicalDevice, uint32_t imageCount);
 
 private:
-
 	mesh_data _mesh;
 
 	uniforms _ubo;

@@ -1,4 +1,5 @@
 #include "vk_queue_family.hxx"
+
 #include <vector>
 
 vk_queue_family::vk_queue_family()

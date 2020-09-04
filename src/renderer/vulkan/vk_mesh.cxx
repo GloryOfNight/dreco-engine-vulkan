@@ -1,10 +1,12 @@
 #include "vk_mesh.hxx"
-#include "vk_device.hxx"
-#include "vk_queue_family.hxx"
-#include "vk_physical_device.hxx"
-#include "vk_utils.hxx"
-#include "vk_shader_module.hxx"
+
 #include "core/utils/file_utils.hxx"
+
+#include "vk_device.hxx"
+#include "vk_physical_device.hxx"
+#include "vk_queue_family.hxx"
+#include "vk_shader_module.hxx"
+#include "vk_utils.hxx"
 
 vk_mesh::vk_mesh()
 	: _vkDevice{VK_NULL_HANDLE}
@@ -23,7 +25,7 @@ vk_mesh::~vk_mesh()
 
 void vk_mesh::create(const vk_mesh_create_info& create_info)
 {
-	_mesh = mesh_data::createSprite(); 
+	_mesh = mesh_data::createSprite();
 	_vkDevice = create_info.device->get();
 
 	createVertexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
@@ -64,7 +66,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 	VkDeviceSize offsets[1]{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1,&_vkDescriptorSets[imageIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &_vkDescriptorSets[imageIndex], 0, nullptr);
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
 }
 

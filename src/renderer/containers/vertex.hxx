@@ -1,7 +1,7 @@
 #pragma once
 #include "math/vec3.hxx"
 
-struct vertex 
+struct vertex
 {
-    vec3 _position;
+	vec3 _position;
 };

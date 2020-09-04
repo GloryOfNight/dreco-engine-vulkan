@@ -20,9 +20,9 @@ private:
 	const VkInstance* _vkInstance;
 
 	VkPhysicalDevice _vkPhysicalDevice;
-	
+
 	VkPhysicalDeviceProperties _vkPhysicalDeviceProperties;
-	
+
 	VkPhysicalDeviceFeatures _vkPhysicalDeviceFeatures;
 
 	VkPhysicalDeviceMemoryProperties _vkPhysicalDeviceMemoryProperties;

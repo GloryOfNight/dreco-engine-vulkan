@@ -1,18 +1,18 @@
 #pragma once
-#include "vk_queue_family.hxx"
-#include "vk_surface.hxx"
-#include "vk_physical_device.hxx"
-#include "vk_device.hxx"
-#include "vk_buffer.hxx"
-#include "vk_mesh.hxx"
-
 #include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
-#include <vulkan/vulkan.h>
+#include "vk_buffer.hxx"
+#include "vk_device.hxx"
+#include "vk_mesh.hxx"
+#include "vk_physical_device.hxx"
+#include "vk_queue_family.hxx"
+#include "vk_surface.hxx"
+
 #include <SDL.h>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 class engine;
 
@@ -57,17 +57,16 @@ protected:
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
-
 	vk_mesh vkMesh;
 
 	engine* _engine;
 
 	VkAllocationCallbacks* mAllocator;
-	
+
 	SDL_Window* window;
 
 	vk_surface surface;
-	
+
 	vk_physical_device physicalDevice;
 
 	vk_queue_family queueFamily;

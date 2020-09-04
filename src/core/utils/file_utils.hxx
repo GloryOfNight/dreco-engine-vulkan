@@ -24,7 +24,7 @@ public:
 				*size = len;
 			}
 		}
-		else 
+		else
 		{
 			std::cerr << "File not found: " << path << "\n";
 		}

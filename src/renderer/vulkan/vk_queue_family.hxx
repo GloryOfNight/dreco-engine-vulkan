@@ -1,8 +1,6 @@
 #pragma once
 #include <vulkan/vulkan_core.h>
 
-
-
 class vk_queue_family
 {
 public:
@@ -23,11 +21,9 @@ public:
 	VkSharingMode getSharingMode() const;
 
 protected:
-
 	bool isIndexValid(uint32_t& index);
 
 private:
-
 	bool isSupported;
 
 	uint32_t graphicsIndex;

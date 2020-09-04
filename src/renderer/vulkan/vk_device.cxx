@@ -1,10 +1,11 @@
 #include "vk_device.hxx"
+
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
-#include <vector>
 #include <set>
+#include <vector>
 
 vk_device::vk_device()
 	: _vkDevice{VK_NULL_HANDLE}
@@ -22,12 +23,10 @@ vk_device::~vk_device()
 void vk_device::create(const vk_physical_device& physical_device, const vk_queue_family& queue_family)
 {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies
-	{
+	std::set<uint32_t> uniqueQueueFamilies{
 		queue_family.getGraphicsIndex(),
 		queue_family.getPresentIndex(),
-		queue_family.getTransferIndex()
-	};
+		queue_family.getTransferIndex()};
 
 	float priorities[]{1.0f};
 

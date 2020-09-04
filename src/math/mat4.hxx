@@ -16,7 +16,7 @@ struct mat4
 	static mat4 makeRotation(const vec3& vec);
 
 	static mat4 makeScale(const vec3& vec);
-	
+
 	static mat4 makeIdentity();
 
 	static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);

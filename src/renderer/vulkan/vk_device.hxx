@@ -25,7 +25,6 @@ public:
 	VkQueue getTransferQueue() const;
 
 private:
-
 	VkDevice _vkDevice;
 
 	VkQueue _vkGraphicsQueue;

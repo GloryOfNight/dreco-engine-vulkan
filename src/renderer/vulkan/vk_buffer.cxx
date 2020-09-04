@@ -1,8 +1,10 @@
 #include "vk_buffer.hxx"
+
 #include "vk_device.hxx"
-#include "vk_queue_family.hxx"
 #include "vk_physical_device.hxx"
+#include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
+
 #include <cstring>
 
 vk_buffer::vk_buffer()
@@ -75,11 +77,10 @@ void vk_buffer::createBuffer(
 	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
 	{
 		uint32_t queueFamilyIndexes[3] =
-		{
-			create_info.queueFamily->getGraphicsIndex(), 
-			create_info.queueFamily->getPresentIndex(),
-			create_info.queueFamily->getTransferIndex()
-		};
+			{
+				create_info.queueFamily->getGraphicsIndex(),
+				create_info.queueFamily->getPresentIndex(),
+				create_info.queueFamily->getTransferIndex()};
 
 		bufferCreateInfo.queueFamilyIndexCount = 3;
 		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
@@ -90,12 +91,10 @@ void vk_buffer::createBuffer(
 	VkMemoryRequirements memoryRequirements;
 	vkGetBufferMemoryRequirements(vkDevice, vkBuffer, &memoryRequirements);
 
-	const int32_t memoryTypeIndex = findMemoryTypeIndex
-	(
+	const int32_t memoryTypeIndex = findMemoryTypeIndex(
 		create_info.physicalDevice->getMemoryProperties(),
 		memoryRequirements.memoryTypeBits,
-		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties)
-	);
+		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties));
 
 	if (-1 != memoryTypeIndex)
 	{
@@ -122,7 +121,7 @@ int32_t vk_buffer::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& v
 	for (uint32_t i = 0; i < vkMemoryProperties.memoryTypeCount; ++i)
 	{
 		const bool isRequeredType = (1 << i) & memoryTypeBits;
-		const bool hasRequeredProperties = 
+		const bool hasRequeredProperties =
 			(vkMemoryProperties.memoryTypes[i].propertyFlags & vkMemoryPropertyFlags) == vkMemoryPropertyFlags;
 
 		if (isRequeredType && hasRequeredProperties)
