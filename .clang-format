@@ -32,7 +32,7 @@ ReflowComments:  false
 SortIncludes:    true
 SortUsingDeclarations: true
 SpacesInAngles: false
-Standard:        c++17
+Standard:        Auto
 TabWidth:        4
 UseTab:          Always
 ColumnLimit:     0
