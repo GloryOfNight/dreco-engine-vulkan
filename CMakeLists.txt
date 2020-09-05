@@ -5,6 +5,7 @@ set(DRECO_SOURCE_LIST
 "src/engine/engine.cxx"
 "src/math/vec3.cxx"
 "src/math/mat4.cxx"
+"src/math/transform.cxx"
 "src/renderer/vulkan/vk_surface.cxx"
 "src/renderer/vulkan/vk_physical_device.cxx"
 "src/renderer/vulkan/vk_renderer.cxx"

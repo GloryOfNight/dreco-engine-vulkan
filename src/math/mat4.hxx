@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 struct vec3;
+struct transform;
 
 struct mat4
 {
@@ -10,6 +11,8 @@ struct mat4
 	mat4(const float m[4][4]);
 
 	static constexpr float size() noexcept;
+
+	static mat4 makeTransform(const transform& t);
 
 	static mat4 makeTranslation(const vec3& vec);
 

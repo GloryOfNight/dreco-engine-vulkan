@@ -16,7 +16,6 @@ vk_mesh::vk_mesh()
 	, _vkGraphicsPipeline{VK_NULL_HANDLE}
 
 {
-	translation = vec3(rand() % 2, rand() % 2, rand() % 2);
 }
 
 vk_mesh::~vk_mesh()
@@ -82,7 +81,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
-	_ubo._model = mat4::makeTranslation(translation);
+	_ubo._model = mat4::makeTransform(transform(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1)));
 	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3f});
 	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.f);
 
@@ -272,8 +271,7 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.blendEnable = VK_FALSE;
-	colorBlendAttachment.colorWriteMask =
-		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
@@ -316,8 +314,7 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	delete[] fragShaderCode;
 }
 
-void vk_mesh::createVertexBuffer(
-	const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
+void vk_mesh::createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::VERTEX;

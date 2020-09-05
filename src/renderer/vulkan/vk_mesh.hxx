@@ -1,4 +1,5 @@
 #pragma once
+#include "math/transform.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
@@ -55,7 +56,7 @@ protected:
 	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount);
 
 private:
-	vec3 translation;
+	transform _transform;
 
 	mesh_data _mesh;
 
