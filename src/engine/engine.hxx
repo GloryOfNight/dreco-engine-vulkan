@@ -1,5 +1,6 @@
 #pragma once
 #include "math/vec3.hxx"
+
 #include "dreco.h"
 
 #include <stdint.h>
@@ -22,9 +23,9 @@ private:
 	void startRenderer();
 
 	void stopRenderer();
-	
-	void startMainLoop();	
-	
+
+	void startMainLoop();
+
 	void stopMainLoop();
 
 	void calculateNewDeltaTime(float& NewDeltaTime);

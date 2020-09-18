@@ -11,7 +11,7 @@ public:
 
 	void create(SDL_Window* window);
 
-	void setup(VkPhysicalDevice vkPhysicalDevice);	
+	void setup(VkPhysicalDevice vkPhysicalDevice);
 
 	void destroy();
 
@@ -24,15 +24,13 @@ public:
 	VkPresentModeKHR getPresentMode() const;
 
 protected:
-
 	inline void setupSurfaceFormats(VkPhysicalDevice vkPhysicaLDevice);
-	
+
 	inline void setupPresentModes(VkPhysicalDevice vkPhysicaLDevice);
 
 	inline void setupSurfaceCapabilities(VkPhysicalDevice vkPhysicaLDevice);
 
 private:
-
 	const VkInstance* _vkInstance;
 
 	VkSurfaceKHR _vkSurface;

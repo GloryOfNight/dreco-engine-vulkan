@@ -5,13 +5,15 @@ set(DRECO_SOURCE_LIST
 "src/engine/engine.cxx"
 "src/math/vec3.cxx"
 "src/math/mat4.cxx"
+"src/math/transform.cxx"
 "src/renderer/vulkan/vk_surface.cxx"
 "src/renderer/vulkan/vk_physical_device.cxx"
 "src/renderer/vulkan/vk_renderer.cxx"
 "src/renderer/vulkan/vk_mesh.cxx"
 "src/renderer/vulkan/vk_device.cxx"
 "src/renderer/vulkan/vk_queue_family.cxx"
-"src/renderer/vulkan/vk_buffer.cxx")
+"src/renderer/vulkan/vk_buffer.cxx"
+"src/renderer/vulkan/vk_shader_module.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 
@@ -20,6 +22,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include_directories("thirdparty")
 
 if (UNIX)
 target_link_libraries(${PROJECT_NAME} PRIVATE vulkan)

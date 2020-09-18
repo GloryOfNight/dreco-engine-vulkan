@@ -1,10 +1,12 @@
 #pragma once
+#include "math/transform.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
+
 #include "vk_buffer.hxx"
 
-#include <vulkan/vulkan.h>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 class vk_device;
 class vk_queue_family;
@@ -28,6 +30,8 @@ public:
 
 	void create(const vk_mesh_create_info& create_info);
 
+	void recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
+
 	void destroy();
 
 	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex);
@@ -35,7 +39,6 @@ public:
 	void beforeSubmitUpdate(const uint32_t imageIndex);
 
 protected:
-
 	void createDescriptorPool(const uint32_t imageCount);
 
 	void createDescriptorSetLayot();
@@ -46,16 +49,14 @@ protected:
 
 	void createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
 
-	void createShaderModule(const VkDevice vkDevice, const char* src, const size_t& src_size, VkShaderModule& shaderModule);
-
 	void createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily,
-		const vk_physical_device* physicalDevice, uint32_t imageCount);
+	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount);
 
 private:
+	transform _transform;
 
 	mesh_data _mesh;
 

@@ -1,4 +1,5 @@
 #include "vk_surface.hxx"
+
 #include "vk_utils.hxx"
 
 #include <SDL.h>
@@ -70,10 +71,10 @@ void vk_surface::setupSurfaceFormats(VkPhysicalDevice vkPhysicaLDevice)
 	std::vector<VkSurfaceFormatKHR> vkSurfaceFormats(formatCount);
 	VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicaLDevice, _vkSurface, &formatCount, vkSurfaceFormats.data()));
 
-	for (const auto& vkSurfaceFormat : vkSurfaceFormats) 
+	for (const auto& vkSurfaceFormat : vkSurfaceFormats)
 	{
 		_vkSurfaceFormat = vkSurfaceFormat;
-		if (VK_FORMAT_B8G8R8A8_UNORM == vkSurfaceFormat.format) 
+		if (VK_FORMAT_B8G8R8A8_UNORM == vkSurfaceFormat.format)
 		{
 			break;
 		}
@@ -87,10 +88,10 @@ void vk_surface::setupPresentModes(VkPhysicalDevice vkPhysicaLDevice)
 	std::vector<VkPresentModeKHR> vkPresentModes(presentCount);
 	VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicaLDevice, _vkSurface, &presentCount, vkPresentModes.data()));
 
-	for (const auto& vkPresentMode : vkPresentModes) 
+	for (const auto& vkPresentMode : vkPresentModes)
 	{
 		_vkPresentMode = vkPresentMode;
-		if (VK_PRESENT_MODE_IMMEDIATE_KHR == vkPresentMode) 
+		if (VK_PRESENT_MODE_IMMEDIATE_KHR == vkPresentMode)
 		{
 			break;
 		}

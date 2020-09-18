@@ -1,6 +1,6 @@
 #include "engine/engine.hxx"
 
-int  main()
+int main()
 {
 	engine Engine;
 	Engine.run();

@@ -1,9 +1,12 @@
 #include "vk_mesh.hxx"
-#include "vk_device.hxx"
-#include "vk_queue_family.hxx"
-#include "vk_physical_device.hxx"
-#include "vk_utils.hxx"
+
 #include "core/utils/file_utils.hxx"
+
+#include "vk_device.hxx"
+#include "vk_physical_device.hxx"
+#include "vk_queue_family.hxx"
+#include "vk_shader_module.hxx"
+#include "vk_utils.hxx"
 
 vk_mesh::vk_mesh()
 	: _vkDevice{VK_NULL_HANDLE}
@@ -22,7 +25,7 @@ vk_mesh::~vk_mesh()
 
 void vk_mesh::create(const vk_mesh_create_info& create_info)
 {
-	_mesh = mesh_data::createSprite(); 
+	_mesh = mesh_data::createSprite();
 	_vkDevice = create_info.device->get();
 
 	createVertexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
@@ -35,6 +38,15 @@ void vk_mesh::create(const vk_mesh_create_info& create_info)
 
 	createGraphicsPipelineLayout();
 	createGraphicsPipeline(create_info.vkRenderPass, create_info.vkExtent);
+}
+
+void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
+{
+	if (VK_NULL_HANDLE != _vkDevice && VK_NULL_HANDLE != _vkPipelineLayout)
+	{
+		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, VK_NULL_HANDLE);
+		createGraphicsPipeline(vkRenderPass, vkExtent);
+	}
 }
 
 void vk_mesh::destroy()
@@ -63,17 +75,15 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 	VkDeviceSize offsets[1]{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers, offsets);
 	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1,&_vkDescriptorSets[imageIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &_vkDescriptorSets[imageIndex], 0, nullptr);
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
 }
 
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
-	_ubo._model = mat4::makeRotation(vec3(0, 0, 0));
+	_ubo._model = mat4::makeTransform(transform(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1)));
 	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3f});
-	int w, h;
 	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.f);
-	// ubo._projection._mat[1][1] = -1;
 
 	_uniformBuffers[imageIndex].map(&_ubo, sizeof(_ubo));
 }
@@ -173,22 +183,23 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	if (nullptr == fragShaderCode)
 		throw std::runtime_error("Failed to load binary shader code");
 
-	VkShaderModule vertShaderModule;
-	createShaderModule(_vkDevice, vertShaderCode, vertShaderSize, vertShaderModule);
-	VkShaderModule fragShaderModule;
-	createShaderModule(_vkDevice, fragShaderCode, fragShaderSize, fragShaderModule);
+	vk_shader_module vertShaderStage;
+	vertShaderStage.create(_vkDevice, vertShaderCode, vertShaderSize);
+
+	vk_shader_module fragShaderStage;
+	fragShaderStage.create(_vkDevice, fragShaderCode, fragShaderSize);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.module = vertShaderStage.get();
 	vertShaderStageInfo.pName = "main";
 	vertShaderStageInfo.pSpecializationInfo = nullptr;
 
 	VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.module = fragShaderStage.get();
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
@@ -260,8 +271,7 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.blendEnable = VK_FALSE;
-	colorBlendAttachment.colorWriteMask =
-		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
@@ -300,25 +310,11 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 
 	VK_CHECK(vkCreateGraphicsPipelines(_vkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, VK_NULL_HANDLE, &_vkGraphicsPipeline));
 
-	vkDestroyShaderModule(_vkDevice, vertShaderModule, VK_NULL_HANDLE);
-	vkDestroyShaderModule(_vkDevice, fragShaderModule, VK_NULL_HANDLE);
 	delete[] vertShaderCode;
 	delete[] fragShaderCode;
 }
 
-void vk_mesh::createShaderModule(
-	const VkDevice vkDevice, const char* src, const size_t& src_size, VkShaderModule& shaderModule)
-{
-	VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	shaderModuleCreateInfo.codeSize = src_size;
-	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(src);
-
-	VK_CHECK(vkCreateShaderModule(vkDevice, &shaderModuleCreateInfo, VK_NULL_HANDLE, &shaderModule));
-}
-
-void vk_mesh::createVertexBuffer(
-	const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
+void vk_mesh::createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::VERTEX;
@@ -344,8 +340,7 @@ void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* 
 	_indexBuffer.map(_mesh._indexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily,
-	const vk_physical_device* physicalDevice, uint32_t imageCount)
+void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::UNIFORM;

@@ -1,8 +1,9 @@
 #include "vk_physical_device.hxx"
+
 #include "vk_queue_family.hxx"
 
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 vk_physical_device::vk_physical_device(const VkInstance* vkInstance)
 	: _vkInstance{vkInstance}
