@@ -1,7 +1,11 @@
 # Dreco Engine - Vulkan
-Rewrite of original [dreco-engine](https://github.com/GloryOfNight/dreco-engine) with some core changes:
-- 3D Space
-- Vulkan as rendering API
+Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) with some core changes:
+- Full support for 3rd space, new matrixes
+- Vulkan as primary rendering API (really fun thing to try)
 
- ## Dependencies
-> sudo apt install libsdl2-dev
+## Build
+![Linux Ubuntu](https://github.com/GloryOfNight/dreco-engine-vulkan/workflows/Ubuntu%20Build/badge.svg?branch=master)
+
+ ## Required Dependencies
+- SDL2 ([link](https://www.libsdl.org/))
+- Vulkan SDK ([link](https://vulkan.lunarg.com/))
