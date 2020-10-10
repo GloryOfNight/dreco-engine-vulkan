@@ -69,7 +69,7 @@ void vk_renderer::tick(const float& delta_time)
 void vk_renderer::createMesh()
 {
 	meshes.push_back(new vk_mesh());
-	// cland-format off
+	// clang-format off
 	vk_mesh_create_info mesh_create_info{
 		&device,
 		&queueFamily,
