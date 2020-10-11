@@ -47,6 +47,8 @@ protected:
 
 	inline void createCommandBuffers();
 
+	inline void createFences();
+
 	inline void recordCommandBuffers();
 
 	inline void createSemaphores();
@@ -54,6 +56,8 @@ protected:
 	inline void cleanupSwapchain(VkSwapchainKHR& swapchain);
 
 	inline void recreateSwapchain();
+
+	void prepareCommandBuffer(uint32_t imageIndex);
 
 	// TODO: should be probably moved or deleted entirely
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
@@ -89,8 +93,12 @@ private:
 	VkCommandPool mTransferCommandPool;
 
 	std::vector<VkCommandBuffer> mGraphicsCommandBuffers;
+	
+	std::vector<VkFence> _vkSubmitQueueFences;
 
 	VkSemaphore mSepaphore_Image_Avaible;
 
 	VkSemaphore mSepaphore_Render_Finished;
+
+	uint32_t _currentImageIndex;
 };

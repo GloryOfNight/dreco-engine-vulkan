@@ -23,6 +23,7 @@ vk_renderer::vk_renderer(engine* eng)
 	, surface(&mInstance)
 	, physicalDevice(&mInstance)
 	, device()
+	, _currentImageIndex{0}
 {
 	createWindow();
 	createInstance();
@@ -36,11 +37,18 @@ vk_renderer::vk_renderer(engine* eng)
 	createCommandPool();
 
 	recreateSwapchain();
+
+	createFences();
 }
 
 vk_renderer::~vk_renderer()
 {
 	device.waitIdle();
+
+	for (auto& fence : _vkSubmitQueueFences)
+	{
+		vkDestroyFence(device.get(), fence, mAllocator);
+	}
 
 	cleanupSwapchain(mSwapchain);
 
@@ -80,7 +88,7 @@ void vk_renderer::createMesh()
 	// clang-format on
 	meshes.back()->create(mesh_create_info);
 
-	recordCommandBuffers();
+	//recordCommandBuffers();
 }
 
 SDL_Window* vk_renderer::getWindow() const
@@ -309,6 +317,17 @@ void vk_renderer::createCommandBuffers()
 	VK_CHECK(vkAllocateCommandBuffers(device.get(), &allocInfo, mGraphicsCommandBuffers.data()));
 }
 
+inline void vk_renderer::createFences()
+{
+	const size_t size = mSwapchainImageViews.size();
+	_vkSubmitQueueFences.resize(size);
+	for (auto& fence : _vkSubmitQueueFences)
+	{
+		VkFenceCreateInfo createInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT};
+		VK_CHECK(vkCreateFence(device.get(), &createInfo, mAllocator, &fence));
+	}
+}
+
 void vk_renderer::recordCommandBuffers()
 {
 	for (size_t i = 0; i < mGraphicsCommandBuffers.size(); ++i)
@@ -356,7 +375,7 @@ void vk_renderer::createSemaphores()
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	if (VkResult result = vkAcquireNextImageKHR(device.get(), mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
+	if (const VkResult result = vkAcquireNextImageKHR(device.get(), mSwapchain, UINT32_MAX, mSepaphore_Image_Avaible, VK_NULL_HANDLE, &imageIndex);
 		VK_SUCCESS != result && VK_SUBOPTIMAL_KHR != result)
 	{
 		if (VK_ERROR_OUT_OF_DATE_KHR == result)
@@ -365,19 +384,28 @@ void vk_renderer::drawFrame()
 		}
 		else
 		{
+			VK_RETURN_ON_RESULT(result, VK_TIMEOUT);
 			VK_CHECK(result);
 		}
 		return;
 	}
 
+	// wait till finish of previos command buffer
+	if (const VkResult result = vkWaitForFences(device.get(), 1, &_vkSubmitQueueFences[_currentImageIndex], true, UINT32_MAX); VK_TIMEOUT == result)
+	{
+		return;
+	}
+	else
+	{
+		VK_CHECK(result);
+	}
+	vkResetFences(device.get(), 1, &_vkSubmitQueueFences[_currentImageIndex]);
+
+	prepareCommandBuffer(imageIndex);
+
 	VkPipelineStageFlags waitStages[]{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	VkSemaphore waitSemaphores[]{mSepaphore_Image_Avaible};
 	VkSemaphore signalSemaphores[]{mSepaphore_Render_Finished};
-
-	for (vk_mesh* mesh : meshes)
-	{
-		mesh->beforeSubmitUpdate(imageIndex);
-	}
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -389,7 +417,7 @@ void vk_renderer::drawFrame()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
+	VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, _vkSubmitQueueFences[_currentImageIndex]));
 
 	VkSwapchainKHR swapchains[]{mSwapchain};
 	VkPresentInfoKHR presentInfo{};
@@ -402,6 +430,8 @@ void vk_renderer::drawFrame()
 	presentInfo.pResults = nullptr;
 
 	vkQueuePresentKHR(device.getPresentQueue(), &presentInfo);
+
+	++_currentImageIndex %= mSwapchainImageViews.size();
 }
 
 void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
@@ -444,7 +474,39 @@ void vk_renderer::recreateSwapchain()
 	{
 		mesh->recreatePipeline(_vkRenderPass, surface.getCapabilities().currentExtent);
 	}
-	recordCommandBuffers();
+}
+
+void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
+{
+	VkCommandBuffer& commandBuffer = mGraphicsCommandBuffers[imageIndex];
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = nullptr;
+
+	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+
+	const VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = _vkRenderPass;
+	renderPassInfo.framebuffer = mFramebuffers[imageIndex];
+	renderPassInfo.renderArea.offset = {0, 0};
+	renderPassInfo.renderArea.extent = surface.getCapabilities().currentExtent;
+	renderPassInfo.clearValueCount = 4;
+	renderPassInfo.pClearValues = &clearColor;
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	for (vk_mesh* mesh : meshes)
+	{
+		mesh->bindToCmdBuffer(commandBuffer, imageIndex);
+		mesh->beforeSubmitUpdate(imageIndex);
+	}
+	vkCmdEndRenderPass(commandBuffer);
+
+	VK_CHECK(vkEndCommandBuffer(commandBuffer));
 }
 
 void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)

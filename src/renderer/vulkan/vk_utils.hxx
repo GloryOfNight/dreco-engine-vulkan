@@ -20,6 +20,17 @@ inline const char* vk_resultToChar(VkResult& result);
 		}                                                                                            \
 	}
 
+#define VK_RETURN_ON_RESULT(op, value)                                                                          \
+	{                                                                                                           \
+		const VkResult vkResult = op;                                                                           \
+		if (value == vkResult)                                                                                  \
+		{                                                                                                       \
+			const std::string error_message = "VK_RETURN_ON_RESULT: " + std::string(vk_resultToChar(vkResult)); \
+			std::cerr << error_message;                                                                         \
+			return;                                                                                             \
+		}                                                                                                       \
+	}
+
 inline const char* vk_resultToChar(const VkResult& result)
 {
 	const char* code;
