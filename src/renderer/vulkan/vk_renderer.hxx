@@ -99,6 +99,4 @@ private:
 	VkSemaphore mSepaphore_Image_Avaible;
 
 	VkSemaphore mSepaphore_Render_Finished;
-
-	uint32_t _currentImageIndex;
 };

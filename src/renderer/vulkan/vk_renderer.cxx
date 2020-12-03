@@ -391,7 +391,7 @@ void vk_renderer::drawFrame()
 	}
 
 	// wait till finish of previos command buffer
-	if (const VkResult result = vkWaitForFences(device.get(), 1, &_vkSubmitQueueFences[_currentImageIndex], true, UINT32_MAX); VK_TIMEOUT == result)
+	if (const VkResult result = vkWaitForFences(device.get(), 1, &_vkSubmitQueueFences[imageIndex], true, UINT32_MAX); VK_TIMEOUT == result)
 	{
 		return;
 	}
@@ -399,7 +399,7 @@ void vk_renderer::drawFrame()
 	{
 		VK_CHECK(result);
 	}
-	vkResetFences(device.get(), 1, &_vkSubmitQueueFences[_currentImageIndex]);
+	vkResetFences(device.get(), 1, &_vkSubmitQueueFences[imageIndex]);
 
 	prepareCommandBuffer(imageIndex);
 
@@ -417,7 +417,7 @@ void vk_renderer::drawFrame()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, _vkSubmitQueueFences[_currentImageIndex]));
+	VK_CHECK(vkQueueSubmit(device.getGraphicsQueue(), 1, &submitInfo, _vkSubmitQueueFences[imageIndex]));
 
 	VkSwapchainKHR swapchains[]{mSwapchain};
 	VkPresentInfoKHR presentInfo{};
@@ -430,8 +430,6 @@ void vk_renderer::drawFrame()
 	presentInfo.pResults = nullptr;
 
 	vkQueuePresentKHR(device.getPresentQueue(), &presentInfo);
-
-	++_currentImageIndex %= mSwapchainImageViews.size();
 }
 
 void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
