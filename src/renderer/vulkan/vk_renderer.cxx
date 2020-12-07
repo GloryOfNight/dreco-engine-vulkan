@@ -23,6 +23,7 @@ vk_renderer::vk_renderer(engine* eng)
 	, _surface(&_vkInstance)
 	, _physicalDevice(&_vkInstance)
 	, _device()
+	, _vkSwapchain{VK_NULL_HANDLE}
 {
 	createWindow();
 	createInstance();
