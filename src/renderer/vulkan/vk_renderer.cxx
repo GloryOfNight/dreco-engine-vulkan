@@ -23,7 +23,6 @@ vk_renderer::vk_renderer(engine* eng)
 	, surface(&mInstance)
 	, physicalDevice(&mInstance)
 	, device()
-	, _currentImageIndex{0}
 {
 	createWindow();
 	createInstance();
@@ -36,7 +35,15 @@ vk_renderer::vk_renderer(engine* eng)
 	createSemaphores();
 	createCommandPool();
 
-	recreateSwapchain();
+	surface.setup(physicalDevice.get());
+
+	createSwapchain();
+	createImageViews();
+
+	createCommandBuffers();
+
+	createRenderPass();
+	createFramebuffers();
 
 	createFences();
 }
@@ -78,17 +85,17 @@ void vk_renderer::createMesh()
 {
 	meshes.push_back(new vk_mesh());
 	// clang-format off
-	vk_mesh_create_info mesh_create_info{
+	vk_mesh_create_info mesh_create_info
+	{
 		&device,
 		&queueFamily,
 		&physicalDevice,
 		_vkRenderPass,
 		surface.getCapabilities().currentExtent,
-		static_cast<uint32_t>(mSwapchainImageViews.size())};
+		static_cast<uint32_t>(mSwapchainImageViews.size())
+	};
 	// clang-format on
 	meshes.back()->create(mesh_create_info);
-
-	//recordCommandBuffers();
 }
 
 SDL_Window* vk_renderer::getWindow() const
@@ -306,7 +313,7 @@ void vk_renderer::createCommandPool()
 
 void vk_renderer::createCommandBuffers()
 {
-	mGraphicsCommandBuffers.resize(mFramebuffers.size());
+	mGraphicsCommandBuffers.resize(mSwapchainImageViews.size());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -436,10 +443,6 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
 	device.waitIdle();
 
-	vkFreeCommandBuffers(device.get(), mGraphicsCommandPool, static_cast<uint32_t>(mGraphicsCommandBuffers.size()),
-		mGraphicsCommandBuffers.data());
-	mGraphicsCommandBuffers.clear();
-
 	vkDestroyRenderPass(device.get(), _vkRenderPass, mAllocator);
 
 	for (auto frameBuffer : mFramebuffers)
@@ -466,7 +469,6 @@ void vk_renderer::recreateSwapchain()
 
 	createRenderPass();
 	createFramebuffers();
-	createCommandBuffers();
 
 	for (vk_mesh* mesh : meshes)
 	{
