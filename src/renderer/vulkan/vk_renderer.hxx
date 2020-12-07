@@ -55,7 +55,9 @@ protected:
 
 	void createCommandPool();
 
-	void createCommandBuffers();
+	void createPrimaryCommandBuffers();
+
+	VkCommandBuffer createSecondaryCommandBuffer();
 
 	void createFences();
 
@@ -100,8 +102,9 @@ private:
 	VkCommandPool _vkGraphicsCommandPool;
 	VkCommandPool _vkTransferCommandPool;
 
-	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
-	
+	std::vector<VkCommandBuffer> _vkGraphicsPrimaryCommandBuffers;
+	std::vector<VkCommandBuffer> _vkGraphicsSecondaryCommandBuffers;
+
 	std::vector<VkFence> _vkSubmitQueueFences;
 
 	VkSemaphore _vkSepaphoreImageAvaible;

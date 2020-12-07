@@ -19,6 +19,7 @@ struct vk_mesh_create_info
 	const vk_physical_device* physicalDevice;
 	const VkRenderPass vkRenderPass;
 	const VkExtent2D vkExtent;
+	const VkCommandBuffer vkCommandBuffer;
 	const uint32_t imageCount;
 };
 
@@ -55,6 +56,7 @@ protected:
 
 	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount);
 
+	void writeCommandBuffer(const VkRenderPass vkRenderPass);
 private:
 	transform _transform;
 
@@ -79,4 +81,6 @@ private:
 	VkPipelineLayout _vkPipelineLayout;
 
 	VkPipeline _vkGraphicsPipeline;
+
+	VkCommandBuffer _vkCommandBuffer;
 };

@@ -15,7 +15,7 @@
 #include <vulkan/vulkan_core.h>
 
 #define VK_ENABLE_VALIDATION
-//#define VK_ENABLE_MESA_OVERLAY
+#define VK_ENABLE_MESA_OVERLAY
 
 vk_renderer::vk_renderer(engine* eng)
 	: _engine(eng)
@@ -33,20 +33,16 @@ vk_renderer::vk_renderer(engine* eng)
 	_queueFamily.setup(_physicalDevice.get(), _surface.get());
 	_device.create(_physicalDevice, _queueFamily);
 
-	createSemaphores();
-	createCommandPool();
-
-	_surface.setup(_physicalDevice.get());
-
 	createSwapchain();
 	createImageViews();
-
-	createCommandBuffers();
-
 	createRenderPass();
 	createFramebuffers();
 
+	createCommandPool();
+
+	createPrimaryCommandBuffers();
 	createFences();
+	createSemaphores();
 }
 
 vk_renderer::~vk_renderer()
@@ -79,6 +75,10 @@ vk_renderer::~vk_renderer()
 
 void vk_renderer::tick(const float& delta_time)
 {
+	for (auto& mesh : _meshes) 
+	{
+		mesh->beforeSubmitUpdate(0);
+	}
 	drawFrame();
 }
 
@@ -93,6 +93,7 @@ void vk_renderer::createMesh()
 		&_physicalDevice,
 		_vkRenderPass,
 		_surface.getCapabilities().currentExtent,
+		createSecondaryCommandBuffer(),
 		static_cast<uint32_t>(_vkSwapchainImageViews.size())
 	};
 	// clang-format on
@@ -304,7 +305,7 @@ void vk_renderer::createFramebuffers()
 
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{_surface.getCapabilities()};
 
-	for (uint32_t i = 0; i < _vkSwapchainImageViews.size(); ++i)
+	for (size_t i = 0; i < _vkSwapchainImageViews.size(); ++i)
 	{
 		VkImageView attachments[]{_vkSwapchainImageViews[i]};
 
@@ -337,17 +338,32 @@ void vk_renderer::createCommandPool()
 	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, _vkAllocator, &_vkTransferCommandPool));
 }
 
-void vk_renderer::createCommandBuffers()
+void vk_renderer::createPrimaryCommandBuffers()
 {
-	_vkGraphicsCommandBuffers.resize(_vkSwapchainImageViews.size());
+	_vkGraphicsPrimaryCommandBuffers.resize(_vkSwapchainImageViews.size());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = _vkGraphicsCommandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(_vkGraphicsCommandBuffers.size());
+	allocInfo.commandBufferCount = static_cast<uint32_t>(_vkGraphicsPrimaryCommandBuffers.size());
 
-	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, _vkGraphicsCommandBuffers.data()));
+	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, _vkGraphicsPrimaryCommandBuffers.data()));
+}
+
+VkCommandBuffer vk_renderer::createSecondaryCommandBuffer()
+{
+	_vkGraphicsSecondaryCommandBuffers.push_back(VK_NULL_HANDLE);
+
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = _vkGraphicsCommandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+	allocInfo.commandBufferCount = 1;
+
+	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, &_vkGraphicsSecondaryCommandBuffers.back()));
+
+	return _vkGraphicsSecondaryCommandBuffers.back();
 }
 
 inline void vk_renderer::createFences()
@@ -411,7 +427,7 @@ void vk_renderer::drawFrame()
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &_vkGraphicsCommandBuffers[imageIndex];
+	submitInfo.pCommandBuffers = &_vkGraphicsPrimaryCommandBuffers[imageIndex];
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -469,11 +485,11 @@ void vk_renderer::recreateSwapchain()
 
 void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 {
-	VkCommandBuffer& commandBuffer = _vkGraphicsCommandBuffers[imageIndex];
+	VkCommandBuffer& commandBuffer = _vkGraphicsPrimaryCommandBuffers[imageIndex];
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 	beginInfo.pInheritanceInfo = nullptr;
 
 	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
@@ -489,12 +505,8 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.clearValueCount = 4;
 	renderPassInfo.pClearValues = &clearColor;
 
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	for (vk_mesh* mesh : _meshes)
-	{
-		mesh->bindToCmdBuffer(commandBuffer, imageIndex);
-		mesh->beforeSubmitUpdate(imageIndex);
-	}
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	vkCmdExecuteCommands(commandBuffer, _vkGraphicsSecondaryCommandBuffers.size(), _vkGraphicsSecondaryCommandBuffers.data());
 	vkCmdEndRenderPass(commandBuffer);
 
 	VK_CHECK(vkEndCommandBuffer(commandBuffer));

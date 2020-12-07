@@ -14,6 +14,7 @@ vk_mesh::vk_mesh()
 	, _vkDescriptorSetLayout{VK_NULL_HANDLE}
 	, _vkPipelineLayout{VK_NULL_HANDLE}
 	, _vkGraphicsPipeline{VK_NULL_HANDLE}
+	, _vkCommandBuffer{VK_NULL_HANDLE}
 
 {
 }
@@ -27,6 +28,7 @@ void vk_mesh::create(const vk_mesh_create_info& create_info)
 {
 	_mesh = mesh_data::createSprite();
 	_vkDevice = create_info.device->get();
+	_vkCommandBuffer = create_info.vkCommandBuffer;
 
 	createVertexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
 	createIndexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
@@ -38,6 +40,8 @@ void vk_mesh::create(const vk_mesh_create_info& create_info)
 
 	createGraphicsPipelineLayout();
 	createGraphicsPipeline(create_info.vkRenderPass, create_info.vkExtent);
+
+	writeCommandBuffer(create_info.vkRenderPass);
 }
 
 void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
@@ -46,6 +50,7 @@ void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D
 	{
 		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, VK_NULL_HANDLE);
 		createGraphicsPipeline(vkRenderPass, vkExtent);
+		writeCommandBuffer(vkRenderPass);
 	}
 }
 
@@ -354,4 +359,24 @@ void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_famil
 	{
 		buffer.create(device, buffer_create_info);
 	}
+}
+
+void vk_mesh::writeCommandBuffer(const VkRenderPass vkRenderPass)
+{
+	VkCommandBufferInheritanceInfo inheritanceInfo{};
+	inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+	inheritanceInfo.pNext = nullptr;
+	inheritanceInfo.renderPass = vkRenderPass;
+	inheritanceInfo.framebuffer = nullptr;
+	inheritanceInfo.subpass = 0;
+	inheritanceInfo.pipelineStatistics = 0;
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	beginInfo.pInheritanceInfo = &inheritanceInfo;
+
+	VK_CHECK(vkBeginCommandBuffer(_vkCommandBuffer, &beginInfo));
+	bindToCmdBuffer(_vkCommandBuffer, 0);
+	VK_CHECK(vkEndCommandBuffer(_vkCommandBuffer));
 }
