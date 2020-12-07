@@ -28,34 +28,42 @@ public:
 
 	SDL_Window* getWindow() const;
 
+	VkAllocationCallbacks* getAllocator() const;
+
+	vk_device& getDevice();
+
+	vk_surface& getSurface();
+
+	vk_physical_device& getPhysicalDevice();
+
+	vk_queue_family& getQueueFamily();
+
 protected:
 	void drawFrame();
 
-	inline void createWindow();
+	void createWindow();
 
-	inline void createInstance();
+	void createInstance();
 
-	inline void createSwapchain();
+	void createSwapchain();
 
-	inline void createImageViews();
+	void createImageViews();
 
-	inline void createRenderPass();
+	void createRenderPass();
 
-	inline void createFramebuffers();
+	void createFramebuffers();
 
-	inline void createCommandPool();
+	void createCommandPool();
 
-	inline void createCommandBuffers();
+	void createCommandBuffers();
 
-	inline void createFences();
+	void createFences();
 
-	inline void recordCommandBuffers();
+	void createSemaphores();
 
-	inline void createSemaphores();
+	void cleanupSwapchain(VkSwapchainKHR& swapchain);
 
-	inline void cleanupSwapchain(VkSwapchainKHR& swapchain);
-
-	inline void recreateSwapchain();
+	void recreateSwapchain();
 
 	void prepareCommandBuffer(uint32_t imageIndex);
 
@@ -63,40 +71,40 @@ protected:
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
-	std::vector<vk_mesh*> meshes;
+	std::vector<vk_mesh*> _meshes;
 
 	engine* _engine;
 
-	VkAllocationCallbacks* mAllocator;
+	VkAllocationCallbacks* _vkAllocator;
 
-	SDL_Window* window;
+	SDL_Window* _window;
 
-	vk_surface surface;
+	vk_surface _surface;
 
-	vk_physical_device physicalDevice;
+	vk_physical_device _physicalDevice;
 
-	vk_queue_family queueFamily;
+	vk_queue_family _queueFamily;
 
-	vk_device device;
+	vk_device _device;
 
-	VkInstance mInstance;
+	VkInstance _vkInstance;
 
-	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
+	VkSwapchainKHR _vkSwapchain;
 
-	std::vector<VkImageView> mSwapchainImageViews;
+	std::vector<VkImageView> _vkSwapchainImageViews;
 
-	std::vector<VkFramebuffer> mFramebuffers;
+	std::vector<VkFramebuffer> _vkFramebuffers;
 
 	VkRenderPass _vkRenderPass;
 
-	VkCommandPool mGraphicsCommandPool;
-	VkCommandPool mTransferCommandPool;
+	VkCommandPool _vkGraphicsCommandPool;
+	VkCommandPool _vkTransferCommandPool;
 
-	std::vector<VkCommandBuffer> mGraphicsCommandBuffers;
+	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
 	
 	std::vector<VkFence> _vkSubmitQueueFences;
 
-	VkSemaphore mSepaphore_Image_Avaible;
+	VkSemaphore _vkSepaphoreImageAvaible;
 
-	VkSemaphore mSepaphore_Render_Finished;
+	VkSemaphore _vkSepaphoreRenderFinished;
 };
