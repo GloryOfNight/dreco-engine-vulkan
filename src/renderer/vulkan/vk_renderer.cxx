@@ -15,7 +15,7 @@
 #include <vulkan/vulkan_core.h>
 
 #define VK_ENABLE_VALIDATION
-#define VK_ENABLE_MESA_OVERLAY
+//#define VK_ENABLE_MESA_OVERLAY
 
 vk_renderer::vk_renderer(engine* eng)
 	: _engine(eng)
@@ -75,7 +75,7 @@ vk_renderer::~vk_renderer()
 
 void vk_renderer::tick(const float& delta_time)
 {
-	for (auto& mesh : _meshes) 
+	for (auto& mesh : _meshes)
 	{
 		mesh->beforeSubmitUpdate(0);
 	}
@@ -138,13 +138,12 @@ void vk_renderer::createWindow()
 
 void vk_renderer::createInstance()
 {
-	std::vector<const char*> instExtensions{"VK_KHR_surface"};
+	std::vector<const char*> instExtensions;
 
-#if PLATFORM_LINUX
-	instExtensions.push_back("VK_KHR_xlib_surface");
-#elif PLATFORM_WINDOWS
-	instExtensions.push_back("VK_KHR_win32_surface");
-#endif
+	unsigned int count;
+	SDL_Vulkan_GetInstanceExtensions(_window, &count, nullptr);
+	instExtensions.resize(count);
+	SDL_Vulkan_GetInstanceExtensions(_window, &count, instExtensions.data() + 0);
 
 #ifdef VK_ENABLE_VALIDATION
 	instExtensions.push_back("VK_EXT_debug_utils");
