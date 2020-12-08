@@ -19,7 +19,7 @@
 
 vk_renderer::vk_renderer(engine* eng)
 	: _engine(eng)
-	, _vkAllocator(nullptr)
+	, _vkAllocator{VK_NULL_HANDLE}
 	, _surface(&_vkInstance)
 	, _physicalDevice(&_vkInstance)
 	, _device()
