@@ -19,7 +19,7 @@ class vk_mesh;
 class vk_renderer
 {
 public:
-	vk_renderer(engine* eng);
+	vk_renderer();
 	~vk_renderer();
 
 	void tick(const float& delta_time);
@@ -74,8 +74,6 @@ protected:
 
 private:
 	std::vector<vk_mesh*> _meshes;
-
-	engine* _engine;
 
 	VkAllocationCallbacks* _vkAllocator;
 

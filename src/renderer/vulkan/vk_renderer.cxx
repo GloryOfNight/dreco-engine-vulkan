@@ -2,7 +2,6 @@
 
 #include "core/platform.h"
 #include "core/utils/file_utils.hxx"
-#include "engine/engine.hxx"
 
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
@@ -17,9 +16,8 @@
 #define VK_ENABLE_VALIDATION
 //#define VK_ENABLE_MESA_OVERLAY
 
-vk_renderer::vk_renderer(engine* eng)
-	: _engine(eng)
-	, _vkAllocator{VK_NULL_HANDLE}
+vk_renderer::vk_renderer()
+	: _vkAllocator{VK_NULL_HANDLE}
 	, _surface(&_vkInstance)
 	, _physicalDevice(&_vkInstance)
 	, _device()
@@ -398,7 +396,6 @@ void vk_renderer::drawFrame()
 		else
 		{
 			VK_RETURN_ON_RESULT(result, VK_TIMEOUT);
-			VK_CHECK(result);
 		}
 		return;
 	}
@@ -493,7 +490,7 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 
 	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-	const VkClearValue clearColor = {0.0f, 0.0f, 0.0f, 1.0f};
+	const VkClearValue clearColor{{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

@@ -47,7 +47,7 @@ protected:
 
 	static void createBuffer(const vk_buffer_create_info& create_info, VkBuffer& vkBuffer, VkDevice vkDevice, VkDeviceMemory& vkDeviceMemory);
 
-	static int32_t findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkPhysicalDeviceMemoryProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags);
+	static uint32_t findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkPhysicalDeviceMemoryProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags);
 
 private:
 	const vk_device* _device;

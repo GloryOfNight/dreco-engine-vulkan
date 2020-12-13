@@ -91,12 +91,12 @@ void vk_buffer::createBuffer(
 	VkMemoryRequirements memoryRequirements;
 	vkGetBufferMemoryRequirements(vkDevice, vkBuffer, &memoryRequirements);
 
-	const int32_t memoryTypeIndex = findMemoryTypeIndex(
+	const uint32_t memoryTypeIndex { findMemoryTypeIndex(
 		create_info.physicalDevice->getMemoryProperties(),
 		memoryRequirements.memoryTypeBits,
-		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties));
+		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties)) };
 
-	if (-1 != memoryTypeIndex)
+	if (UINT32_MAX != memoryTypeIndex)
 	{
 		VkMemoryAllocateInfo memoryAllocateInfo{};
 		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -115,19 +115,19 @@ void vk_buffer::createBuffer(
 	}
 }
 
-int32_t vk_buffer::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkMemoryProperties,
+uint32_t vk_buffer::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkMemoryProperties,
 	uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags)
 {
 	for (uint32_t i = 0; i < vkMemoryProperties.memoryTypeCount; ++i)
 	{
-		const bool isRequeredType = (1 << i) & memoryTypeBits;
-		const bool hasRequeredProperties =
+		const bool isRequiredType = (1 << i) & memoryTypeBits;
+		const bool hasRequiredProperties =
 			(vkMemoryProperties.memoryTypes[i].propertyFlags & vkMemoryPropertyFlags) == vkMemoryPropertyFlags;
 
-		if (isRequeredType && hasRequeredProperties)
+		if (isRequiredType && hasRequiredProperties)
 		{
-			return static_cast<int32_t>(i);
+			return i;
 		}
 	}
-	return -1;
+	return UINT32_MAX;
 }
