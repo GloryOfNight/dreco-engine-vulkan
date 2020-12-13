@@ -33,14 +33,9 @@ void engine::run()
 		return;
 	}
 
-	if (vk_renderer::isSupported())
+	if (true == startRenderer())
 	{
-		startRenderer();
 		startMainLoop();
-	}
-	else 
-	{
-		std::cout << "Vulkan isn't supported. Cannot start" << std::endl;
 	}
 }
 
@@ -57,22 +52,30 @@ void engine::stop()
 	SDL_Quit();
 }
 
-void engine::startRenderer()
+bool engine::startRenderer()
 {
 	if (_renderer == nullptr)
 	{
-		_renderer = new vk_renderer();
-		uint32_t major;
-		uint32_t minor;
-		uint32_t patch;
-		_renderer->getVersion(major, minor, &patch);
+		if (vk_renderer::isSupported())
+		{
+			_renderer = new vk_renderer();
+			uint32_t major;
+			uint32_t minor;
+			uint32_t patch;
+			_renderer->getVersion(major, minor, &patch);
 
-		std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
+			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
 
-		_renderer->createMesh();
-		_renderer->createMesh();
-		_renderer->createMesh();
+			_renderer->createMesh();
+			_renderer->createMesh();
+			_renderer->createMesh();
+		}
+		else
+		{
+			std::cout << "Vulkan not supported by current driver or GPU." << std::endl;
+		}
 	}
+	return _renderer != nullptr;
 }
 
 void engine::stopRenderer()

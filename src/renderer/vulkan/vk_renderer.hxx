@@ -24,7 +24,7 @@ public:
 
 	static bool isSupported();
 
-	void tick(const float& delta_time);
+	void tick(float deltaTime);
 
 	void createMesh();
 

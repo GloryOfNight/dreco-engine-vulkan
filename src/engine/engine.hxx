@@ -12,7 +12,7 @@ class DRECO_DECLSPEC engine
 public:
 	engine();
 	~engine();
-
+	
 	void run();
 
 	void stop();
@@ -20,7 +20,7 @@ public:
 	vec3 shapeTranslation{0, 0, 0};
 
 private:
-	void startRenderer();
+	bool startRenderer();
 
 	void stopRenderer();
 

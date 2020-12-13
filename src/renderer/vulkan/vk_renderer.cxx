@@ -69,7 +69,7 @@ vk_renderer::~vk_renderer()
 	_device.destroy();
 	SDL_DestroyWindow(_window);
 	_surface.destroy();
-	vkDestroyInstance(_vkInstance, nullptr);
+	vkDestroyInstance(_vkInstance, _vkAllocator);
 }
 
 bool vk_renderer::isSupported()
@@ -77,7 +77,7 @@ bool vk_renderer::isSupported()
 	return NULL != vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
 }
 
-void vk_renderer::tick(const float& delta_time)
+void vk_renderer::tick(float deltaTime)
 {
 	for (auto& mesh : _meshes)
 	{
