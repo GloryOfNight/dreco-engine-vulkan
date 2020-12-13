@@ -11,7 +11,6 @@
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include <vulkan/vulkan_core.h>
 
 #define VK_ENABLE_VALIDATION
 //#define VK_ENABLE_MESA_OVERLAY

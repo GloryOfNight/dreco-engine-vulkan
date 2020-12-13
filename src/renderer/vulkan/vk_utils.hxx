@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 
 inline const char* vk_resultToChar(VkResult& result);
 
