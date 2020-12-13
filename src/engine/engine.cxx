@@ -33,8 +33,15 @@ void engine::run()
 		return;
 	}
 
-	startRenderer();
-	startMainLoop();
+	if (vk_renderer::isSupported())
+	{
+		startRenderer();
+		startMainLoop();
+	}
+	else 
+	{
+		std::cout << "Vulkan isn't supported. Cannot start" << std::endl;
+	}
 }
 
 void engine::stop()
@@ -55,6 +62,13 @@ void engine::startRenderer()
 	if (_renderer == nullptr)
 	{
 		_renderer = new vk_renderer();
+		uint32_t major;
+		uint32_t minor;
+		uint32_t patch;
+		_renderer->getVersion(major, minor, &patch);
+
+		std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
+
 		_renderer->createMesh();
 		_renderer->createMesh();
 		_renderer->createMesh();

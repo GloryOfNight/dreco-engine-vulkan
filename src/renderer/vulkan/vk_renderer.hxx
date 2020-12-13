@@ -22,9 +22,13 @@ public:
 	vk_renderer();
 	~vk_renderer();
 
+	static bool isSupported();
+
 	void tick(const float& delta_time);
 
 	void createMesh();
+
+	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
 	SDL_Window* getWindow() const;
 
@@ -73,6 +77,8 @@ protected:
 	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
+	uint32_t _apiVersion;
+
 	std::vector<vk_mesh*> _meshes;
 
 	VkAllocationCallbacks* _vkAllocator;

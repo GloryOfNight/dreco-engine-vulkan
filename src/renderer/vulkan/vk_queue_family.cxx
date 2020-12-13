@@ -4,9 +4,9 @@
 
 vk_queue_family::vk_queue_family()
 	: isSupported{false}
-	, graphicsIndex{static_cast<uint32_t>(-1)}
-	, transferIndex{static_cast<uint32_t>(-1)}
-	, presentIndex{static_cast<uint32_t>(-1)}
+	, graphicsIndex{UINT32_MAX}
+	, transferIndex{UINT32_MAX}
+	, presentIndex{UINT32_MAX}
 	, sharingMode{VK_SHARING_MODE_CONCURRENT}
 	, uniqueQueueIndexes{}
 {
@@ -91,7 +91,7 @@ VkSharingMode vk_queue_family::getSharingMode() const
 	return sharingMode;
 }
 
-const std::vector<uint32_t>& vk_queue_family::getUniqueQueueIndexes() const 
+const std::vector<uint32_t>& vk_queue_family::getUniqueQueueIndexes() const
 {
 	return uniqueQueueIndexes;
 }

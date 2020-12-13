@@ -17,12 +17,14 @@
 //#define VK_ENABLE_MESA_OVERLAY
 
 vk_renderer::vk_renderer()
-	: _vkAllocator{VK_NULL_HANDLE}
+	: _apiVersion{0}
+	, _vkAllocator{VK_NULL_HANDLE}
 	, _surface(&_vkInstance)
 	, _physicalDevice(&_vkInstance)
 	, _device()
 	, _vkSwapchain{VK_NULL_HANDLE}
 {
+	vkEnumerateInstanceVersion(&_apiVersion);
 	createWindow();
 	createInstance();
 	_surface.create(getWindow());
@@ -71,6 +73,11 @@ vk_renderer::~vk_renderer()
 	vkDestroyInstance(_vkInstance, nullptr);
 }
 
+bool vk_renderer::isSupported()
+{
+	return NULL != vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
+}
+
 void vk_renderer::tick(const float& delta_time)
 {
 	for (auto& mesh : _meshes)
@@ -96,6 +103,17 @@ void vk_renderer::createMesh()
 	};
 	// clang-format on
 	_meshes.back()->create(mesh_create_info);
+}
+
+uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
+{
+	major = VK_VERSION_MAJOR(_apiVersion);
+	minor = VK_VERSION_MINOR(_apiVersion);
+	if (nullptr != patch)
+	{
+		*patch = VK_VERSION_PATCH(_apiVersion);
+	}
+	return _apiVersion;
 }
 
 SDL_Window* vk_renderer::getWindow() const
@@ -165,7 +183,7 @@ void vk_renderer::createInstance()
 		0,
 		"dreco",
 		0,
-		VK_API_VERSION_1_1
+		_apiVersion
 	};
 
 	const VkInstanceCreateInfo instance_info
