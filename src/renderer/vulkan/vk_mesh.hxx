@@ -57,6 +57,7 @@ protected:
 	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount);
 
 	void writeCommandBuffer(const VkRenderPass vkRenderPass);
+
 private:
 	transform _transform;
 

@@ -1,6 +1,6 @@
 #include "vk_queue_family.hxx"
 
-#include <vector>
+#include <set>
 
 vk_queue_family::vk_queue_family()
 	: isSupported{false}
@@ -8,6 +8,7 @@ vk_queue_family::vk_queue_family()
 	, transferIndex{static_cast<uint32_t>(-1)}
 	, presentIndex{static_cast<uint32_t>(-1)}
 	, sharingMode{VK_SHARING_MODE_CONCURRENT}
+	, uniqueQueueIndexes{}
 {
 }
 
@@ -60,6 +61,9 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	{
 		sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
+
+	const std::set<uint32_t> indexesSet{presentIndex, graphicsIndex, transferIndex};
+	uniqueQueueIndexes = std::vector<uint32_t>(indexesSet.begin(), indexesSet.end());
 }
 
 bool vk_queue_family::isVulkanSupported() const
@@ -85,6 +89,11 @@ uint32_t vk_queue_family::getPresentIndex() const
 VkSharingMode vk_queue_family::getSharingMode() const
 {
 	return sharingMode;
+}
+
+const std::vector<uint32_t>& vk_queue_family::getUniqueQueueIndexes() const 
+{
+	return uniqueQueueIndexes;
 }
 
 bool vk_queue_family::isIndexValid(uint32_t& index)

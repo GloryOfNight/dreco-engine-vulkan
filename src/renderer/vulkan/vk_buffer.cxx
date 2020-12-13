@@ -72,18 +72,13 @@ void vk_buffer::createBuffer(
 	bufferCreateInfo.pNext = nullptr;
 	bufferCreateInfo.flags = 0;
 	bufferCreateInfo.size = create_info.size;
-	bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(create_info.usage);
+	bufferCreateInfo.usage = static_cast<VkBufferUsageFlagBits>(create_info.usage);
 	bufferCreateInfo.sharingMode = create_info.queueFamily->getSharingMode();
 	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
 	{
-		uint32_t queueFamilyIndexes[3] =
-			{
-				create_info.queueFamily->getGraphicsIndex(),
-				create_info.queueFamily->getPresentIndex(),
-				create_info.queueFamily->getTransferIndex()};
-
-		bufferCreateInfo.queueFamilyIndexCount = 3;
-		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
+		const auto& uniqueQueueIndexes = create_info.queueFamily->getUniqueQueueIndexes();
+		bufferCreateInfo.queueFamilyIndexCount = uniqueQueueIndexes.size();
+		bufferCreateInfo.pQueueFamilyIndices = uniqueQueueIndexes.data();
 	}
 
 	VK_CHECK(vkCreateBuffer(vkDevice, &bufferCreateInfo, VK_NULL_HANDLE, &vkBuffer));

@@ -22,21 +22,21 @@ vk_device::~vk_device()
 
 void vk_device::create(const vk_physical_device& physical_device, const vk_queue_family& queue_family)
 {
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies{
-		queue_family.getGraphicsIndex(),
-		queue_family.getPresentIndex(),
-		queue_family.getTransferIndex()};
+	const auto& uniqueQueueIndexes = queue_family.getUniqueQueueIndexes();
 
 	float priorities[]{1.0f};
 
-	for (auto i : uniqueQueueFamilies)
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
+	queueCreateInfoList.reserve(uniqueQueueIndexes.size());
+
+	for (const auto& i : uniqueQueueIndexes)
 	{
 		VkDeviceQueueCreateInfo deviceQueueInfo{};
 		deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		deviceQueueInfo.queueFamilyIndex = i;
 		deviceQueueInfo.queueCount = 1;
 		deviceQueueInfo.pQueuePriorities = priorities;
+
 		queueCreateInfoList.push_back(deviceQueueInfo);
 	}
 
