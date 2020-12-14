@@ -1,5 +1,6 @@
 #include "vk_swapchain.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_surface.hxx"
@@ -16,10 +17,9 @@ void vk_swapchain::create()
 	const vk_queue_family& queueFamily = _renderer.getQueueFamily();
 	const vk_surface& surface = _renderer.getSurface();
 	VkDevice device = _renderer.getDevice().get();
-	VkAllocationCallbacks* allocator = _renderer.getAllocator();
 
-	createSwapchain(queueFamily, surface, device, allocator);
-	createSwapchainImageViews(device, surface.getFormat().format, allocator);
+	createSwapchain(queueFamily, surface, device);
+	createSwapchainImageViews(device, surface.getFormat().format);
 }
 
 uint32_t vk_swapchain::getImageCount() const
@@ -27,7 +27,7 @@ uint32_t vk_swapchain::getImageCount() const
 	return _vkSwapchainImageViews.size();
 }
 
-void vk_swapchain::createSwapchain(const vk_queue_family& queueFamily, const vk_surface& surface, VkDevice device, VkAllocationCallbacks* allocator)
+void vk_swapchain::createSwapchain(const vk_queue_family& queueFamily, const vk_surface& surface, VkDevice device)
 {
 	VkSharingMode sharingMode{queueFamily.getSharingMode()};
 	std::vector<uint32_t> queueFamilyIndexes{
@@ -59,7 +59,7 @@ void vk_swapchain::createSwapchain(const vk_queue_family& queueFamily, const vk_
 	swapchainCreateInfo.oldSwapchain = _vkSwapchain;
 
 	const VkResult createResult =
-		vkCreateSwapchainKHR(device, &swapchainCreateInfo, allocator, &_vkSwapchain);
+		vkCreateSwapchainKHR(device, &swapchainCreateInfo, vkGetAllocator(), &_vkSwapchain);
 
 	if (VK_SUCCESS == createResult && swapchainCreateInfo.oldSwapchain != VK_NULL_HANDLE)
 	{
@@ -67,7 +67,7 @@ void vk_swapchain::createSwapchain(const vk_queue_family& queueFamily, const vk_
 	}
 }
 
-void vk_swapchain::createSwapchainImageViews(VkDevice device, VkFormat surfaceFormat, VkAllocationCallbacks* allocator)
+void vk_swapchain::createSwapchainImageViews(VkDevice device, VkFormat surfaceFormat)
 {
 	uint32_t imageCount;
 	vkGetSwapchainImagesKHR(device, _vkSwapchain, &imageCount, nullptr);
@@ -94,6 +94,6 @@ void vk_swapchain::createSwapchainImageViews(VkDevice device, VkFormat surfaceFo
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 
-		VK_CHECK(vkCreateImageView(device, &imageViewCreateInfo, allocator, &_vkSwapchainImageViews[i]));
+		VK_CHECK(vkCreateImageView(device, &imageViewCreateInfo, vkGetAllocator(), &_vkSwapchainImageViews[i]));
 	}
 }

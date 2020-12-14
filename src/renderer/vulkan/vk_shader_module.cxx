@@ -1,5 +1,6 @@
 #include "vk_shader_module.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_utils.hxx"
 
 vk_shader_module::vk_shader_module()
@@ -22,7 +23,7 @@ void vk_shader_module::create(VkDevice vkDevice, const char* code, const size_t&
 	shaderModuleCreateInfo.codeSize = codeSize;
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code);
 
-	VK_CHECK(vkCreateShaderModule(_vkDevice, &shaderModuleCreateInfo, VK_NULL_HANDLE, &_vkShaderModule));
+	VK_CHECK(vkCreateShaderModule(_vkDevice, &shaderModuleCreateInfo, vkGetAllocator(), &_vkShaderModule));
 }
 
 VkShaderModule vk_shader_module::get() const
@@ -34,7 +35,7 @@ void vk_shader_module::destroy()
 {
 	if (VK_NULL_HANDLE != _vkDevice && VK_NULL_HANDLE != _vkShaderModule)
 	{
-		vkDestroyShaderModule(_vkDevice, _vkShaderModule, VK_NULL_HANDLE);
+		vkDestroyShaderModule(_vkDevice, _vkShaderModule, vkGetAllocator());
 		_vkDevice = VK_NULL_HANDLE;
 	}
 }

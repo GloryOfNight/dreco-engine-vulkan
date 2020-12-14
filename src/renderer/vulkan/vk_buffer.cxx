@@ -1,5 +1,6 @@
 #include "vk_buffer.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
@@ -52,12 +53,12 @@ void vk_buffer::destroy(VkDevice vkDevice, VkBuffer& vkBuffer, VkDeviceMemory& v
 	{
 		if (VK_NULL_HANDLE != vkBuffer)
 		{
-			vkDestroyBuffer(vkDevice, vkBuffer, VK_NULL_HANDLE);
+			vkDestroyBuffer(vkDevice, vkBuffer, vkGetAllocator());
 			vkBuffer = VK_NULL_HANDLE;
 		}
 		if (VK_NULL_HANDLE != vkDeviceMemery)
 		{
-			vkFreeMemory(vkDevice, vkDeviceMemery, VK_NULL_HANDLE);
+			vkFreeMemory(vkDevice, vkDeviceMemery, vkGetAllocator());
 			vkDeviceMemery = VK_NULL_HANDLE;
 		}
 		vkDevice = VK_NULL_HANDLE;
@@ -81,15 +82,15 @@ void vk_buffer::createBuffer(
 		bufferCreateInfo.pQueueFamilyIndices = uniqueQueueIndexes.data();
 	}
 
-	VK_CHECK(vkCreateBuffer(vkDevice, &bufferCreateInfo, VK_NULL_HANDLE, &vkBuffer));
+	VK_CHECK(vkCreateBuffer(vkDevice, &bufferCreateInfo, vkGetAllocator(), &vkBuffer));
 
 	VkMemoryRequirements memoryRequirements;
 	vkGetBufferMemoryRequirements(vkDevice, vkBuffer, &memoryRequirements);
 
-	const uint32_t memoryTypeIndex { findMemoryTypeIndex(
+	const uint32_t memoryTypeIndex{findMemoryTypeIndex(
 		create_info.physicalDevice->getMemoryProperties(),
 		memoryRequirements.memoryTypeBits,
-		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties)) };
+		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties))};
 
 	if (UINT32_MAX != memoryTypeIndex)
 	{
@@ -99,7 +100,7 @@ void vk_buffer::createBuffer(
 		memoryAllocateInfo.allocationSize = memoryRequirements.size;
 		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
-		VK_CHECK(vkAllocateMemory(vkDevice, &memoryAllocateInfo, VK_NULL_HANDLE, &vkDeviceMemory));
+		VK_CHECK(vkAllocateMemory(vkDevice, &memoryAllocateInfo, vkGetAllocator(), &vkDeviceMemory));
 
 		vkBindBufferMemory(vkDevice, vkBuffer, vkDeviceMemory, 0);
 	}

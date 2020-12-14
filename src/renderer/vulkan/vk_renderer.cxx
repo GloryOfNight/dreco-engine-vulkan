@@ -2,7 +2,9 @@
 
 #include "core/platform.h"
 #include "core/utils/file_utils.hxx"
+#include "engine/engine.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
@@ -17,11 +19,58 @@
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
-	, _vkAllocator{VK_NULL_HANDLE}
 	, _surface(&_vkInstance)
 	, _physicalDevice(&_vkInstance)
 	, _device()
 	, _vkSwapchain{VK_NULL_HANDLE}
+{
+}
+
+vk_renderer::~vk_renderer()
+{
+	_device.waitIdle();
+
+	for (auto& fence : _vkSubmitQueueFences)
+	{
+		vkDestroyFence(_device.get(), fence, vkGetAllocator());
+	}
+
+	cleanupSwapchain(_vkSwapchain);
+
+	for (vk_mesh* mesh : _meshes)
+	{
+		delete mesh;
+	}
+	_meshes.clear();
+
+	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
+	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
+	vkDestroyCommandPool(_device.get(), _vkGraphicsCommandPool, vkGetAllocator());
+	vkDestroyCommandPool(_device.get(), _vkTransferCommandPool, vkGetAllocator());
+
+	_device.destroy();
+	_surface.destroy();
+
+	vkDestroyInstance(_vkInstance, vkGetAllocator());
+
+	SDL_DestroyWindow(_window);
+}
+
+vk_renderer* vk_renderer::get()
+{
+	if (auto eng = engine::get())
+	{
+		return eng->getRenderer();
+	}
+	return nullptr;
+}
+
+bool vk_renderer::isSupported()
+{
+	return NULL != vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
+}
+
+void vk_renderer::init()
 {
 	vkEnumerateInstanceVersion(&_apiVersion);
 	createWindow();
@@ -42,39 +91,6 @@ vk_renderer::vk_renderer()
 	createPrimaryCommandBuffers();
 	createFences();
 	createSemaphores();
-}
-
-vk_renderer::~vk_renderer()
-{
-	_device.waitIdle();
-
-	for (auto& fence : _vkSubmitQueueFences)
-	{
-		vkDestroyFence(_device.get(), fence, _vkAllocator);
-	}
-
-	cleanupSwapchain(_vkSwapchain);
-
-	for (vk_mesh* mesh : _meshes)
-	{
-		delete mesh;
-	}
-	_meshes.clear();
-
-	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, _vkAllocator);
-	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, _vkAllocator);
-	vkDestroyCommandPool(_device.get(), _vkGraphicsCommandPool, _vkAllocator);
-	vkDestroyCommandPool(_device.get(), _vkTransferCommandPool, _vkAllocator);
-
-	_device.destroy();
-	SDL_DestroyWindow(_window);
-	_surface.destroy();
-	vkDestroyInstance(_vkInstance, _vkAllocator);
-}
-
-bool vk_renderer::isSupported()
-{
-	return NULL != vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
 }
 
 void vk_renderer::tick(float deltaTime)
@@ -122,7 +138,7 @@ SDL_Window* vk_renderer::getWindow() const
 
 VkAllocationCallbacks* vk_renderer::getAllocator() const
 {
-	return _vkAllocator;
+	return vkGetAllocator();
 }
 
 vk_device& vk_renderer::getDevice()
@@ -198,7 +214,7 @@ void vk_renderer::createInstance()
 	};
 	// clang-format on
 
-	VK_CHECK(vkCreateInstance(&instance_info, _vkAllocator, &_vkInstance));
+	VK_CHECK(vkCreateInstance(&instance_info, vkGetAllocator(), &_vkInstance));
 }
 
 void vk_renderer::createSwapchain()
@@ -232,7 +248,7 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.clipped = VK_TRUE;
 	swapchainCreateInfo.oldSwapchain = _vkSwapchain;
 
-	VK_CHECK(vkCreateSwapchainKHR(_device.get(), &swapchainCreateInfo, _vkAllocator, &_vkSwapchain));
+	VK_CHECK(vkCreateSwapchainKHR(_device.get(), &swapchainCreateInfo, vkGetAllocator(), &_vkSwapchain));
 
 	if (swapchainCreateInfo.oldSwapchain != VK_NULL_HANDLE)
 	{
@@ -268,7 +284,7 @@ void vk_renderer::createImageViews()
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.subresourceRange.levelCount = 1;
 
-		VK_CHECK(vkCreateImageView(_device.get(), &imageViewCreateInfo, _vkAllocator, &_vkSwapchainImageViews[i]));
+		VK_CHECK(vkCreateImageView(_device.get(), &imageViewCreateInfo, vkGetAllocator(), &_vkSwapchainImageViews[i]));
 	}
 }
 
@@ -310,7 +326,7 @@ void vk_renderer::createRenderPass()
 	renderPassCreateInfo.dependencyCount = 1;
 	renderPassCreateInfo.pDependencies = &subpassDependecy;
 
-	VK_CHECK(vkCreateRenderPass(_device.get(), &renderPassCreateInfo, _vkAllocator, &_vkRenderPass));
+	VK_CHECK(vkCreateRenderPass(_device.get(), &renderPassCreateInfo, vkGetAllocator(), &_vkRenderPass));
 }
 
 void vk_renderer::createFramebuffers()
@@ -332,7 +348,7 @@ void vk_renderer::createFramebuffers()
 		framebufferCreateInfo.height = surfaceCapabilities.currentExtent.height;
 		framebufferCreateInfo.layers = 1;
 
-		VK_CHECK(vkCreateFramebuffer(_device.get(), &framebufferCreateInfo, _vkAllocator, &_vkFramebuffers[i]));
+		VK_CHECK(vkCreateFramebuffer(_device.get(), &framebufferCreateInfo, vkGetAllocator(), &_vkFramebuffers[i]));
 	}
 }
 
@@ -343,13 +359,13 @@ void vk_renderer::createCommandPool()
 	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getGraphicsIndex();
 	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, _vkAllocator, &_vkGraphicsCommandPool));
+	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &_vkGraphicsCommandPool));
 
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getTransferIndex();
 	commandPoolCreateInfo.flags = 0;
 
-	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, _vkAllocator, &_vkTransferCommandPool));
+	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &_vkTransferCommandPool));
 }
 
 void vk_renderer::createPrimaryCommandBuffers()
@@ -387,7 +403,7 @@ inline void vk_renderer::createFences()
 	for (auto& fence : _vkSubmitQueueFences)
 	{
 		VkFenceCreateInfo createInfo{VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, VK_FENCE_CREATE_SIGNALED_BIT};
-		VK_CHECK(vkCreateFence(_device.get(), &createInfo, _vkAllocator, &fence));
+		VK_CHECK(vkCreateFence(_device.get(), &createInfo, vkGetAllocator(), &fence));
 	}
 }
 
@@ -396,8 +412,8 @@ void vk_renderer::createSemaphores()
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, _vkAllocator, &_vkSepaphoreImageAvaible));
-	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, _vkAllocator, &_vkSepaphoreRenderFinished));
+	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSepaphoreImageAvaible));
+	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSepaphoreRenderFinished));
 }
 
 void vk_renderer::drawFrame()
@@ -463,21 +479,21 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)
 {
 	_device.waitIdle();
 
-	vkDestroyRenderPass(_device.get(), _vkRenderPass, _vkAllocator);
+	vkDestroyRenderPass(_device.get(), _vkRenderPass, vkGetAllocator());
 
 	for (auto frameBuffer : _vkFramebuffers)
 	{
-		vkDestroyFramebuffer(_device.get(), frameBuffer, _vkAllocator);
+		vkDestroyFramebuffer(_device.get(), frameBuffer, vkGetAllocator());
 	}
 	_vkFramebuffers.clear();
 
 	for (auto imageView : _vkSwapchainImageViews)
 	{
-		vkDestroyImageView(_device.get(), imageView, _vkAllocator);
+		vkDestroyImageView(_device.get(), imageView, vkGetAllocator());
 	}
 	_vkSwapchainImageViews.clear();
 
-	vkDestroySwapchainKHR(_device.get(), swapchain, _vkAllocator);
+	vkDestroySwapchainKHR(_device.get(), swapchain, vkGetAllocator());
 }
 
 void vk_renderer::recreateSwapchain()

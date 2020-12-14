@@ -16,9 +16,9 @@ public:
 	uint32_t getImageCount() const;
 
 protected:
-	void createSwapchain(const vk_queue_family& queueFamily, const vk_surface& surface, VkDevice device, VkAllocationCallbacks* allocator);
+	void createSwapchain(const vk_queue_family& queueFamily, const vk_surface& surface, VkDevice device);
 
-	void createSwapchainImageViews(VkDevice device, VkFormat surfaceFormat, VkAllocationCallbacks* allocator);
+	void createSwapchainImageViews(VkDevice device, VkFormat surfaceFormat);
 
 private:
 	vk_renderer& _renderer;

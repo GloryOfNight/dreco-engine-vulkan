@@ -5,6 +5,8 @@
 #include <SDL.h>
 #include <iostream>
 
+static inline engine* gEngine{nullptr};
+
 engine::engine()
 	: _renderer{nullptr}
 {
@@ -18,6 +20,16 @@ engine::~engine()
 	}
 }
 
+engine* engine::get()
+{
+	return gEngine;
+}
+
+vk_renderer* engine::getRenderer() const
+{
+	return _renderer;
+}
+
 void engine::run()
 {
 	if (isRunning)
@@ -26,12 +38,19 @@ void engine::run()
 		return;
 	}
 
+	if (gEngine != nullptr && gEngine->isRunning)
+	{
+		std::cerr << "Another engine instance already running, abording. \n";
+		return;
+	}
+
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		std::cerr << "SDL Initialization error: " << SDL_GetError() << "\n";
-		throw std::runtime_error("SDL initialization failed. Cannot proceed.");
 		return;
 	}
+
+	gEngine = this;
 
 	if (true == startRenderer())
 	{
@@ -59,6 +78,8 @@ bool engine::startRenderer()
 		if (vk_renderer::isSupported())
 		{
 			_renderer = new vk_renderer();
+			_renderer->init();
+
 			uint32_t major;
 			uint32_t minor;
 			uint32_t patch;

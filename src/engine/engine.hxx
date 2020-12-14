@@ -13,6 +13,10 @@ public:
 	engine();
 	~engine();
 	
+	static engine* get();
+
+	vk_renderer* getRenderer() const;
+	
 	void run();
 
 	void stop();

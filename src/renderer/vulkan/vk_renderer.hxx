@@ -22,7 +22,11 @@ public:
 	vk_renderer();
 	~vk_renderer();
 
+	static vk_renderer* get();
+
 	static bool isSupported();
+
+	void init();
 
 	void tick(float deltaTime);
 
@@ -80,8 +84,6 @@ private:
 	uint32_t _apiVersion;
 
 	std::vector<vk_mesh*> _meshes;
-
-	VkAllocationCallbacks* _vkAllocator;
 
 	SDL_Window* _window;
 

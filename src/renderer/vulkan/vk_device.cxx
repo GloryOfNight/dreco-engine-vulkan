@@ -1,5 +1,6 @@
 #include "vk_device.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
@@ -54,7 +55,7 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
 	deviceCreateInfo.pEnabledFeatures = &physical_device.getFeatures();
 
-	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, VK_NULL_HANDLE, &_vkDevice));
+	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, vkGetAllocator(), &_vkDevice));
 
 	vkGetDeviceQueue(_vkDevice, queue_family.getGraphicsIndex(), 0, &_vkGraphicsQueue);
 	vkGetDeviceQueue(_vkDevice, queue_family.getPresentIndex(), 0, &_vkPresentQueue);
@@ -73,7 +74,7 @@ void vk_device::destroy()
 {
 	if (VK_NULL_HANDLE != _vkDevice)
 	{
-		vkDestroyDevice(_vkDevice, VK_NULL_HANDLE);
+		vkDestroyDevice(_vkDevice, vkGetAllocator());
 		_vkDevice = VK_NULL_HANDLE;
 	}
 }

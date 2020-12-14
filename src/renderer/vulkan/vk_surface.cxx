@@ -1,5 +1,6 @@
 #include "vk_surface.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_utils.hxx"
 
 #include <SDL.h>
@@ -39,7 +40,7 @@ void vk_surface::destroy()
 {
 	if (VK_NULL_HANDLE != _vkSurface)
 	{
-		vkDestroySurfaceKHR(*_vkInstance, _vkSurface, VK_NULL_HANDLE);
+		vkDestroySurfaceKHR(*_vkInstance, _vkSurface, vkGetAllocator());
 		_vkSurface = VK_NULL_HANDLE;
 	}
 }

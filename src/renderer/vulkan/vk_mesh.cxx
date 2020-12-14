@@ -2,6 +2,7 @@
 
 #include "core/utils/file_utils.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
@@ -48,7 +49,7 @@ void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D
 {
 	if (VK_NULL_HANDLE != _vkDevice && VK_NULL_HANDLE != _vkPipelineLayout)
 	{
-		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, VK_NULL_HANDLE);
+		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, vkGetAllocator());
 		createGraphicsPipeline(vkRenderPass, vkExtent);
 		writeCommandBuffer(vkRenderPass);
 	}
