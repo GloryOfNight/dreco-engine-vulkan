@@ -127,7 +127,7 @@ void engine::startMainLoop()
 			}
 			else if (event.type == SDL_KEYDOWN)
 			{
-				const float speed = 100.f;
+				const float speed = 100.F;
 				if (event.key.keysym.sym == SDLK_w)
 				{
 					shapeTranslation._y += DeltaTime * speed;

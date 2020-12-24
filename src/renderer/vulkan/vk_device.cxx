@@ -26,7 +26,7 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 {
 	const auto& uniqueQueueIndexes = queue_family.getUniqueQueueIndexes();
 
-	float priorities{1.0F};
+	const float priorities{1.0F};
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
 	queueCreateInfoList.reserve(uniqueQueueIndexes.size());
@@ -42,7 +42,7 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 		queueCreateInfoList.push_back(deviceQueueInfo);
 	}
 
-	std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
+	const std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
 
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

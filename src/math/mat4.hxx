@@ -1,14 +1,17 @@
 #pragma once
-#include <stddef.h>
+#include <array>
+#include <cstddef>
 
 struct vec3;
 struct transform;
 
 struct mat4
 {
+	typedef std::array<std::array<float, 4>, 4> mat4d;
+
 	mat4();
 
-	mat4(const float m[4][4]);
+	explicit mat4(const mat4d& _mat);
 
 	static constexpr float size() noexcept;
 
@@ -24,7 +27,7 @@ struct mat4
 
 	static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
 
-	float _mat[4][4];
+	mat4d _mat;
 };
 
 mat4 operator*(const mat4& a, const mat4& b);
