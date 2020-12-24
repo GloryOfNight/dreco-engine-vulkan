@@ -4,9 +4,9 @@
 class vk_physical_device
 {
 public:
-	explicit vk_physical_device(const VkInstance* vkInstance);
+	vk_physical_device();
 
-	void setup(VkSurfaceKHR vkSurface);
+	void setup(const VkInstance vkInstance, VkSurfaceKHR vkSurface);
 
 	VkPhysicalDevice get() const;
 
@@ -17,8 +17,6 @@ public:
 	const VkPhysicalDeviceMemoryProperties& getMemoryProperties() const;
 
 private:
-	const VkInstance* _vkInstance;
-
 	VkPhysicalDevice _vkPhysicalDevice;
 
 	VkPhysicalDeviceProperties _vkPhysicalDeviceProperties;

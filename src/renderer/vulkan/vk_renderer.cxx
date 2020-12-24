@@ -21,8 +21,8 @@
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
 	, _meshes{}
-	, _surface(&_vkInstance)
-	, _physicalDevice(&_vkInstance)
+	, _surface()
+	, _physicalDevice()
 	, _queueFamily()
 	, _device()
 	, _vkInstance{VK_NULL_HANDLE}
@@ -63,7 +63,7 @@ vk_renderer::~vk_renderer()
 	vkDestroyCommandPool(_device.get(), _vkTransferCommandPool, vkGetAllocator());
 
 	_device.destroy();
-	_surface.destroy();
+	_surface.destroy(_vkInstance);
 
 	vkDestroyInstance(_vkInstance, vkGetAllocator());
 
@@ -89,8 +89,8 @@ void vk_renderer::init()
 	vkEnumerateInstanceVersion(&_apiVersion);
 	createWindow();
 	createInstance();
-	_surface.create(getWindow());
-	_physicalDevice.setup(_surface.get());
+	_surface.create(_vkInstance, _window);
+	_physicalDevice.setup(_vkInstance, _surface.get());
 	_surface.setup(_physicalDevice.get());
 	_queueFamily.setup(_physicalDevice.get(), _surface.get());
 	_device.create(_physicalDevice, _queueFamily);
@@ -351,13 +351,13 @@ void vk_renderer::createFramebuffers()
 
 	for (size_t i = 0; i < _vkSwapchainImageViews.size(); ++i)
 	{
-		VkImageView attachments[]{_vkSwapchainImageViews[i]};
+		VkImageView attachments{_vkSwapchainImageViews[i]};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferCreateInfo.renderPass = _vkRenderPass;
 		framebufferCreateInfo.attachmentCount = 1;
-		framebufferCreateInfo.pAttachments = attachments;
+		framebufferCreateInfo.pAttachments = &attachments;
 		framebufferCreateInfo.width = surfaceCapabilities.currentExtent.width;
 		framebufferCreateInfo.height = surfaceCapabilities.currentExtent.height;
 		framebufferCreateInfo.layers = 1;

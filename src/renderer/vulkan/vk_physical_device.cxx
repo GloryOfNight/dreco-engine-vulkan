@@ -1,29 +1,44 @@
 #include "vk_physical_device.hxx"
 
-#include "vk_queue_family.hxx"
-
 #include <stdexcept>
 #include <vector>
 
-vk_physical_device::vk_physical_device(const VkInstance* vkInstance)
-	: _vkInstance{vkInstance}
-	, _vkPhysicalDevice{VK_NULL_HANDLE}
+vk_physical_device::vk_physical_device()
+	: _vkPhysicalDevice{VK_NULL_HANDLE}
 	, _vkPhysicalDeviceProperties{}
 	, _vkPhysicalDeviceFeatures{}
 	, _vkPhysicalDeviceMemoryProperties{}
 {
 }
 
-void vk_physical_device::setup(VkSurfaceKHR vkSurface)
+void vk_physical_device::setup(const VkInstance vkInstance, VkSurfaceKHR vkSurface)
 {
-	uint32_t gpuCount = 0;
-	vkEnumeratePhysicalDevices(*_vkInstance, &gpuCount, nullptr);
+	uint32_t gpuCount{0};
+	vkEnumeratePhysicalDevices(vkInstance, &gpuCount, nullptr);
 	std::vector<VkPhysicalDevice> gpuList(gpuCount);
-	vkEnumeratePhysicalDevices(*_vkInstance, &gpuCount, gpuList.data());
+	vkEnumeratePhysicalDevices(vkInstance, &gpuCount, gpuList.data());
+
+	// clang-format off
+	auto isGpuSuitSurface = [vkSurface](const VkPhysicalDevice vkPhysicalDevice) -> bool 
+	{
+		uint32_t queueFamilyCount;
+		vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamilyCount, nullptr);
+		for (uint32_t i = 0; i < queueFamilyCount; ++i)
+		{
+			VkBool32 isQueueFamilySupported;
+			vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &isQueueFamilySupported);
+			if (isQueueFamilySupported)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	// clang-format on
 
 	for (auto& gpu : gpuList)
 	{
-		if (vk_queue_family(gpu, vkSurface).isVulkanSupported())
+		if (isGpuSuitSurface(gpu))
 		{
 			_vkPhysicalDevice = gpu;
 			vkGetPhysicalDeviceProperties(gpu, &_vkPhysicalDeviceProperties);

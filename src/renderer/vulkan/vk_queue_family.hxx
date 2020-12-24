@@ -23,9 +23,6 @@ public:
 
 	const std::vector<uint32_t>& getUniqueQueueIndexes() const;
 
-protected:
-	bool isIndexValid(uint32_t& index);
-
 private:
 	bool isSupported;
 
