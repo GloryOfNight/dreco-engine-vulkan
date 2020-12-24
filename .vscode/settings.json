@@ -56,6 +56,9 @@
         "ratio": "cpp",
         "mutex": "cpp",
         "shared_mutex": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "ranges": "cpp"
     }
 }

@@ -1,28 +1,24 @@
 #pragma once
+#include <cstdint>
 #include <fstream>
 #include <iostream>
-#include <cstdint>
+#include <string>
 
 class file_utils
 {
 public:
-	static char* read_file(const char* path, size_t* size)
+	static std::string read_file(const char* path)
 	{
-		char* buff{nullptr};
+		std::string buff;
 		std::ifstream file{path, std::ifstream::binary | std::ifstream::ate};
 
 		if (file.is_open())
 		{
 			const size_t len{static_cast<size_t>(file.tellg())};
 			file.seekg(0, file.beg);
-			buff = new char[len];
+			buff.reserve(len);
 
-			file.read(buff, len);
-			//buff[len + 1] = '\0';
-			if (size)
-			{
-				*size = len;
-			}
+			buff.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 		}
 		else
 		{

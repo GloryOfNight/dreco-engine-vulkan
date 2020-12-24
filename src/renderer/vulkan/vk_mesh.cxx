@@ -182,25 +182,14 @@ void vk_mesh::createGraphicsPipelineLayout()
 
 void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
 {
-	size_t vertShaderSize{0};
-	char* vertShaderCode = file_utils::read_file("shaders/vert.spv", &vertShaderSize);
-	if (nullptr == vertShaderCode)
-	{
-		throw std::runtime_error("Failed to load binary shader code");
-	}
-
-	size_t fragShaderSize{0};
-	char* fragShaderCode = file_utils::read_file("shaders/frag.spv", &fragShaderSize);
-	if (nullptr == fragShaderCode)
-	{
-		throw std::runtime_error("Failed to load binary shader code");
-	}
+	const std::string vertShaderCode = file_utils::read_file("shaders/vert.spv");
+	const std::string fragShaderCode = file_utils::read_file("shaders/frag.spv");
 
 	vk_shader_module vertShaderStage;
-	vertShaderStage.create(_vkDevice, vertShaderCode, vertShaderSize);
+	vertShaderStage.create(_vkDevice, vertShaderCode.data(), vertShaderCode.size());
 
 	vk_shader_module fragShaderStage;
-	fragShaderStage.create(_vkDevice, fragShaderCode, fragShaderSize);
+	fragShaderStage.create(_vkDevice, fragShaderCode.data(), fragShaderCode.size());
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -322,9 +311,6 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	pipelineInfo.basePipelineIndex = -1;
 
 	VK_CHECK(vkCreateGraphicsPipelines(_vkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, VK_NULL_HANDLE, &_vkGraphicsPipeline));
-
-	delete[] vertShaderCode;
-	delete[] fragShaderCode;
 }
 
 void vk_mesh::createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
