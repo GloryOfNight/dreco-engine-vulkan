@@ -4,6 +4,8 @@
 #include "vk_utils.hxx"
 
 vk_shader_module::vk_shader_module()
+	: _vkDevice{VK_NULL_HANDLE}
+	, _vkShaderModule{VK_NULL_HANDLE}
 {
 }
 

@@ -8,7 +8,12 @@ class vk_device
 {
 public:
 	vk_device();
+	vk_device(const vk_device&) = delete;
+	vk_device(vk_device&&) = delete;
 	~vk_device();
+
+	vk_device& operator=(const vk_device&) = delete;
+	vk_device& operator=(vk_device&&) = delete;
 
 	void create(const vk_physical_device& vkPhysicalDevice, const vk_queue_family& vkQueueFamily);
 

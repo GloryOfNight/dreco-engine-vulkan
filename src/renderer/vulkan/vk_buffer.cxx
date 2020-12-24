@@ -15,6 +15,16 @@ vk_buffer::vk_buffer()
 {
 }
 
+vk_buffer::vk_buffer(vk_buffer&& other) noexcept
+	: _device{other._device}
+	, _vkBuffer{other._vkBuffer}
+	, _vkDeviceMemory{other._vkDeviceMemory}
+{
+	other._device = nullptr;
+	other._vkBuffer = VK_NULL_HANDLE;
+	other._vkDeviceMemory = VK_NULL_HANDLE;
+}
+
 vk_buffer::~vk_buffer()
 {
 	destroy();

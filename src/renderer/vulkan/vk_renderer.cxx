@@ -10,6 +10,7 @@
 #include "vk_utils.hxx"
 
 #include <SDL_vulkan.h>
+#include <array>
 #include <iostream>
 #include <set>
 #include <stdexcept>
@@ -19,10 +20,23 @@
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
+	, _meshes{}
 	, _surface(&_vkInstance)
 	, _physicalDevice(&_vkInstance)
+	, _queueFamily()
 	, _device()
+	, _vkInstance{VK_NULL_HANDLE}
 	, _vkSwapchain{VK_NULL_HANDLE}
+	, _vkSwapchainImageViews{VK_NULL_HANDLE}
+	, _vkFramebuffers{}
+	, _vkRenderPass{VK_NULL_HANDLE}
+	, _vkGraphicsCommandPool{VK_NULL_HANDLE}
+	, _vkTransferCommandPool{VK_NULL_HANDLE}
+	, _vkGraphicsPrimaryCommandBuffers{}
+	, _vkGraphicsSecondaryCommandBuffers{}
+	, _vkSubmitQueueFences{}
+	, _vkSepaphoreImageAvaible{}
+	, _vkSepaphoreRenderFinished{}
 {
 }
 
@@ -433,42 +447,37 @@ void vk_renderer::drawFrame()
 		return;
 	}
 
-	// wait till finish of previos command buffer
-	if (const VkResult result = vkWaitForFences(_device.get(), 1, &_vkSubmitQueueFences[imageIndex], true, UINT32_MAX); VK_TIMEOUT == result)
-	{
-		return;
-	}
-	else
-	{
-		VK_CHECK(result);
-	}
+	const VkResult result = vkWaitForFences(_device.get(), 1, &_vkSubmitQueueFences[imageIndex], true, UINT32_MAX);
+	VK_RETURN_ON_RESULT(result, VK_TIMEOUT);
+	VK_CHECK(result);
+
 	vkResetFences(_device.get(), 1, &_vkSubmitQueueFences[imageIndex]);
 
 	prepareCommandBuffer(imageIndex);
 
-	VkPipelineStageFlags waitStages[]{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	VkSemaphore waitSemaphores[]{_vkSepaphoreImageAvaible};
-	VkSemaphore signalSemaphores[]{_vkSepaphoreRenderFinished};
+	std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	std::array<VkSemaphore, 1> waitSemaphores = {_vkSepaphoreImageAvaible};
+	std::array<VkSemaphore, 1> signalSemaphores = {_vkSepaphoreRenderFinished};
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.pWaitSemaphores = waitSemaphores.data();
+	submitInfo.pWaitDstStageMask = waitStages.data();
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &_vkGraphicsPrimaryCommandBuffers[imageIndex];
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
 	VK_CHECK(vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, _vkSubmitQueueFences[imageIndex]));
 
-	VkSwapchainKHR swapchains[]{_vkSwapchain};
+	std::array<VkSwapchainKHR, 1> swapchains{_vkSwapchain};
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.pWaitSemaphores = signalSemaphores.data();
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapchains;
+	presentInfo.pSwapchains = swapchains.data();
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
@@ -523,7 +532,7 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 
 	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-	const VkClearValue clearColor{{{0.0f, 0.0f, 0.0f, 1.0f}}};
+	const VkClearValue clearColor{{{0.0F, 0.0F, 0.0F, 1.0F}}};
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

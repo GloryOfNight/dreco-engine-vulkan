@@ -1,5 +1,5 @@
 #pragma once
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -15,8 +15,8 @@ inline const char* vk_resultToChar(VkResult& result);
 		if (VK_SUCCESS != vkResult)                                                                  \
 		{                                                                                            \
 			const std::string error_message = "VK_CHECK: " + std::string(vk_resultToChar(vkResult)); \
-			std::cerr << error_message;                                                              \
-			throw std::runtime_error(error_message);                                                 \
+			std::cerr << error_message.data();                                                       \
+			throw std::runtime_error(error_message.data());                                          \
 		}                                                                                            \
 	}
 
@@ -26,7 +26,7 @@ inline const char* vk_resultToChar(VkResult& result);
 		if (value == vkResult)                                                                                  \
 		{                                                                                                       \
 			const std::string error_message = "VK_RETURN_ON_RESULT: " + std::string(vk_resultToChar(vkResult)); \
-			std::cerr << error_message;                                                                         \
+			std::cerr << error_message.data();                                                                  \
 			return;                                                                                             \
 		}                                                                                                       \
 	}

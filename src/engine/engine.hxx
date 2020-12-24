@@ -3,7 +3,7 @@
 
 #include "dreco.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 class vk_renderer;
 

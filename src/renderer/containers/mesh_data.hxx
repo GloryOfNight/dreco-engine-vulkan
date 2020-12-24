@@ -1,7 +1,7 @@
 #pragma once
 #include "vertex.hxx"
 
-#include <stdint.h>
+#include <cstdint>
 #include <vector>
 
 struct mesh_data
@@ -11,8 +11,8 @@ struct mesh_data
 
 	static mesh_data createSprite()
 	{
-		// clang-format off
-		const mesh_data mesh
+		// clang-format offconst
+		mesh_data mesh
 		{
 			{
 				{vec3(-0.5, 0.5, 0.0)}, 

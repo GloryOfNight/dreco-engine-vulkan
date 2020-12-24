@@ -4,7 +4,7 @@
 class vk_physical_device
 {
 public:
-	vk_physical_device(const VkInstance* vkInstance);
+	explicit vk_physical_device(const VkInstance* vkInstance);
 
 	void setup(VkSurfaceKHR vkSurface);
 

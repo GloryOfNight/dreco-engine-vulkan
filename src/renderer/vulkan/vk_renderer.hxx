@@ -20,7 +20,12 @@ class vk_renderer
 {
 public:
 	vk_renderer();
+	vk_renderer(const vk_renderer&) = delete;
+	vk_renderer(vk_renderer&&) = delete;
 	~vk_renderer();
+	
+	vk_renderer& operator=(vk_renderer&) = delete;
+	vk_renderer& operator=(vk_renderer&&) = delete;
 
 	static vk_renderer* get();
 

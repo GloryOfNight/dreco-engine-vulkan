@@ -5,7 +5,12 @@ class vk_shader_module
 {
 public:
 	vk_shader_module();
+	vk_shader_module(const vk_shader_module&) = delete;
+	vk_shader_module(vk_shader_module&&) = delete;
 	~vk_shader_module();
+
+	vk_shader_module& operator=(const vk_shader_module&) = delete;
+	vk_shader_module& operator=(const vk_shader_module&&) = delete;
 
 	void create(VkDevice vkDevice, const char* code, const size_t& code_size);
 

@@ -27,7 +27,12 @@ class vk_mesh
 {
 public:
 	vk_mesh();
+	vk_mesh(const vk_mesh&) = delete;
+	vk_mesh(vk_mesh&&) = delete;
 	~vk_mesh();
+
+	vk_mesh& operator=(const vk_mesh&) = delete;
+	vk_mesh& operator=(vk_mesh&&) = delete;
 
 	void create(const vk_mesh_create_info& create_info);
 

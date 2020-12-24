@@ -5,6 +5,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
+#include <array>
 #include <set>
 #include <vector>
 
@@ -25,7 +26,7 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 {
 	const auto& uniqueQueueIndexes = queue_family.getUniqueQueueIndexes();
 
-	float priorities[]{1.0f};
+	float priorities{1.0F};
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
 	queueCreateInfoList.reserve(uniqueQueueIndexes.size());
@@ -36,13 +37,12 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 		deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		deviceQueueInfo.queueFamilyIndex = i;
 		deviceQueueInfo.queueCount = 1;
-		deviceQueueInfo.pQueuePriorities = priorities;
+		deviceQueueInfo.pQueuePriorities = &priorities;
 
 		queueCreateInfoList.push_back(deviceQueueInfo);
 	}
 
-	const uint32_t deviceExtensionsCount = 1;
-	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
+	std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
 
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -51,8 +51,8 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfoList.data();
 	deviceCreateInfo.enabledLayerCount = 0;
 	deviceCreateInfo.ppEnabledLayerNames = nullptr;
-	deviceCreateInfo.enabledExtensionCount = deviceExtensionsCount;
-	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
+	deviceCreateInfo.enabledExtensionCount = deviceExtensions.size();
+	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceCreateInfo.pEnabledFeatures = &physical_device.getFeatures();
 
 	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, vkGetAllocator(), &_vkDevice));

@@ -6,8 +6,13 @@ struct SDL_Window;
 class vk_surface
 {
 public:
-	vk_surface(const VkInstance* vkInstance);
+	explicit vk_surface(const VkInstance* vkInstance);
+	vk_surface(const vk_surface&) = delete;
+	vk_surface(vk_surface&&) = delete;
 	~vk_surface();
+
+	vk_surface& operator=(const vk_surface&) = delete;
+	vk_surface& operator=(vk_surface&&) = delete;
 
 	void create(SDL_Window* window);
 

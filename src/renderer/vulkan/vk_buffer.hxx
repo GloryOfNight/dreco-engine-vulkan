@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+#include <cstdint>
 #include <vulkan/vulkan.h>
 
 class vk_device;
@@ -32,7 +32,12 @@ class vk_buffer
 {
 public:
 	vk_buffer();
+	vk_buffer(const vk_buffer&) = default;
+	vk_buffer(vk_buffer&&) noexcept;
 	~vk_buffer();
+
+	vk_buffer& operator=(const vk_buffer&) = delete;
+	vk_buffer& operator=(vk_buffer&&) = delete;
 
 	void create(const vk_device* device, const vk_buffer_create_info& create_info);
 

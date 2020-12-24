@@ -9,7 +9,7 @@ class vk_surface;
 class vk_swapchain
 {
 public:
-	vk_swapchain(vk_renderer& renderer);
+	explicit vk_swapchain(vk_renderer& renderer);
 
 	void create();
 

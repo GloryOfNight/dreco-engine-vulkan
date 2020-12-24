@@ -9,6 +9,8 @@
 #include "vk_shader_module.hxx"
 #include "vk_utils.hxx"
 
+#include <array>
+
 vk_mesh::vk_mesh()
 	: _vkDevice{VK_NULL_HANDLE}
 	, _vkDescriptorPool{VK_NULL_HANDLE}
@@ -77,9 +79,9 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 {
 	vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkGraphicsPipeline);
 
-	VkBuffer buffers[1]{_vertexBuffer.get()};
-	VkDeviceSize offsets[1]{0};
-	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers, offsets);
+	std::array<VkBuffer, 1> buffers{_vertexBuffer.get()};
+	std::array<VkDeviceSize, 1> offsets{0};
+	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers.data(), offsets.data());
 	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
 	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &_vkDescriptorSets[imageIndex], 0, nullptr);
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
@@ -88,8 +90,8 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
 	_ubo._model = mat4::makeTransform(transform(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1)));
-	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3f});
-	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.f);
+	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3F});
+	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.F);
 
 	_uniformBuffers[imageIndex].map(&_ubo, sizeof(_ubo));
 }
@@ -174,7 +176,7 @@ void vk_mesh::createGraphicsPipelineLayout()
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &_vkDescriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 	VK_CHECK(vkCreatePipelineLayout(_vkDevice, &pipelineLayoutInfo, VK_NULL_HANDLE, &_vkPipelineLayout));
 }
 
@@ -183,11 +185,16 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	size_t vertShaderSize{0};
 	char* vertShaderCode = file_utils::read_file("shaders/vert.spv", &vertShaderSize);
 	if (nullptr == vertShaderCode)
+	{
 		throw std::runtime_error("Failed to load binary shader code");
+	}
+
 	size_t fragShaderSize{0};
 	char* fragShaderCode = file_utils::read_file("shaders/frag.spv", &fragShaderSize);
 	if (nullptr == fragShaderCode)
+	{
 		throw std::runtime_error("Failed to load binary shader code");
+	}
 
 	vk_shader_module vertShaderStage;
 	vertShaderStage.create(_vkDevice, vertShaderCode, vertShaderSize);
@@ -209,7 +216,7 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
-	VkPipelineShaderStageCreateInfo shaderStagesInfo[]{vertShaderStageInfo, fragShaderStageInfo};
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStagesInfo{vertShaderStageInfo, fragShaderStageInfo};
 
 	VkVertexInputBindingDescription vertexInputBindingDescription{};
 	vertexInputBindingDescription.binding = 0;
@@ -235,12 +242,12 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
 	VkViewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
+	viewport.x = 0.0F;
+	viewport.y = 0.0F;
 	viewport.width = static_cast<float>(vkExtent.width);
 	viewport.height = static_cast<float>(vkExtent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	viewport.minDepth = 0.0F;
+	viewport.maxDepth = 1.0F;
 
 	VkRect2D scissors{};
 	scissors.offset = {0, 0};
@@ -258,19 +265,19 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	rasterizationState.depthClampEnable = VK_FALSE;
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizationState.lineWidth = 1.0f;
+	rasterizationState.lineWidth = 1.0F;
 	rasterizationState.cullMode = VK_CULL_MODE_NONE;
 	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationState.depthBiasEnable = VK_FALSE;
-	rasterizationState.depthBiasConstantFactor = 0.0f;
-	rasterizationState.depthBiasClamp = 0.0f;
-	rasterizationState.depthBiasSlopeFactor = 0.0f;
+	rasterizationState.depthBiasConstantFactor = 0.0F;
+	rasterizationState.depthBiasClamp = 0.0F;
+	rasterizationState.depthBiasSlopeFactor = 0.0F;
 
 	VkPipelineMultisampleStateCreateInfo multisampleState{};
 	multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleState.sampleShadingEnable = VK_FALSE;
 	multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	multisampleState.minSampleShading = 1.0f;
+	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
 	multisampleState.alphaToCoverageEnable = VK_FALSE;
 	multisampleState.alphaToOneEnable = VK_FALSE;
@@ -291,15 +298,15 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	colorBlending.logicOp = VK_LOGIC_OP_COPY;
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments = &colorBlendAttachment;
-	colorBlending.blendConstants[0] = 0.0f;
-	colorBlending.blendConstants[1] = 0.0f;
-	colorBlending.blendConstants[2] = 0.0f;
-	colorBlending.blendConstants[3] = 0.0f;
+	colorBlending.blendConstants[0] = 0.0F;
+	colorBlending.blendConstants[1] = 0.0F;
+	colorBlending.blendConstants[2] = 0.0F;
+	colorBlending.blendConstants[3] = 0.0F;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = shaderStagesInfo;
+	pipelineInfo.pStages = shaderStagesInfo.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembly;
 	pipelineInfo.pViewportState = &viewportState;
