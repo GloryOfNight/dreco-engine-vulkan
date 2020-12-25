@@ -2,7 +2,7 @@
 
 #include <set>
 
-#define IS_QUEUE_INDEX_VALID(index) UINT32_MAX != index
+#define IS_QUEUE_INDEX_VALID(index) (UINT32_MAX != index)
 
 vk_queue_family::vk_queue_family()
 	: isSupported{false}
@@ -10,7 +10,6 @@ vk_queue_family::vk_queue_family()
 	, transferIndex{UINT32_MAX}
 	, presentIndex{UINT32_MAX}
 	, sharingMode{VK_SHARING_MODE_CONCURRENT}
-	, uniqueQueueIndexes{}
 {
 }
 
@@ -63,9 +62,6 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	{
 		sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
-
-	const std::set<uint32_t> indexesSet{presentIndex, graphicsIndex, transferIndex};
-	uniqueQueueIndexes = std::vector<uint32_t>(indexesSet.begin(), indexesSet.end());
 }
 
 bool vk_queue_family::isVulkanSupported() const
@@ -93,7 +89,13 @@ VkSharingMode vk_queue_family::getSharingMode() const
 	return sharingMode;
 }
 
-const std::vector<uint32_t>& vk_queue_family::getUniqueQueueIndexes() const
+std::vector<uint32_t> vk_queue_family::getQueueIndexes() const
 {
-	return uniqueQueueIndexes;
+	return std::vector<uint32_t>{presentIndex, graphicsIndex, transferIndex};
+}
+
+std::vector<uint32_t> vk_queue_family::getUniqueQueueIndexes() const
+{
+	const std::set<uint32_t> indexesSet{presentIndex, graphicsIndex, transferIndex};
+	return std::vector<uint32_t>(indexesSet.begin(), indexesSet.end());
 }

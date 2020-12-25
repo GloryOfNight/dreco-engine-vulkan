@@ -233,11 +233,10 @@ void vk_renderer::createInstance()
 
 void vk_renderer::createSwapchain()
 {
-	VkSharingMode sharingMode{_queueFamily.getSharingMode()};
-	std::vector<uint32_t> queueFamilyIndexes{
-		_queueFamily.getGraphicsIndex(),
-		_queueFamily.getTransferIndex(),
-		_queueFamily.getPresentIndex()};
+	const VkSharingMode sharingMode{_queueFamily.getSharingMode()};
+
+	const std::vector<uint32_t> queueFamilyIndexes =
+		VK_SHARING_MODE_CONCURRENT == sharingMode ? _queueFamily.getUniqueQueueIndexes() : _queueFamily.getQueueIndexes();
 
 	const VkSurfaceFormatKHR& surfaceFormat{_surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{_surface.getCapabilities()};

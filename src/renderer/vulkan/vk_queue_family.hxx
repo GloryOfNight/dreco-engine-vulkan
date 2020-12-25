@@ -21,7 +21,9 @@ public:
 
 	VkSharingMode getSharingMode() const;
 
-	const std::vector<uint32_t>& getUniqueQueueIndexes() const;
+	std::vector<uint32_t> getQueueIndexes() const;
+
+	std::vector<uint32_t> getUniqueQueueIndexes() const;
 
 private:
 	bool isSupported;
@@ -33,6 +35,4 @@ private:
 	uint32_t presentIndex;
 
 	VkSharingMode sharingMode;
-
-	std::vector<uint32_t> uniqueQueueIndexes;
 };
