@@ -33,11 +33,17 @@ public:
 
 	void init();
 
-	void tick(float deltaTime);
+	void tick(double deltaTime);
 
-	void createMesh();
+	vk_mesh* createMesh();
+
+	VkCommandBuffer createSecondaryCommandBuffer();
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
+
+	uint32_t getImageCount() const;
+
+	VkRenderPass getRenderPass() const;
 
 	SDL_Window* getWindow() const;
 
@@ -69,8 +75,6 @@ protected:
 	void createCommandPool();
 
 	void createPrimaryCommandBuffers();
-
-	VkCommandBuffer createSecondaryCommandBuffer();
 
 	void createFences();
 

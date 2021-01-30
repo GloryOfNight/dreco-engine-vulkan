@@ -16,6 +16,7 @@
 #include <stdexcept>
 
 #define VK_ENABLE_VALIDATION
+#define VK_ENABLE_LUNAR_MONITOR
 //#define VK_ENABLE_MESA_OVERLAY
 
 vk_renderer::vk_renderer()
@@ -107,11 +108,11 @@ void vk_renderer::init()
 	createSemaphores();
 }
 
-void vk_renderer::tick(float deltaTime)
+void vk_renderer::tick(double deltaTime)
 {
 	for (auto& mesh : _meshes)
 	{
-		const float rotSpeed = 1.F;
+		const double rotSpeed = 1.F;
 		transform mesh_transform(mesh->_transform);
 		vec3 rotation(mesh_transform._rotation);
 		rotation._x += rotSpeed * deltaTime;
@@ -126,22 +127,14 @@ void vk_renderer::tick(float deltaTime)
 	drawFrame();
 }
 
-void vk_renderer::createMesh()
+vk_mesh* vk_renderer::createMesh()
 {
 	_meshes.push_back(new vk_mesh());
-	// clang-format off
-	vk_mesh_create_info mesh_create_info
-	{
-		&_device,
-		&_queueFamily,
-		&_physicalDevice,
-		_vkRenderPass,
-		_surface.getCapabilities().currentExtent,
-		createSecondaryCommandBuffer(),
-		static_cast<uint32_t>(_vkSwapchainImageViews.size())
-	};
-	// clang-format on
-	_meshes.back()->create(mesh_create_info);
+
+	vk_mesh* newMesh = _meshes.back();
+	newMesh->create();
+
+	return newMesh;
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -153,6 +146,16 @@ uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* pat
 		*patch = VK_VERSION_PATCH(_apiVersion);
 	}
 	return _apiVersion;
+}
+
+uint32_t vk_renderer::getImageCount() const
+{
+	return _vkSwapchainImageViews.size();
+}
+
+VkRenderPass vk_renderer::getRenderPass() const
+{
+	return _vkRenderPass;
 }
 
 SDL_Window* vk_renderer::getWindow() const
@@ -211,6 +214,10 @@ void vk_renderer::createInstance()
 
 #ifdef VK_ENABLE_MESA_OVERLAY
 	instLayers.push_back("VK_LAYER_MESA_overlay");
+#endif
+
+#ifdef VK_ENABLE_LUNAR_MONITOR
+	instLayers.push_back("VK_LAYER_LUNARG_monitor");
 #endif
 
 	// clang-format off

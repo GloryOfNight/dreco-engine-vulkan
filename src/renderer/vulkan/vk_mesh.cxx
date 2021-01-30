@@ -6,6 +6,7 @@
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
+#include "vk_renderer.hxx"
 #include "vk_shader_module.hxx"
 #include "vk_utils.hxx"
 
@@ -27,24 +28,33 @@ vk_mesh::~vk_mesh()
 	destroy();
 }
 
-void vk_mesh::create(const vk_mesh_create_info& create_info)
+void vk_mesh::create()
 {
+	vk_renderer* renderer{vk_renderer::get()};
+
 	_mesh = mesh_data::createBox();
-	_vkDevice = create_info.device->get();
-	_vkCommandBuffer = create_info.vkCommandBuffer;
 
-	createVertexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
-	createIndexBuffer(create_info.device, create_info.queueFamily, create_info.physicalDevice);
-	createUniformBuffers(create_info.device, create_info.queueFamily, create_info.physicalDevice, create_info.imageCount);
+	const VkExtent2D currentExtent{renderer->getSurface().getCapabilities().currentExtent};
+	const vk_device* vkDevice{&renderer->getDevice()};
+	const vk_queue_family* vkQueueFamily{&renderer->getQueueFamily()};
+	const vk_physical_device* vkPhysicalDevice{&renderer->getPhysicalDevice()};
+	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
 
-	createDescriptorPool(create_info.imageCount);
+	_vkDevice = vkDevice->get();
+	_vkCommandBuffer = renderer->createSecondaryCommandBuffer();
+
+	createVertexBuffer(vkDevice, vkQueueFamily, vkPhysicalDevice);
+	createIndexBuffer(vkDevice, vkQueueFamily, vkPhysicalDevice);
+	createUniformBuffers(vkDevice, vkQueueFamily, vkPhysicalDevice);
+
+	createDescriptorPool();
 	createDescriptorSetLayot();
 	createDescriptorSets();
 
 	createGraphicsPipelineLayout();
-	createGraphicsPipeline(create_info.vkRenderPass, create_info.vkExtent);
+	createGraphicsPipeline(vkRenderPass, currentExtent);
 
-	writeCommandBuffer(create_info.vkRenderPass);
+	writeCommandBuffer(vkRenderPass);
 }
 
 void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
@@ -96,11 +106,11 @@ void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 	_uniformBuffer.map(&_ubo, sizeof(_ubo));
 }
 
-void vk_mesh::createDescriptorPool(const uint32_t imageCount)
+void vk_mesh::createDescriptorPool()
 {
 	VkDescriptorPoolSize poolSize{};
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = static_cast<uint32_t>(imageCount);
+	poolSize.descriptorCount = 1;
 
 	VkDescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -108,7 +118,7 @@ void vk_mesh::createDescriptorPool(const uint32_t imageCount)
 	poolCreateInfo.flags = 0;
 	poolCreateInfo.poolSizeCount = 1;
 	poolCreateInfo.pPoolSizes = &poolSize;
-	poolCreateInfo.maxSets = imageCount;
+	poolCreateInfo.maxSets = 1;
 
 	VK_CHECK(vkCreateDescriptorPool(_vkDevice, &poolCreateInfo, VK_NULL_HANDLE, &_vkDescriptorPool));
 }
@@ -333,7 +343,7 @@ void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* 
 	_indexBuffer.map(_mesh._indexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount)
+void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
@@ -351,7 +361,7 @@ void vk_mesh::writeCommandBuffer(const VkRenderPass vkRenderPass)
 	inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 	inheritanceInfo.pNext = nullptr;
 	inheritanceInfo.renderPass = vkRenderPass;
-	inheritanceInfo.framebuffer = nullptr;
+	inheritanceInfo.framebuffer = VK_NULL_HANDLE;
 	inheritanceInfo.subpass = 0;
 	inheritanceInfo.pipelineStatistics = 0;
 

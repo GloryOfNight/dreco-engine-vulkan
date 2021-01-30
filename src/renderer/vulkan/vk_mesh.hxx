@@ -12,17 +12,6 @@ class vk_device;
 class vk_queue_family;
 class vk_physical_device;
 
-struct vk_mesh_create_info
-{
-	const vk_device* device;
-	const vk_queue_family* queueFamily;
-	const vk_physical_device* physicalDevice;
-	const VkRenderPass vkRenderPass;
-	const VkExtent2D vkExtent;
-	const VkCommandBuffer vkCommandBuffer;
-	const uint32_t imageCount;
-};
-
 class vk_mesh
 {
 public:
@@ -34,7 +23,7 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const vk_mesh_create_info& create_info);
+	void create();
 
 	void recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
 
@@ -47,7 +36,7 @@ public:
 	transform _transform;
 
 protected:
-	void createDescriptorPool(const uint32_t imageCount);
+	void createDescriptorPool();
 
 	void createDescriptorSetLayot();
 
@@ -61,7 +50,7 @@ protected:
 
 	void createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, uint32_t imageCount);
+	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void writeCommandBuffer(const VkRenderPass vkRenderPass);
 
