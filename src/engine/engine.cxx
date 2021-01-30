@@ -88,8 +88,6 @@ bool engine::startRenderer()
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
 
 			_renderer->createMesh();
-			_renderer->createMesh();
-			_renderer->createMesh();
 		}
 		else
 		{

@@ -4,7 +4,7 @@
 
 struct transform
 {
-	transform() = default;
+	transform();
 	transform(const vec3& translation, const vec3& rotation, const vec3& scale);
 
 	vec3 _translation;

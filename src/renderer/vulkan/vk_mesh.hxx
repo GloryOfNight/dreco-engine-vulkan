@@ -44,12 +44,14 @@ public:
 
 	void beforeSubmitUpdate(const uint32_t imageIndex);
 
+	transform _transform;
+
 protected:
 	void createDescriptorPool(const uint32_t imageCount);
 
 	void createDescriptorSetLayot();
 
-	void createDescriptorSets(const uint32_t imageCount);
+	void createDescriptorSets();
 
 	void createGraphicsPipelineLayout();
 
@@ -64,8 +66,6 @@ protected:
 	void writeCommandBuffer(const VkRenderPass vkRenderPass);
 
 private:
-	transform _transform;
-
 	mesh_data _mesh;
 
 	uniforms _ubo;
@@ -74,7 +74,7 @@ private:
 
 	vk_buffer _indexBuffer;
 
-	std::vector<vk_buffer> _uniformBuffers;
+	vk_buffer _uniformBuffer;
 
 	VkDevice _vkDevice;
 
@@ -82,7 +82,7 @@ private:
 
 	VkDescriptorSetLayout _vkDescriptorSetLayout;
 
-	std::vector<VkDescriptorSet> _vkDescriptorSets;
+	VkDescriptorSet _vkDescriptorSet;
 
 	VkPipelineLayout _vkPipelineLayout;
 

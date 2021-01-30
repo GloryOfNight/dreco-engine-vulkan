@@ -111,6 +111,16 @@ void vk_renderer::tick(float deltaTime)
 {
 	for (auto& mesh : _meshes)
 	{
+		const float rotSpeed = 1.F;
+		transform mesh_transform(mesh->_transform);
+		vec3 rotation(mesh_transform._rotation);
+		rotation._x += rotSpeed * deltaTime;
+		rotation._y += rotSpeed * deltaTime;
+		rotation._z += rotSpeed * deltaTime;
+
+		mesh_transform._rotation = rotation;
+
+		mesh->_transform = mesh_transform;
 		mesh->beforeSubmitUpdate(0);
 	}
 	drawFrame();

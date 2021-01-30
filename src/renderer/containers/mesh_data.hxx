@@ -11,8 +11,8 @@ struct mesh_data
 
 	static mesh_data createSprite()
 	{
-		// clang-format offconst
-		mesh_data mesh
+		// clang-format off
+		const mesh_data mesh
 		{
 			{
 				{vec3(-0.5, 0.5, 0.0)}, 
@@ -22,7 +22,35 @@ struct mesh_data
 			},
 			{
 				0, 1, 2,
-				0, 2, 3    
+				0, 2, 3
+			}
+		};
+		// clang-format on
+		return mesh;
+	}
+
+	static mesh_data createBox() 
+	{
+		// clang-format off
+		const mesh_data mesh
+		{
+			{
+				{vec3(-0.5, 0.5, 0.5)}, 
+				{vec3(-0.5, -0.5, 0.5)}, 
+				{vec3(0.5, -0.5, 0.5)}, 
+				{vec3(0.5, 0.5, 0.5)},
+				{vec3(-0.5, 0.5, -0.5)}, 
+				{vec3(-0.5, -0.5, -0.5)}, 
+				{vec3(0.5, -0.5, -0.5)}, 
+				{vec3(0.5, 0.5, -0.5)}
+			},
+			{
+				0, 1, 3, 3, 1, 2,
+				1, 5, 2, 2, 5, 6,
+				5, 4, 6, 6, 4, 7,
+				4, 0, 7, 7, 0, 3,
+				3, 2, 7, 7, 2, 6,
+				4, 5, 0, 0, 5, 1
 			}
 		};
 		// clang-format on

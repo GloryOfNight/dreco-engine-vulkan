@@ -18,7 +18,7 @@ vk_mesh::vk_mesh()
 	, _vkPipelineLayout{VK_NULL_HANDLE}
 	, _vkGraphicsPipeline{VK_NULL_HANDLE}
 	, _vkCommandBuffer{VK_NULL_HANDLE}
-
+	, _transform{}
 {
 }
 
@@ -29,7 +29,7 @@ vk_mesh::~vk_mesh()
 
 void vk_mesh::create(const vk_mesh_create_info& create_info)
 {
-	_mesh = mesh_data::createSprite();
+	_mesh = mesh_data::createBox();
 	_vkDevice = create_info.device->get();
 	_vkCommandBuffer = create_info.vkCommandBuffer;
 
@@ -39,7 +39,7 @@ void vk_mesh::create(const vk_mesh_create_info& create_info)
 
 	createDescriptorPool(create_info.imageCount);
 	createDescriptorSetLayot();
-	createDescriptorSets(create_info.imageCount);
+	createDescriptorSets();
 
 	createGraphicsPipelineLayout();
 	createGraphicsPipeline(create_info.vkRenderPass, create_info.vkExtent);
@@ -69,7 +69,7 @@ void vk_mesh::destroy()
 
 		_vertexBuffer.destroy();
 		_indexBuffer.destroy();
-		_uniformBuffers.clear();
+		_uniformBuffer.destroy();
 
 		_vkDevice = VK_NULL_HANDLE;
 	}
@@ -83,17 +83,17 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 	std::array<VkDeviceSize, 1> offsets{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers.data(), offsets.data());
 	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &_vkDescriptorSets[imageIndex], 0, nullptr);
+	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &_vkDescriptorSet, 0, nullptr);
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
 }
 
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
-	_ubo._model = mat4::makeTransform(transform(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1)));
+	_ubo._model = mat4::makeTransform(_transform);
 	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3F});
 	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.F);
 
-	_uniformBuffers[imageIndex].map(&_ubo, sizeof(_ubo));
+	_uniformBuffer.map(&_ubo, sizeof(_ubo));
 }
 
 void vk_mesh::createDescriptorPool(const uint32_t imageCount)
@@ -132,41 +132,35 @@ void vk_mesh::createDescriptorSetLayot()
 	VK_CHECK(vkCreateDescriptorSetLayout(_vkDevice, &layoutCreateInfo, VK_NULL_HANDLE, &_vkDescriptorSetLayout));
 }
 
-void vk_mesh::createDescriptorSets(const uint32_t imageCount)
+void vk_mesh::createDescriptorSets()
 {
-	std::vector<VkDescriptorSetLayout> layouts(imageCount, _vkDescriptorSetLayout);
-	_vkDescriptorSets.resize(imageCount);
-
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.pNext = nullptr;
 	allocInfo.descriptorPool = _vkDescriptorPool;
-	allocInfo.descriptorSetCount = imageCount;
-	allocInfo.pSetLayouts = layouts.data();
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &_vkDescriptorSetLayout;
 
-	VK_CHECK(vkAllocateDescriptorSets(_vkDevice, &allocInfo, _vkDescriptorSets.data()));
+	VK_CHECK(vkAllocateDescriptorSets(_vkDevice, &allocInfo, &_vkDescriptorSet));
 
-	for (uint32_t i = 0; i < imageCount; ++i)
-	{
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = _uniformBuffers[i].get();
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(uniforms);
+	VkDescriptorBufferInfo bufferInfo{};
+	bufferInfo.buffer = _uniformBuffer.get();
+	bufferInfo.offset = 0;
+	bufferInfo.range = sizeof(uniforms);
 
-		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.pNext = nullptr;
-		descriptorWrite.dstSet = _vkDescriptorSets[i];
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
-		descriptorWrite.pImageInfo = nullptr;
-		descriptorWrite.pTexelBufferView = nullptr;
+	VkWriteDescriptorSet descriptorWrite{};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.pNext = nullptr;
+	descriptorWrite.dstSet = _vkDescriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pBufferInfo = &bufferInfo;
+	descriptorWrite.pImageInfo = nullptr;
+	descriptorWrite.pTexelBufferView = nullptr;
 
-		vkUpdateDescriptorSets(_vkDevice, 1, &descriptorWrite, 0, nullptr);
-	}
+	vkUpdateDescriptorSets(_vkDevice, 1, &descriptorWrite, 0, nullptr);
 }
 
 void vk_mesh::createGraphicsPipelineLayout()
@@ -255,7 +249,7 @@ void vk_mesh::createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkEx
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizationState.lineWidth = 1.0F;
-	rasterizationState.cullMode = VK_CULL_MODE_NONE;
+	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationState.depthBiasEnable = VK_FALSE;
 	rasterizationState.depthBiasConstantFactor = 0.0F;
@@ -348,11 +342,7 @@ void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_famil
 	buffer_create_info.physicalDevice = physicalDevice;
 	buffer_create_info.size = sizeof(uniforms);
 
-	_uniformBuffers.resize(imageCount);
-	for (auto& buffer : _uniformBuffers)
-	{
-		buffer.create(device, buffer_create_info);
-	}
+	_uniformBuffer.create(device, buffer_create_info);
 }
 
 void vk_mesh::writeCommandBuffer(const VkRenderPass vkRenderPass)
