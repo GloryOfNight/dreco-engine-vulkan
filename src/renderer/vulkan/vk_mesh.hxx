@@ -4,6 +4,7 @@
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
+#include "vk_descriptor_set.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -36,11 +37,7 @@ public:
 	transform _transform;
 
 protected:
-	void createDescriptorPool();
-
-	void createDescriptorSetLayot();
-
-	void createDescriptorSets();
+	void createDescriptorSet();
 
 	void createGraphicsPipelineLayout();
 
@@ -65,13 +62,9 @@ private:
 
 	vk_buffer _uniformBuffer;
 
+	vk_descriptor_set _descriptorSet;
+
 	VkDevice _vkDevice;
-
-	VkDescriptorPool _vkDescriptorPool;
-
-	VkDescriptorSetLayout _vkDescriptorSetLayout;
-
-	VkDescriptorSet _vkDescriptorSet;
 
 	VkPipelineLayout _vkPipelineLayout;
 

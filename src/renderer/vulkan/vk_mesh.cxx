@@ -14,8 +14,6 @@
 
 vk_mesh::vk_mesh()
 	: _vkDevice{VK_NULL_HANDLE}
-	, _vkDescriptorPool{VK_NULL_HANDLE}
-	, _vkDescriptorSetLayout{VK_NULL_HANDLE}
 	, _vkPipelineLayout{VK_NULL_HANDLE}
 	, _vkGraphicsPipeline{VK_NULL_HANDLE}
 	, _vkCommandBuffer{VK_NULL_HANDLE}
@@ -47,9 +45,7 @@ void vk_mesh::create()
 	createIndexBuffer(vkDevice, vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkDevice, vkQueueFamily, vkPhysicalDevice);
 
-	createDescriptorPool();
-	createDescriptorSetLayot();
-	createDescriptorSets();
+	createDescriptorSet();
 
 	createGraphicsPipelineLayout();
 	createGraphicsPipeline(vkRenderPass, currentExtent);
@@ -71,8 +67,7 @@ void vk_mesh::destroy()
 {
 	if (VK_NULL_HANDLE != _vkDevice)
 	{
-		vkDestroyDescriptorSetLayout(_vkDevice, _vkDescriptorSetLayout, VK_NULL_HANDLE);
-		vkDestroyDescriptorPool(_vkDevice, _vkDescriptorPool, VK_NULL_HANDLE);
+		_descriptorSet.destroy();
 
 		vkDestroyPipeline(_vkDevice, _vkGraphicsPipeline, VK_NULL_HANDLE);
 		vkDestroyPipelineLayout(_vkDevice, _vkPipelineLayout, VK_NULL_HANDLE);
@@ -93,7 +88,10 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 	std::array<VkDeviceSize, 1> offsets{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers.data(), offsets.data());
 	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &_vkDescriptorSet, 0, nullptr);
+
+	const VkDescriptorSet vkDescriptorSet{_descriptorSet.get()};
+	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipelineLayout, 0, 1, &vkDescriptorSet, 0, nullptr);
+
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
 }
 
@@ -106,52 +104,9 @@ void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 	_uniformBuffer.map(&_ubo, sizeof(_ubo));
 }
 
-void vk_mesh::createDescriptorPool()
+void vk_mesh::createDescriptorSet()
 {
-	VkDescriptorPoolSize poolSize{};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = 1;
-
-	VkDescriptorPoolCreateInfo poolCreateInfo{};
-	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolCreateInfo.pNext = nullptr;
-	poolCreateInfo.flags = 0;
-	poolCreateInfo.poolSizeCount = 1;
-	poolCreateInfo.pPoolSizes = &poolSize;
-	poolCreateInfo.maxSets = 1;
-
-	VK_CHECK(vkCreateDescriptorPool(_vkDevice, &poolCreateInfo, VK_NULL_HANDLE, &_vkDescriptorPool));
-}
-
-void vk_mesh::createDescriptorSetLayot()
-{
-	VkDescriptorSetLayoutBinding uboLayoutBinding{};
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uboLayoutBinding.pImmutableSamplers = VK_NULL_HANDLE;
-
-	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
-	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.pNext = nullptr;
-	layoutCreateInfo.flags = 0;
-	layoutCreateInfo.bindingCount = 1;
-	layoutCreateInfo.pBindings = &uboLayoutBinding;
-
-	VK_CHECK(vkCreateDescriptorSetLayout(_vkDevice, &layoutCreateInfo, VK_NULL_HANDLE, &_vkDescriptorSetLayout));
-}
-
-void vk_mesh::createDescriptorSets()
-{
-	VkDescriptorSetAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.pNext = nullptr;
-	allocInfo.descriptorPool = _vkDescriptorPool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &_vkDescriptorSetLayout;
-
-	VK_CHECK(vkAllocateDescriptorSets(_vkDevice, &allocInfo, &_vkDescriptorSet));
+	_descriptorSet.create();
 
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = _uniformBuffer.get();
@@ -161,7 +116,7 @@ void vk_mesh::createDescriptorSets()
 	VkWriteDescriptorSet descriptorWrite{};
 	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	descriptorWrite.pNext = nullptr;
-	descriptorWrite.dstSet = _vkDescriptorSet;
+	descriptorWrite.dstSet = _descriptorSet.get();
 	descriptorWrite.dstBinding = 0;
 	descriptorWrite.dstArrayElement = 0;
 	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -170,15 +125,18 @@ void vk_mesh::createDescriptorSets()
 	descriptorWrite.pImageInfo = nullptr;
 	descriptorWrite.pTexelBufferView = nullptr;
 
-	vkUpdateDescriptorSets(_vkDevice, 1, &descriptorWrite, 0, nullptr);
+	std::vector<VkWriteDescriptorSet> writeInfo{descriptorWrite};
+	_descriptorSet.update(writeInfo);
 }
 
 void vk_mesh::createGraphicsPipelineLayout()
 {
+	const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts{_descriptorSet.getLayouts()};
+
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &_vkDescriptorSetLayout;
+	pipelineLayoutInfo.setLayoutCount = vkDescriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = vkDescriptorSetLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 	VK_CHECK(vkCreatePipelineLayout(_vkDevice, &pipelineLayoutInfo, VK_NULL_HANDLE, &_vkPipelineLayout));
