@@ -15,9 +15,10 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_buffer.cxx"
 "src/renderer/vulkan/vk_shader_module.cxx"
 "src/renderer/vulkan/vk_swapchain.cxx"
-"src/renderer/vulkan/vk_descriptor_set.cxx")
+"src/renderer/vulkan/vk_descriptor_set.cxx"
+"src/renderer/vulkan/vk_graphics_pipeline.cxx")
 
-add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
+add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST} "src/renderer/vulkan/vk_graphics_pipeline.cxx")
 
 find_package(SDL2 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})

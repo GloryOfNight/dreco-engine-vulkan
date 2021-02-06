@@ -5,12 +5,14 @@
 
 #include "vk_buffer.hxx"
 #include "vk_descriptor_set.hxx"
+#include "vk_graphics_pipeline.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.h>
 
 class vk_device;
 class vk_queue_family;
+class vk_graphics_pipeline;
 class vk_physical_device;
 
 class vk_mesh
@@ -39,9 +41,7 @@ public:
 protected:
 	void createDescriptorSet();
 
-	void createGraphicsPipelineLayout();
-
-	void createGraphicsPipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
+	void createGraphicsPipeline();
 
 	void createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
@@ -62,13 +62,11 @@ private:
 
 	vk_buffer _uniformBuffer;
 
+	vk_graphics_pipeline _graphicsPipeline;
+
 	vk_descriptor_set _descriptorSet;
 
 	VkDevice _vkDevice;
-
-	VkPipelineLayout _vkPipelineLayout;
-
-	VkPipeline _vkGraphicsPipeline;
 
 	VkCommandBuffer _vkCommandBuffer;
 };
