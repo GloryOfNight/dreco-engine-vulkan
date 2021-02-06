@@ -12,11 +12,13 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_mesh.cxx"
 "src/renderer/vulkan/vk_device.cxx"
 "src/renderer/vulkan/vk_queue_family.cxx"
+"src/renderer/vulkan/vk_device_memory.cxx"
 "src/renderer/vulkan/vk_buffer.cxx"
 "src/renderer/vulkan/vk_shader_module.cxx"
 "src/renderer/vulkan/vk_swapchain.cxx"
 "src/renderer/vulkan/vk_descriptor_set.cxx"
-"src/renderer/vulkan/vk_graphics_pipeline.cxx")
+"src/renderer/vulkan/vk_graphics_pipeline.cxx"
+"src/renderer/vulkan/vk_texture_image.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST} "src/renderer/vulkan/vk_graphics_pipeline.cxx")
 

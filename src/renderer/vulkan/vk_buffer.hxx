@@ -1,4 +1,6 @@
 #pragma once
+#include "vk_device_memory.hxx"
+
 #include <cstdint>
 #include <vulkan/vulkan.h>
 
@@ -8,23 +10,16 @@ class vk_queue_family;
 
 enum class vk_buffer_usage : VkFlags
 {
+	TRANSFER_SRC = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 	UNIFORM = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 	INDEX = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 	VERTEX = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
 };
 
-enum class vk_buffer_memory_properties : VkFlags
-{
-	HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	DEVICE = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-};
-
 struct vk_buffer_create_info
 {
 	vk_buffer_usage usage;
-	vk_buffer_memory_properties memory_properties;
-	const vk_queue_family* queueFamily;
-	const vk_physical_device* physicalDevice;
+	vk_device_memory_properties memory_properties_flags;
 	VkDeviceSize size;
 };
 
@@ -32,8 +27,8 @@ class vk_buffer
 {
 public:
 	vk_buffer();
-	vk_buffer(const vk_buffer&) = default;
-	vk_buffer(vk_buffer&&) noexcept;
+	vk_buffer(const vk_buffer&) = delete;
+	vk_buffer(vk_buffer&&) = delete;
 	~vk_buffer();
 
 	vk_buffer& operator=(const vk_buffer&) = delete;
@@ -41,23 +36,19 @@ public:
 
 	void create(const vk_device* device, const vk_buffer_create_info& create_info);
 
-	void destroy();
-
-	void map(const void* data, const VkDeviceSize size);
+	virtual void destroy();
 
 	VkBuffer get() const;
 
+	vk_device_memory& getDeviceMemory();
+
 protected:
-	static void destroy(VkDevice vkDevice, VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemery);
+	void createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info);
 
-	static void createBuffer(const vk_buffer_create_info& create_info, VkBuffer& vkBuffer, VkDevice vkDevice, VkDeviceMemory& vkDeviceMemory);
-
-	static uint32_t findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkPhysicalDeviceMemoryProperties, uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags);
+	void bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset);
 
 private:
-	const vk_device* _device;
+	vk_device_memory _deviceMemory;
 
 	VkBuffer _vkBuffer;
-
-	VkDeviceMemory _vkDeviceMemory;
 };

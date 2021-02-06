@@ -91,7 +91,7 @@ void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3F});
 	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.F);
 
-	_uniformBuffer.map(&_ubo, sizeof(_ubo));
+	_uniformBuffer.getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }
 
 void vk_mesh::createDescriptorSet()
@@ -128,35 +128,29 @@ void vk_mesh::createVertexBuffer(const vk_device* device, const vk_queue_family*
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::VERTEX;
-	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
-	buffer_create_info.queueFamily = queueFamily;
-	buffer_create_info.physicalDevice = physicalDevice;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
 	buffer_create_info.size = sizeof(_mesh._vertexes[0]) * _mesh._vertexes.size();
 
 	_vertexBuffer.create(device, buffer_create_info);
-	_vertexBuffer.map(_mesh._vertexes.data(), buffer_create_info.size);
+	_vertexBuffer.getDeviceMemory().map(_mesh._vertexes.data(), buffer_create_info.size);
 }
 
 void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::INDEX;
-	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
-	buffer_create_info.queueFamily = queueFamily;
-	buffer_create_info.physicalDevice = physicalDevice;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
 	buffer_create_info.size = sizeof(_mesh._indexes[0]) * _mesh._indexes.size();
 
 	_indexBuffer.create(device, buffer_create_info);
-	_indexBuffer.map(_mesh._indexes.data(), buffer_create_info.size);
+	_indexBuffer.getDeviceMemory().map(_mesh._indexes.data(), buffer_create_info.size);
 }
 
 void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
-	buffer_create_info.memory_properties = vk_buffer_memory_properties::DEVICE;
-	buffer_create_info.queueFamily = queueFamily;
-	buffer_create_info.physicalDevice = physicalDevice;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
 	buffer_create_info.size = sizeof(uniforms);
 
 	_uniformBuffer.create(device, buffer_create_info);
