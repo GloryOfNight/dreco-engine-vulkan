@@ -28,7 +28,7 @@ void vk_mesh::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
-	_mesh = mesh_data::createSprite();
+	_mesh = mesh_data::createBox();
 
 	const VkExtent2D currentExtent{renderer->getSurface().getCapabilities().currentExtent};
 	const vk_device* vkDevice{&renderer->getDevice()};
@@ -90,8 +90,10 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
 	_ubo._model = mat4::makeTransform(_transform);
-	_ubo._view = mat4::makeTranslation(vec3{0, 0, 1.3F});
-	_ubo._projection = mat4::makeProjection(-1, 1, static_cast<float>(800) / static_cast<float>(800), 75.F);
+	_ubo._view = mat4::makeTranslation(vec3{0, 0, 3.0F});
+
+	const VkExtent2D vkCurrentExtent = vk_renderer::get()->getSurface().getCapabilities().currentExtent;
+	_ubo._projection = mat4::makeProjection(0.1F, 100, static_cast<float>(vkCurrentExtent.width) / static_cast<float>(vkCurrentExtent.height), 45.F);
 
 	_uniformBuffer.getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }

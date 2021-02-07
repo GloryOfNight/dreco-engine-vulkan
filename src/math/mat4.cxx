@@ -113,16 +113,15 @@ mat4 mat4::makeIdentity()
 
 mat4 mat4::makeProjection(const float near, const float far, const float aspect, const float fov)
 {
-	// not a actual projection, for now
-	// clang-format off
-	const mat4d mat = 
-		{{
-			{ 1, 0, 0, 0 }, 
-			{ 0, -1, 0, 0 }, 
-			{ 0, 0, 1.0F / 2.0F, 1.0F / 2.0F },
-			{ 0, 0, 0, 1 }
-		}};
-	// clang-format on
+	float tanHalfFov = std::tan(fov / 2.F);
+
+	mat4d mat{};
+	mat[0][0] = 1 / (aspect * tanHalfFov);
+	mat[1][1] = 1 / (aspect * tanHalfFov);
+	mat[2][2] = (far + near) / (far - near);
+	mat[2][3] = 1;
+	mat[3][2] = -(far * near) / (far - near);
+
 	return mat4(mat);
 }
 
