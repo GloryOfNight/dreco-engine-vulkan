@@ -57,16 +57,22 @@ const std::vector<VkDescriptorSetLayout>& vk_descriptor_set::getLayouts() const
 
 void vk_descriptor_set::createDescriptorPool(VkDevice vkDevice)
 {
-	VkDescriptorPoolSize poolSize{};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = 1;
+	VkDescriptorPoolSize uniformSize{};
+	uniformSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformSize.descriptorCount = 1;
+
+	VkDescriptorPoolSize sampledImageSize{};
+	sampledImageSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampledImageSize.descriptorCount = 1;
+
+	std::vector<VkDescriptorPoolSize> poolSizes{uniformSize, sampledImageSize};
 
 	VkDescriptorPoolCreateInfo poolCreateInfo{};
 	poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolCreateInfo.pNext = nullptr;
 	poolCreateInfo.flags = 0;
-	poolCreateInfo.poolSizeCount = 1;
-	poolCreateInfo.pPoolSizes = &poolSize;
+	poolCreateInfo.poolSizeCount = poolSizes.size();
+	poolCreateInfo.pPoolSizes = poolSizes.data();
 	poolCreateInfo.maxSets = 1;
 
 	VK_CHECK(vkCreateDescriptorPool(vkDevice, &poolCreateInfo, VK_NULL_HANDLE, &_vkDescriptorPool));
@@ -74,22 +80,30 @@ void vk_descriptor_set::createDescriptorPool(VkDevice vkDevice)
 
 void vk_descriptor_set::createDescriptorSetLayout(VkDevice vkDevice)
 {
-	_vkDescriptorSetLayouts.resize(1);
+	VkDescriptorSetLayoutBinding uniformBinding{};
+	uniformBinding.binding = 0;
+	uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformBinding.descriptorCount = 1;
+	uniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uniformBinding.pImmutableSamplers = VK_NULL_HANDLE;
 
-	VkDescriptorSetLayoutBinding layoutBinding{};
-	layoutBinding.binding = 0;
-	layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	layoutBinding.descriptorCount = 1;
-	layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	layoutBinding.pImmutableSamplers = VK_NULL_HANDLE;
+	VkDescriptorSetLayoutBinding sampledImageBinding{};
+	sampledImageBinding.binding = 1;
+	sampledImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampledImageBinding.descriptorCount = 1;
+	sampledImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	sampledImageBinding.pImmutableSamplers = VK_NULL_HANDLE;
+
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{uniformBinding, sampledImageBinding};
 
 	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutCreateInfo.pNext = nullptr;
 	layoutCreateInfo.flags = 0;
-	layoutCreateInfo.bindingCount = 1;
-	layoutCreateInfo.pBindings = &layoutBinding;
+	layoutCreateInfo.bindingCount = layoutBindings.size();
+	layoutCreateInfo.pBindings = layoutBindings.data();
 
+	_vkDescriptorSetLayouts.resize(1);
 	VK_CHECK(vkCreateDescriptorSetLayout(vkDevice, &layoutCreateInfo, VK_NULL_HANDLE, _vkDescriptorSetLayouts.data()));
 }
 

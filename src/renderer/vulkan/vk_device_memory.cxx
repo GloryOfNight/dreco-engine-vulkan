@@ -11,7 +11,7 @@ vk_device_memory::vk_device_memory()
 
 vk_device_memory::~vk_device_memory()
 {
-	destroy();
+	free();
 }
 
 void vk_device_memory::allocate(const VkMemoryRequirements& vkMemoryRequirements, const VkMemoryPropertyFlags vkMemoryPropertyFlags)
@@ -38,7 +38,7 @@ void vk_device_memory::allocate(const VkMemoryRequirements& vkMemoryRequirements
 	}
 }
 
-void vk_device_memory::destroy()
+void vk_device_memory::free()
 {
 	if (VK_NULL_HANDLE != _vkDeviceMemory)
 	{

@@ -18,16 +18,29 @@ public:
 
 	VkImage get() const;
 
+	VkImageView getImageView() const;
+
+	VkSampler getSampler() const;
+
 	vk_device_memory& getDeviceMemory();
 
-protected:
+	static void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-	void createImage(const VkDevice vkDevice);
+	protected:
+	void createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height);
 
 	void bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset);
 
+	void createImageView(const VkDevice vkDevice, const VkFormat vkFormat);
+
+	void createSampler(const VkDevice vkDevice);
+
 private:
 	VkImage _vkImage;
-	
+
 	vk_device_memory _deviceMemory;
+
+	VkImageView _vkImageView;
+
+	VkSampler _vkSampler;
 };

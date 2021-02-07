@@ -28,7 +28,7 @@ void vk_mesh::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
-	_mesh = mesh_data::createBox();
+	_mesh = mesh_data::createSprite();
 
 	const VkExtent2D currentExtent{renderer->getSurface().getCapabilities().currentExtent};
 	const vk_device* vkDevice{&renderer->getDevice()};
@@ -39,9 +39,11 @@ void vk_mesh::create()
 	_vkDevice = vkDevice->get();
 	_vkCommandBuffer = renderer->createSecondaryCommandBuffer();
 
-	createVertexBuffer(vkDevice, vkQueueFamily, vkPhysicalDevice);
-	createIndexBuffer(vkDevice, vkQueueFamily, vkPhysicalDevice);
-	createUniformBuffers(vkDevice, vkQueueFamily, vkPhysicalDevice);
+	createVertexBuffer(vkQueueFamily, vkPhysicalDevice);
+	createIndexBuffer(vkQueueFamily, vkPhysicalDevice);
+	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
+	
+	_textureImage.create();
 
 	createDescriptorSet();
 	_graphicsPipeline.create(_descriptorSet);
@@ -76,7 +78,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 
 	std::array<VkBuffer, 1> buffers{_vertexBuffer.get()};
 	std::array<VkDeviceSize, 1> offsets{0};
-	vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, buffers.data(), offsets.data());
+	vkCmdBindVertexBuffers(vkCommandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
 	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
 
 	const VkDescriptorSet vkDescriptorSet{_descriptorSet.get()};
@@ -103,20 +105,34 @@ void vk_mesh::createDescriptorSet()
 	bufferInfo.offset = 0;
 	bufferInfo.range = sizeof(uniforms);
 
-	VkWriteDescriptorSet descriptorWrite{};
-	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrite.pNext = nullptr;
-	descriptorWrite.dstSet = _descriptorSet.get();
-	descriptorWrite.dstBinding = 0;
-	descriptorWrite.dstArrayElement = 0;
-	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrite.descriptorCount = 1;
-	descriptorWrite.pBufferInfo = &bufferInfo;
-	descriptorWrite.pImageInfo = nullptr;
-	descriptorWrite.pTexelBufferView = nullptr;
+	std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+	writeDescriptorSets.resize(2);
 
-	std::vector<VkWriteDescriptorSet> writeInfo{descriptorWrite};
-	_descriptorSet.update(writeInfo);
+	writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptorSets[0].pNext = nullptr;
+	writeDescriptorSets[0].dstSet = _descriptorSet.get();
+	writeDescriptorSets[0].dstBinding = 0;
+	writeDescriptorSets[0].dstArrayElement = 0;
+	writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeDescriptorSets[0].descriptorCount = 1;
+	writeDescriptorSets[0].pBufferInfo = &bufferInfo;
+	writeDescriptorSets[0].pImageInfo = nullptr;
+	writeDescriptorSets[0].pTexelBufferView = nullptr;
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = _textureImage.getImageView();
+	imageInfo.sampler = _textureImage.getSampler();
+
+	writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptorSets[1].dstSet = _descriptorSet.get();
+	writeDescriptorSets[1].dstBinding = 1;
+	writeDescriptorSets[1].dstArrayElement = 0;
+	writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSets[1].descriptorCount = 1;
+	writeDescriptorSets[1].pImageInfo = &imageInfo;
+
+	_descriptorSet.update(writeDescriptorSets);
 }
 
 void vk_mesh::createGraphicsPipeline()
@@ -124,36 +140,36 @@ void vk_mesh::createGraphicsPipeline()
 	
 }
 
-void vk_mesh::createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
+void vk_mesh::createVertexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::VERTEX;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
 	buffer_create_info.size = sizeof(_mesh._vertexes[0]) * _mesh._vertexes.size();
 
-	_vertexBuffer.create(device, buffer_create_info);
+	_vertexBuffer.create(buffer_create_info);
 	_vertexBuffer.getDeviceMemory().map(_mesh._vertexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
+void vk_mesh::createIndexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::INDEX;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
 	buffer_create_info.size = sizeof(_mesh._indexes[0]) * _mesh._indexes.size();
 
-	_indexBuffer.create(device, buffer_create_info);
+	_indexBuffer.create(buffer_create_info);
 	_indexBuffer.getDeviceMemory().map(_mesh._indexes.data(), buffer_create_info.size);
 }
 
-void vk_mesh::createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
+void vk_mesh::createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
 	buffer_create_info.size = sizeof(uniforms);
 
-	_uniformBuffer.create(device, buffer_create_info);
+	_uniformBuffer.create(buffer_create_info);
 }
 
 void vk_mesh::writeCommandBuffer(const VkRenderPass vkRenderPass)

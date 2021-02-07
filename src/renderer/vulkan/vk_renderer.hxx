@@ -23,7 +23,7 @@ public:
 	vk_renderer(const vk_renderer&) = delete;
 	vk_renderer(vk_renderer&&) = delete;
 	~vk_renderer();
-	
+
 	vk_renderer& operator=(vk_renderer&) = delete;
 	vk_renderer& operator=(vk_renderer&&) = delete;
 
@@ -45,6 +45,8 @@ public:
 
 	VkRenderPass getRenderPass() const;
 
+	VkCommandPool getTransferCommandPool() const;
+
 	SDL_Window* getWindow() const;
 
 	VkAllocationCallbacks* getAllocator() const;
@@ -56,6 +58,10 @@ public:
 	vk_physical_device& getPhysicalDevice();
 
 	vk_queue_family& getQueueFamily();
+
+	VkCommandBuffer beginSingleTimeTransferCommands();
+
+	void endSingleTimeCommands(const VkCommandBuffer vkCommandBuffer);
 
 protected:
 	void drawFrame();

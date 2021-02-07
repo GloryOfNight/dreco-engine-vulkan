@@ -158,6 +158,11 @@ VkRenderPass vk_renderer::getRenderPass() const
 	return _vkRenderPass;
 }
 
+VkCommandPool vk_renderer::getTransferCommandPool() const
+{
+	return _vkTransferCommandPool;
+}
+
 SDL_Window* vk_renderer::getWindow() const
 {
 	return _window;
@@ -186,6 +191,43 @@ vk_physical_device& vk_renderer::getPhysicalDevice()
 vk_queue_family& vk_renderer::getQueueFamily()
 {
 	return _queueFamily;
+}
+
+VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
+{
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocateInfo.pNext = nullptr;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	commandBufferAllocateInfo.commandBufferCount = 1;
+	commandBufferAllocateInfo.commandPool = _vkGraphicsCommandPool;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	commandBufferBeginInfo.pNext = nullptr;
+	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
+
+	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+	return commandBuffer;
+}
+
+void vk_renderer::endSingleTimeCommands(const VkCommandBuffer vkCommandBuffer)
+{
+	vkEndCommandBuffer(vkCommandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &vkCommandBuffer;
+
+	vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(_device.getGraphicsQueue());
+	vkFreeCommandBuffers(_device.get(), _vkGraphicsCommandPool, 1, &vkCommandBuffer);
 }
 
 void vk_renderer::createWindow()

@@ -34,13 +34,15 @@ public:
 	vk_buffer& operator=(const vk_buffer&) = delete;
 	vk_buffer& operator=(vk_buffer&&) = delete;
 
-	void create(const vk_device* device, const vk_buffer_create_info& create_info);
+	void create(const vk_buffer_create_info& create_info);
 
 	virtual void destroy();
 
 	VkBuffer get() const;
 
 	vk_device_memory& getDeviceMemory();
+
+	static void copyBufferToImage(VkBuffer vkBuffer, VkImage vkImage, VkImageLayout vkImageLayout, uint32_t width, uint32_t height);
 
 protected:
 	void createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info);

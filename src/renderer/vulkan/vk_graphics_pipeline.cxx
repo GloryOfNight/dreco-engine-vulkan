@@ -2,12 +2,13 @@
 
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
+#include "renderer/containers/vertex.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_descriptor_set.hxx"
 #include "vk_renderer.hxx"
 #include "vk_shader_module.hxx"
 #include "vk_utils.hxx"
-#include "vk_allocator.hxx"
 
 #include <array>
 #include <vector>
@@ -107,25 +108,17 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
-	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStagesInfo{vertShaderStageInfo, fragShaderStageInfo};
+	const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStagesInfo{vertShaderStageInfo, fragShaderStageInfo};
 
-	VkVertexInputBindingDescription vertexInputBindingDescription{};
-	vertexInputBindingDescription.binding = 0;
-	vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	vertexInputBindingDescription.stride = sizeof(vec3);
-
-	VkVertexInputAttributeDescription vertexInputAttributeDescription{};
-	vertexInputAttributeDescription.binding = 0;
-	vertexInputAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-	vertexInputAttributeDescription.location = 0;
-	vertexInputAttributeDescription.offset = 0;
+	const std::vector<VkVertexInputBindingDescription> vertexInputBindingDescription{vertex::getInputBindingDescription()};
+	const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions{vertex::getInputAttributeDescription()};
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;
-	vertexInputInfo.vertexAttributeDescriptionCount = 1;
-	vertexInputInfo.pVertexAttributeDescriptions = &vertexInputAttributeDescription;
+	vertexInputInfo.vertexBindingDescriptionCount = vertexInputBindingDescription.size();
+	vertexInputInfo.pVertexBindingDescriptions = vertexInputBindingDescription.data();
+	vertexInputInfo.vertexAttributeDescriptionCount = vertexInputAttributeDescriptions.size();
+	vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions.data();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

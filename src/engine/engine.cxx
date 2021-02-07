@@ -89,7 +89,7 @@ bool engine::startRenderer()
 			_renderer->getVersion(major, minor, &patch);
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
-
+			
 			auto mesh = _renderer->createMesh();
 			mesh->_transform._translation = vec3(1, 1, 1);
 

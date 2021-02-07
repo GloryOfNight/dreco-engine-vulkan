@@ -2,9 +2,15 @@
 
 #include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
+#include "vk_utils.hxx"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 
 vk_texture_image::vk_texture_image()
 	: _vkImage{VK_NULL_HANDLE}
+	, _vkImageView{VK_NULL_HANDLE}
+	, _vkSampler{VK_NULL_HANDLE}
 {
 }
 
@@ -15,27 +21,71 @@ vk_texture_image::~vk_texture_image()
 
 void vk_texture_image::create()
 {
+	int texWidth, texHeight, texChannels;
+	stbi_uc* pixels = stbi_load("content/doge.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+	if (!pixels)
+	{
+		throw std::runtime_error("failed to load texture image!");
+	}
+
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice{renderer->getDevice().get()};
 
-	createImage(vkDevice);
+	const VkFormat vkFormat = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
+
+	createImage(vkDevice, vkFormat, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	VkMemoryRequirements memoryRequirements;
 	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
 
-	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE));
+	vk_buffer_create_info info;
+	info.memory_properties_flags = vk_device_memory_properties::HOST;
+	info.size = memoryRequirements.size;
+	info.usage = vk_buffer_usage::TRANSFER_SRC;
+	vk_buffer stagingBuffer;
+	stagingBuffer.create(info);
+
+	stagingBuffer.getDeviceMemory().map(pixels, memoryRequirements.size);
+	
+
+	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
 
 	bindToMemory(vkDevice, _deviceMemory.get(), 0);
+
+	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	vk_buffer::copyBufferToImage(stagingBuffer.get(), _vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	createImageView(vkDevice, vkFormat);
+	createSampler(vkDevice);
+
+	stbi_image_free(pixels);
 }
 
 void vk_texture_image::destroy()
 {
+	const VkDevice vkDevice{vk_renderer::get()->getDevice().get()};
+	if (VK_NULL_HANDLE != _vkSampler)
+	{
+		vkDestroySampler(vkDevice, _vkSampler, vkGetAllocator());
+		_vkSampler = VK_NULL_HANDLE;
+	}
+	if (VK_NULL_HANDLE != _vkImageView)
+	{
+		vkDestroyImageView(vkDevice, _vkImageView, vkGetAllocator());
+		_vkImageView = VK_NULL_HANDLE;
+	}
 	if (VK_NULL_HANDLE != _vkImage)
 	{
-		vkDestroyImage(vk_renderer::get()->getDevice().get(), _vkImage, vkGetAllocator());
+		vkDestroyImage(vkDevice, _vkImage, vkGetAllocator());
 		_vkImage = VK_NULL_HANDLE;
 	}
-	_deviceMemory.destroy();
+	_deviceMemory.free();
 }
 
 VkImage vk_texture_image::get() const
@@ -43,12 +93,68 @@ VkImage vk_texture_image::get() const
 	return _vkImage;
 }
 
+VkImageView vk_texture_image::getImageView() const
+{
+	return _vkImageView;
+}
+
+VkSampler vk_texture_image::getSampler() const
+{
+	return _vkSampler;
+}
+
 vk_device_memory& vk_texture_image::getDeviceMemory()
 {
 	return _deviceMemory;
 }
 
-void vk_texture_image::createImage(const VkDevice vkDevice)
+void vk_texture_image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+	vk_renderer* renderer{vk_renderer::get()};
+	VkCommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
+
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = oldLayout;
+	barrier.newLayout = newLayout;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = image;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else
+	{
+		throw std::invalid_argument("unsupported layout transition!");
+	}
+
+	vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+	renderer->endSingleTimeCommands(commandBuffer);
+}
+
+void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkSharingMode sharingMode = renderer->getQueueFamily().getSharingMode();
@@ -57,26 +163,72 @@ void vk_texture_image::createImage(const VkDevice vkDevice)
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.pNext = nullptr;
 	imageCreateInfo.imageType = VkImageType::VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
-	imageCreateInfo.extent = VkExtent3D{512, 512, 0};
+	imageCreateInfo.format = vkFormat;
+	imageCreateInfo.extent = VkExtent3D{width, height, 1};
 	imageCreateInfo.mipLevels = 1;
 	imageCreateInfo.arrayLayers = 1;
 	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 	imageCreateInfo.tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR;
-	imageCreateInfo.usage = VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	imageCreateInfo.sharingMode = sharingMode;
-	if (sharingMode == VkSharingMode::VK_SHARING_MODE_CONCURRENT)
-	{
-		const std::vector<uint32_t> queueIndexes{renderer->getQueueFamily().getQueueIndexes()};
-		imageCreateInfo.queueFamilyIndexCount = queueIndexes.size();
-		imageCreateInfo.pQueueFamilyIndices = queueIndexes.data();
-	}
+
+	const std::vector<uint32_t> queueIndexes{renderer->getQueueFamily().getQueueIndexes()};
+	imageCreateInfo.queueFamilyIndexCount = queueIndexes.size();
+	imageCreateInfo.pQueueFamilyIndices = queueIndexes.data();
+
 	imageCreateInfo.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 
-	vkCreateImage(vkDevice, &imageCreateInfo, vkGetAllocator(), &_vkImage);
+	VK_CHECK(vkCreateImage(vkDevice, &imageCreateInfo, vkGetAllocator(), &_vkImage));
 }
 
 void vk_texture_image::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)
 {
-	bindToMemory(vkDevice, vkDeviceMemory, memoryOffset);
+	VK_CHECK(vkBindImageMemory(vkDevice, _vkImage, vkDeviceMemory, memoryOffset));
+}
+
+void vk_texture_image::createImageView(const VkDevice vkDevice, const VkFormat vkFormat)
+{
+	VkImageViewCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.image = _vkImage;
+	createInfo.format = vkFormat;
+	createInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.layerCount = 1;
+	createInfo.subresourceRange.levelCount = 1;
+
+	VK_CHECK(vkCreateImageView(vkDevice, &createInfo, vkGetAllocator(), &_vkImageView));
+}
+
+void vk_texture_image::createSampler(const VkDevice vkDevice)
+{
+	const vk_physical_device& physicalDevice = vk_renderer::get()->getPhysicalDevice();
+	const VkPhysicalDeviceProperties& physicalDeviceProperties = physicalDevice.getProperties();
+	const VkPhysicalDeviceFeatures& physicalDeviceFeatures = physicalDevice.getFeatures();
+
+	VkSamplerCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.magFilter = VK_FILTER_LINEAR;
+	createInfo.minFilter = VK_FILTER_LINEAR;
+	createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	createInfo.mipLodBias = 0.0F;
+	createInfo.anisotropyEnable = physicalDeviceFeatures.samplerAnisotropy;
+	createInfo.maxAnisotropy = physicalDeviceProperties.limits.maxSamplerAnisotropy;
+	createInfo.compareEnable = VK_FALSE;
+	createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	createInfo.minLod = 0.0F;
+	createInfo.maxLod = 0.0F;
+	createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	createInfo.unnormalizedCoordinates = VK_FALSE;
+
+	vkCreateSampler(vkDevice, &createInfo, vkGetAllocator(), &_vkSampler);
 }

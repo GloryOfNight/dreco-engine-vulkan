@@ -3,9 +3,11 @@ project(dreco)
 
 set(DRECO_SOURCE_LIST 
 "src/engine/engine.cxx"
+"src/math/vec2.cxx"
 "src/math/vec3.cxx"
 "src/math/mat4.cxx"
 "src/math/transform.cxx"
+"src/renderer/containers/vertex.cxx"
 "src/renderer/vulkan/vk_surface.cxx"
 "src/renderer/vulkan/vk_physical_device.cxx"
 "src/renderer/vulkan/vk_renderer.cxx"
@@ -20,7 +22,7 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_graphics_pipeline.cxx"
 "src/renderer/vulkan/vk_texture_image.cxx")
 
-add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST} "src/renderer/vulkan/vk_graphics_pipeline.cxx")
+add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 
 find_package(SDL2 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})

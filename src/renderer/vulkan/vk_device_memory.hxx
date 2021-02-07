@@ -4,7 +4,8 @@
 enum class vk_device_memory_properties : VkFlags
 {
 	HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	DEVICE = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+	DEVICE = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+	DEVICE_ONLY = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 };
 
 class vk_device_memory
@@ -20,7 +21,7 @@ public:
 
 	void allocate(const VkMemoryRequirements& vkMemoryRequirements, const VkMemoryPropertyFlags vkMemoryPropertyFlags);
 
-	virtual void destroy();
+	virtual void free();
 
 	void map(const void* data, const VkDeviceSize size);
 

@@ -28,7 +28,6 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	for (uint32_t i = 0; i < queueFamilyCount; ++i)
 	{
 		const VkQueueFamilyProperties& queueFamily = queueFamilyProperties[i];
-
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			graphicsIndex = i;

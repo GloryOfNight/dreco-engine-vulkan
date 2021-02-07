@@ -6,6 +6,7 @@
 #include "vk_buffer.hxx"
 #include "vk_descriptor_set.hxx"
 #include "vk_graphics_pipeline.hxx"
+#include "vk_texture_image.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -43,11 +44,11 @@ protected:
 
 	void createGraphicsPipeline();
 
-	void createVertexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createVertexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createIndexBuffer(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createIndexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
-	void createUniformBuffers(const vk_device* device, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void writeCommandBuffer(const VkRenderPass vkRenderPass);
 
@@ -61,6 +62,8 @@ private:
 	vk_buffer _indexBuffer;
 
 	vk_buffer _uniformBuffer;
+
+	vk_texture_image _textureImage;
 
 	vk_graphics_pipeline _graphicsPipeline;
 
