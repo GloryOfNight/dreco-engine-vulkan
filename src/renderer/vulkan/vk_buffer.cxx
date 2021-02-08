@@ -52,53 +52,38 @@ vk_device_memory& vk_buffer::getDeviceMemory()
 	return _deviceMemory;
 }
 
-void vk_buffer::copyBufferToImage(VkBuffer vkBuffer, VkImage vkImage, VkImageLayout vkImageLayout, uint32_t width, uint32_t height)
+void vk_buffer::copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDst, const std::vector<VkBufferCopy>& vkBufferCopyRegions)
 {
 	vk_renderer* renderer{vk_renderer::get()};
-	vk_device& device{renderer->getDevice()};
-	VkCommandPool transferCommandPool{renderer->getTransferCommandPool()};
 
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.pNext = nullptr;
-	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = 1;
-	commandBufferAllocateInfo.commandPool = transferCommandPool;
+	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
 
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(renderer->getDevice().get(), &commandBufferAllocateInfo, &commandBuffer);
+	vkCmdCopyBuffer(vkCommandBuffer, vkBufferSrc, VkBufferDst, vkBufferCopyRegions.size(), vkBufferCopyRegions.data());
+	vkEndCommandBuffer(vkCommandBuffer);
 
-	VkCommandBufferBeginInfo commandBufferBeginInfo{};
-	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandBufferBeginInfo.pNext = nullptr;
-	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	commandBufferBeginInfo.pInheritanceInfo = nullptr;
+	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
+}
 
-	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+void vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height)
+{
+	vk_renderer* renderer{vk_renderer::get()};
+	
+	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
+
 	VkBufferImageCopy copyRegion{};
 	copyRegion.bufferOffset = 0;
 	copyRegion.bufferRowLength = 0;
 	copyRegion.bufferImageHeight = 0;
-
 	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copyRegion.imageSubresource.mipLevel = 0;
 	copyRegion.imageSubresource.baseArrayLayer = 0;
 	copyRegion.imageSubresource.layerCount = 1;
-
 	copyRegion.imageOffset = {0, 0, 0};
 	copyRegion.imageExtent = {width, height, 1};
 
-	vkCmdCopyBufferToImage(commandBuffer, vkBuffer, vkImage, vkImageLayout, 1, &copyRegion);
-	vkEndCommandBuffer(commandBuffer);
+	vkCmdCopyBufferToImage(vkCommandBuffer, vkBuffer, vkImage, vkImageLayout, 1, &copyRegion);
 
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(device.getTransferQueue());
-	vkFreeCommandBuffers(device.get(), transferCommandPool, 1, &commandBuffer);
+	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
 }
 
 void vk_buffer::createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info)

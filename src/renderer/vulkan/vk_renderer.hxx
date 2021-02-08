@@ -59,9 +59,13 @@ public:
 
 	vk_queue_family& getQueueFamily();
 
+	VkCommandBuffer beginSingleTimeGraphicsCommands();
+
+	void endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandBuffer);
+
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
-	void endSingleTimeCommands(const VkCommandBuffer vkCommandBuffer);
+	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);
 
 protected:
 	void drawFrame();
@@ -91,9 +95,6 @@ protected:
 	void recreateSwapchain();
 
 	void prepareCommandBuffer(uint32_t imageIndex);
-
-	// TODO: should be probably moved or deleted entirely
-	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
 
 private:
 	uint32_t _apiVersion;

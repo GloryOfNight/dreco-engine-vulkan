@@ -193,7 +193,7 @@ vk_queue_family& vk_renderer::getQueueFamily()
 	return _queueFamily;
 }
 
-VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
+VkCommandBuffer vk_renderer::beginSingleTimeGraphicsCommands()
 {
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
 	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -216,7 +216,7 @@ VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 	return commandBuffer;
 }
 
-void vk_renderer::endSingleTimeCommands(const VkCommandBuffer vkCommandBuffer)
+void vk_renderer::endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandBuffer)
 {
 	vkEndCommandBuffer(vkCommandBuffer);
 
@@ -228,6 +228,43 @@ void vk_renderer::endSingleTimeCommands(const VkCommandBuffer vkCommandBuffer)
 	vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(_device.getGraphicsQueue());
 	vkFreeCommandBuffers(_device.get(), _vkGraphicsCommandPool, 1, &vkCommandBuffer);
+}
+
+VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
+{
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocateInfo.pNext = nullptr;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	commandBufferAllocateInfo.commandBufferCount = 1;
+	commandBufferAllocateInfo.commandPool = _vkTransferCommandPool;
+
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &commandBuffer);
+
+	VkCommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	commandBufferBeginInfo.pNext = nullptr;
+	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
+
+	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+
+	return commandBuffer;
+}
+
+void vk_renderer::endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer)
+{
+	vkEndCommandBuffer(vkCommandBuffer);
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &vkCommandBuffer;
+
+	vkQueueSubmit(_device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(_device.getTransferQueue());
+	vkFreeCommandBuffers(_device.get(), _vkTransferCommandPool, 1, &vkCommandBuffer);
 }
 
 void vk_renderer::createWindow()
@@ -606,41 +643,4 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	vkCmdEndRenderPass(commandBuffer);
 
 	VK_CHECK(vkEndCommandBuffer(commandBuffer));
-}
-
-void vk_renderer::copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size)
-{
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.pNext = nullptr;
-	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = 1;
-	commandBufferAllocateInfo.commandPool = _vkTransferCommandPool;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo commandBufferBeginInfo{};
-	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandBufferBeginInfo.pNext = nullptr;
-	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	commandBufferBeginInfo.pInheritanceInfo = nullptr;
-
-	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-	VkBufferCopy copyRegion{};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = size;
-
-	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(_device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(_device.getTransferQueue());
-	vkFreeCommandBuffers(_device.get(), _vkTransferCommandPool, 1, &commandBuffer);
 }

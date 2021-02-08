@@ -2,6 +2,7 @@
 #include "vk_device_memory.hxx"
 
 #include <cstdint>
+#include <vector>
 #include <vulkan/vulkan.h>
 
 class vk_device;
@@ -42,7 +43,9 @@ public:
 
 	vk_device_memory& getDeviceMemory();
 
-	static void copyBufferToImage(VkBuffer vkBuffer, VkImage vkImage, VkImageLayout vkImageLayout, uint32_t width, uint32_t height);
+	static void copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDst, const std::vector<VkBufferCopy>& vkBufferCopyRegions);
+
+	static void copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height);
 
 protected:
 	void createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info);
