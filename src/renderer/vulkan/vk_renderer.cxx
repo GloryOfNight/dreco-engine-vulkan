@@ -16,7 +16,7 @@
 #include <stdexcept>
 
 #define VK_ENABLE_VALIDATION
-#define VK_ENABLE_LUNAR_MONITOR
+//#define VK_ENABLE_LUNAR_MONITOR
 //#define VK_ENABLE_MESA_OVERLAY
 
 vk_renderer::vk_renderer()
