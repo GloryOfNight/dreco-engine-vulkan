@@ -13,6 +13,7 @@ vk_physical_device::vk_physical_device()
 
 void vk_physical_device::setup(const VkInstance vkInstance, VkSurfaceKHR vkSurface)
 {
+	
 	uint32_t gpuCount{0};
 	vkEnumeratePhysicalDevices(vkInstance, &gpuCount, nullptr);
 	std::vector<VkPhysicalDevice> gpuList(gpuCount);

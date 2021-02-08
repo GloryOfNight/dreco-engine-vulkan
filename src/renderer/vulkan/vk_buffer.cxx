@@ -67,7 +67,7 @@ void vk_buffer::copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDs
 void vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height)
 {
 	vk_renderer* renderer{vk_renderer::get()};
-	
+
 	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
 
 	VkBufferImageCopy copyRegion{};
@@ -88,21 +88,24 @@ void vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage
 
 void vk_buffer::createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info)
 {
-	vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
+	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
+	std::vector<uint32_t> queueIndexes;
 
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.pNext = nullptr;
-	bufferCreateInfo.flags = 0;
-	bufferCreateInfo.size = create_info.size;
-	bufferCreateInfo.usage = static_cast<VkBufferUsageFlagBits>(create_info.usage);
-	bufferCreateInfo.sharingMode = queueFamily.getSharingMode();
+	VkBufferCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.size = create_info.size;
+	createInfo.usage = static_cast<VkBufferUsageFlagBits>(create_info.usage);
+	createInfo.sharingMode = queueFamily.getSharingMode();
+	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
+	{
+		queueIndexes = queueFamily.getUniqueQueueIndexes();
+		createInfo.queueFamilyIndexCount = queueIndexes.size();
+		createInfo.pQueueFamilyIndices = queueIndexes.data();
+	}
 
-	const auto queueFamilyIndexes = queueFamily.getUniqueQueueIndexes();
-	bufferCreateInfo.queueFamilyIndexCount = queueFamilyIndexes.size();
-	bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
-
-	VK_CHECK(vkCreateBuffer(vkDevice, &bufferCreateInfo, vkGetAllocator(), &_vkBuffer));
+	VK_CHECK(vkCreateBuffer(vkDevice, &createInfo, vkGetAllocator(), &_vkBuffer));
 }
 
 void vk_buffer::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)

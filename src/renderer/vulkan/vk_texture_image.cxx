@@ -138,27 +138,31 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 
 void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height)
 {
-	vk_renderer* renderer{vk_renderer::get()};
-	const VkSharingMode sharingMode = renderer->getQueueFamily().getSharingMode();
-	const std::vector<uint32_t> queueIndexes{renderer->getQueueFamily().getUniqueQueueIndexes()};
+	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
+	std::vector<uint32_t> queueIndexes;
 
-	VkImageCreateInfo imageCreateInfo{};
-	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateInfo.pNext = nullptr;
-	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = vkFormat;
-	imageCreateInfo.extent = VkExtent3D{width, height, 1};
-	imageCreateInfo.mipLevels = 1;
-	imageCreateInfo.arrayLayers = 1;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
-	imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageCreateInfo.sharingMode = sharingMode;
-	imageCreateInfo.queueFamilyIndexCount = queueIndexes.size();
-	imageCreateInfo.pQueueFamilyIndices = queueIndexes.data();
+	VkImageCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.imageType = VK_IMAGE_TYPE_2D;
+	createInfo.format = vkFormat;
+	createInfo.extent = VkExtent3D{width, height, 1};
+	createInfo.mipLevels = 1;
+	createInfo.arrayLayers = 1;
+	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	createInfo.tiling = VK_IMAGE_TILING_LINEAR;
+	createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	createInfo.sharingMode = queueFamily.getSharingMode();
+	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
+	{
+		queueIndexes = queueFamily.getUniqueQueueIndexes();
+		createInfo.queueFamilyIndexCount = queueIndexes.size();
+		createInfo.pQueueFamilyIndices = queueIndexes.data();
+	}
+	
 
-	VK_CHECK(vkCreateImage(vkDevice, &imageCreateInfo, vkGetAllocator(), &_vkImage));
+	VK_CHECK(vkCreateImage(vkDevice, &createInfo, vkGetAllocator(), &_vkImage));
 }
 
 void vk_texture_image::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)

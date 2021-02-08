@@ -10,14 +10,16 @@
 #include "vk_utils.hxx"
 
 #include <SDL_vulkan.h>
-#include <array>
 #include <iostream>
-#include <set>
 #include <stdexcept>
 
+#define VK_USE_DEBUG 1
+
+#if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
-//#define VK_ENABLE_LUNAR_MONITOR
-//#define VK_ENABLE_MESA_OVERLAY
+#define VK_ENABLE_LUNAR_MONITOR
+#define VK_ENABLE_MESA_OVERLAY
+#endif
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
@@ -282,22 +284,30 @@ void vk_renderer::createInstance()
 	instExtensions.resize(count);
 	SDL_Vulkan_GetInstanceExtensions(_window, &count, instExtensions.data() + 0);
 
-#ifdef VK_ENABLE_VALIDATION
-	instExtensions.push_back("VK_EXT_debug_utils");
-#endif
+	uint32_t layersCount;
+	vkEnumerateInstanceLayerProperties(&layersCount, nullptr);
+	std::vector<VkLayerProperties> avaibleLayers(layersCount);
+	vkEnumerateInstanceLayerProperties(&layersCount, avaibleLayers.data());
 
 	std::vector<const char*> instLayers{};
+	for (const auto& vkLayerProperty : avaibleLayers)
+	{
+#define PUSH_LAYER_IF_AVAIBLE(layer)                             \
+	if (vkLayerProperty.layerName == std::string(#layer)) \
+		instLayers.push_back(#layer);
+
 #ifdef VK_ENABLE_VALIDATION
-	instLayers.push_back("VK_LAYER_KHRONOS_validation");
+		PUSH_LAYER_IF_AVAIBLE(VK_LAYER_KHRONOS_validation);
 #endif
 
 #ifdef VK_ENABLE_MESA_OVERLAY
-	instLayers.push_back("VK_LAYER_MESA_overlay");
+		PUSH_LAYER_IF_AVAIBLE(VK_LAYER_MESA_overlay);
 #endif
 
 #ifdef VK_ENABLE_LUNAR_MONITOR
-	instLayers.push_back("VK_LAYER_LUNARG_monitor");
+		PUSH_LAYER_IF_AVAIBLE(VK_LAYER_LUNARG_monitor);
 #endif
+	}
 
 	// clang-format off
 	const VkApplicationInfo app_info
