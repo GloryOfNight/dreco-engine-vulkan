@@ -649,7 +649,11 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.pClearValues = &clearColor;
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	vkCmdExecuteCommands(commandBuffer, _vkGraphicsSecondaryCommandBuffers.size(), _vkGraphicsSecondaryCommandBuffers.data());
+	const uint32_t graphicsCommandBuffersSize{static_cast<uint32_t>(_vkGraphicsSecondaryCommandBuffers.size())};
+	if (graphicsCommandBuffersSize > 0)
+	{
+		vkCmdExecuteCommands(commandBuffer, _vkGraphicsSecondaryCommandBuffers.size(), _vkGraphicsSecondaryCommandBuffers.data());
+	}
 	vkCmdEndRenderPass(commandBuffer);
 
 	VK_CHECK(vkEndCommandBuffer(commandBuffer));

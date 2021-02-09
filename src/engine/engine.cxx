@@ -1,7 +1,7 @@
 #include "engine.hxx"
 
-#include "renderer/vulkan/vk_renderer.hxx"
 #include "renderer/vulkan/vk_mesh.hxx"
+#include "renderer/vulkan/vk_renderer.hxx"
 
 #include <SDL.h>
 #include <iostream>
@@ -89,7 +89,7 @@ bool engine::startRenderer()
 			_renderer->getVersion(major, minor, &patch);
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
-			
+
 			auto mesh = _renderer->createMesh();
 			mesh->_transform._translation = vec3(1, 1, 1);
 
@@ -101,6 +101,9 @@ bool engine::startRenderer()
 
 			mesh = _renderer->createMesh();
 			mesh->_transform._translation = vec3(-1, 1, 1);
+
+			mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(0, 0, 0);
 		}
 		else
 		{
