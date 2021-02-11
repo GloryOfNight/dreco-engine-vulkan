@@ -1,12 +1,17 @@
 #include "engine.hxx"
 
+#include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 
 #include <SDL.h>
 #include <iostream>
 
+static inline engine* gEngine{nullptr};
+
 engine::engine()
 	: _renderer{nullptr}
+	, isRunning{false}
+	, lastTickTime{0}
 {
 }
 
@@ -18,6 +23,16 @@ engine::~engine()
 	}
 }
 
+engine* engine::get()
+{
+	return gEngine;
+}
+
+vk_renderer* engine::getRenderer() const
+{
+	return _renderer;
+}
+
 void engine::run()
 {
 	if (isRunning)
@@ -26,15 +41,24 @@ void engine::run()
 		return;
 	}
 
-	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
+	if (gEngine != nullptr && gEngine->isRunning)
 	{
-		std::cerr << "SDL Initialization error: " << SDL_GetError() << "\n";
-		throw std::runtime_error("SDL initialization failed. Cannot proceed.");
+		std::cerr << "Another engine instance already running, abording. \n";
 		return;
 	}
 
-	startRenderer();
-	startMainLoop();
+	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
+	{
+		std::cerr << "SDL Initialization error: " << SDL_GetError() << "\n";
+		return;
+	}
+
+	gEngine = this;
+
+	if (true == startRenderer())
+	{
+		startMainLoop();
+	}
 }
 
 void engine::stop()
@@ -50,15 +74,43 @@ void engine::stop()
 	SDL_Quit();
 }
 
-void engine::startRenderer()
+bool engine::startRenderer()
 {
 	if (_renderer == nullptr)
 	{
-		_renderer = new vk_renderer(this);
-		_renderer->createMesh();
-		_renderer->createMesh();
-		_renderer->createMesh();
+		if (vk_renderer::isSupported())
+		{
+			_renderer = new vk_renderer();
+			_renderer->init();
+
+			uint32_t major;
+			uint32_t minor;
+			uint32_t patch;
+			_renderer->getVersion(major, minor, &patch);
+
+			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
+
+			auto mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(1, 1, 1);
+
+			mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(-1, -1, 1);
+
+			mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(1, -1, 1);
+
+			mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(-1, 1, 1);
+
+			mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(0, 0, 0);
+		}
+		else
+		{
+			std::cout << "Vulkan not supported by current driver or GPU." << std::endl;
+		}
 	}
+	return _renderer != nullptr;
 }
 
 void engine::stopRenderer()
@@ -72,10 +124,12 @@ void engine::stopRenderer()
 
 void engine::startMainLoop()
 {
+	lastTickTime = SDL_GetPerformanceCounter();
+
 	isRunning = true;
 	while (isRunning)
 	{
-		float DeltaTime;
+		double DeltaTime{0};
 		calculateNewDeltaTime(DeltaTime);
 
 		_renderer->tick(DeltaTime);
@@ -87,36 +141,30 @@ void engine::startMainLoop()
 			{
 				stop();
 			}
-			else if (event.type == SDL_KEYDOWN)
-			{
-				const float speed = 100.f;
-				if (event.key.keysym.sym == SDLK_w)
-				{
-					shapeTranslation._y += DeltaTime * speed;
-				}
-				else if (event.key.keysym.sym == SDLK_s)
-				{
-					shapeTranslation._y -= DeltaTime * speed;
-				}
+			//else if (event.type == SDL_KEYDOWN)
+			//{
+			//	const float speed = 100.F;
+			//	if (event.key.keysym.sym == SDLK_w)
+			//	{
+			//	}
+			//	else if (event.key.keysym.sym == SDLK_s)
+			//	{
+			//	}
 
-				if (event.key.keysym.sym == SDLK_d)
-				{
-					shapeTranslation._x += DeltaTime * speed;
-				}
-				else if (event.key.keysym.sym == SDLK_a)
-				{
-					shapeTranslation._x -= DeltaTime * speed;
-				}
+			//	if (event.key.keysym.sym == SDLK_d)
+			//	{
+			//	}
+			//	else if (event.key.keysym.sym == SDLK_a)
+			//	{
+			//	}
 
-				if (event.key.keysym.sym == SDLK_e)
-				{
-					shapeTranslation._z += DeltaTime * speed;
-				}
-				else if (event.key.keysym.sym == SDLK_q)
-				{
-					shapeTranslation._z -= DeltaTime * speed;
-				}
-			}
+			//	if (event.key.keysym.sym == SDLK_e)
+			//	{
+			//	}
+			//	else if (event.key.keysym.sym == SDLK_q)
+			//	{
+			//	}
+			//}
 		}
 	}
 }
@@ -126,11 +174,11 @@ void engine::stopMainLoop()
 	isRunning = false;
 }
 
-void engine::calculateNewDeltaTime(float& NewDeltaTime)
+void engine::calculateNewDeltaTime(double& NewDeltaTime)
 {
 	const uint64_t now{SDL_GetPerformanceCounter()};
 
-	NewDeltaTime = static_cast<float>(now - lastTickTime) / static_cast<float>(SDL_GetPerformanceFrequency());
+	NewDeltaTime = static_cast<double>(now - lastTickTime) / static_cast<double>(SDL_GetPerformanceFrequency());
 
 	lastTickTime = now;
 }

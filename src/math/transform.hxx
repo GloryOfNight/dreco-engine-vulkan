@@ -4,10 +4,8 @@
 
 struct transform
 {
-	transform() = default;
+	transform();
 	transform(const vec3& translation, const vec3& rotation, const vec3& scale);
-
-	~transform() = default;
 
 	vec3 _translation;
 

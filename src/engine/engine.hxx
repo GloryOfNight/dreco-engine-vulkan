@@ -3,7 +3,7 @@
 
 #include "dreco.h"
 
-#include <stdint.h>
+#include <cstdint>
 
 class vk_renderer;
 
@@ -11,16 +11,23 @@ class DRECO_DECLSPEC engine
 {
 public:
 	engine();
+	engine(const engine&) = delete;
+	engine(engine&&) = delete;
 	~engine();
+
+	engine& operator=(const engine&) = delete;
+	engine& operator=(engine&&) = delete;
+
+	static engine* get();
+
+	vk_renderer* getRenderer() const;
 
 	void run();
 
 	void stop();
 
-	vec3 shapeTranslation{0, 0, 0};
-
 private:
-	void startRenderer();
+	bool startRenderer();
 
 	void stopRenderer();
 
@@ -28,11 +35,11 @@ private:
 
 	void stopMainLoop();
 
-	void calculateNewDeltaTime(float& NewDeltaTime);
+	void calculateNewDeltaTime(double& NewDeltaTime);
 
 	vk_renderer* _renderer;
 
-	bool isRunning{false};
+	bool isRunning;
 
-	uint64_t lastTickTime{0};
+	uint64_t lastTickTime;
 };

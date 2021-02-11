@@ -1,5 +1,6 @@
 #pragma once
-#include <vulkan/vulkan_core.h>
+#include <vector>
+#include <vulkan/vulkan.h>
 
 class vk_queue_family
 {
@@ -20,8 +21,9 @@ public:
 
 	VkSharingMode getSharingMode() const;
 
-protected:
-	bool isIndexValid(uint32_t& index);
+	std::vector<uint32_t> getQueueIndexes() const;
+
+	std::vector<uint32_t> getUniqueQueueIndexes() const;
 
 private:
 	bool isSupported;

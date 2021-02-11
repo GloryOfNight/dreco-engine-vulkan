@@ -19,78 +19,117 @@ class vk_mesh;
 class vk_renderer
 {
 public:
-	vk_renderer(engine* eng);
+	vk_renderer();
+	vk_renderer(const vk_renderer&) = delete;
+	vk_renderer(vk_renderer&&) = delete;
 	~vk_renderer();
 
-	void tick(const float& delta_time);
+	vk_renderer& operator=(vk_renderer&) = delete;
+	vk_renderer& operator=(vk_renderer&&) = delete;
 
-	void createMesh();
+	static vk_renderer* get();
+
+	static bool isSupported();
+
+	void init();
+
+	void tick(double deltaTime);
+
+	vk_mesh* createMesh();
+
+	VkCommandBuffer createSecondaryCommandBuffer();
+
+	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
+
+	uint32_t getImageCount() const;
+
+	VkRenderPass getRenderPass() const;
+
+	VkCommandPool getTransferCommandPool() const;
 
 	SDL_Window* getWindow() const;
+
+	VkAllocationCallbacks* getAllocator() const;
+
+	vk_device& getDevice();
+
+	vk_surface& getSurface();
+
+	vk_physical_device& getPhysicalDevice();
+
+	vk_queue_family& getQueueFamily();
+
+	VkCommandBuffer beginSingleTimeGraphicsCommands();
+
+	void endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandBuffer);
+
+	VkCommandBuffer beginSingleTimeTransferCommands();
+
+	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);
 
 protected:
 	void drawFrame();
 
-	inline void createWindow();
+	void createWindow();
 
-	inline void createInstance();
+	void createInstance();
 
-	inline void createSwapchain();
+	void createSwapchain();
 
-	inline void createImageViews();
+	void createImageViews();
 
-	inline void createRenderPass();
+	void createRenderPass();
 
-	inline void createFramebuffers();
+	void createFramebuffers();
 
-	inline void createCommandPool();
+	void createCommandPool();
 
-	inline void createCommandBuffers();
+	void createPrimaryCommandBuffers();
 
-	inline void recordCommandBuffers();
+	void createFences();
 
-	inline void createSemaphores();
+	void createSemaphores();
 
-	inline void cleanupSwapchain(VkSwapchainKHR& swapchain);
+	void cleanupSwapchain(VkSwapchainKHR& swapchain);
 
-	inline void recreateSwapchain();
+	void recreateSwapchain();
 
-	// TODO: should be probably moved or deleted entirely
-	void copyBuffer(VkBuffer& srcBuffer, VkBuffer& dstBuffer, VkDeviceSize size);
+	void prepareCommandBuffer(uint32_t imageIndex);
 
 private:
-	std::vector<vk_mesh*> meshes;
+	uint32_t _apiVersion;
 
-	engine* _engine;
+	std::vector<vk_mesh*> _meshes;
 
-	VkAllocationCallbacks* mAllocator;
+	SDL_Window* _window;
 
-	SDL_Window* window;
+	vk_surface _surface;
 
-	vk_surface surface;
+	vk_physical_device _physicalDevice;
 
-	vk_physical_device physicalDevice;
+	vk_queue_family _queueFamily;
 
-	vk_queue_family queueFamily;
+	vk_device _device;
 
-	vk_device device;
+	VkInstance _vkInstance;
 
-	VkInstance mInstance;
+	VkSwapchainKHR _vkSwapchain;
 
-	VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
+	std::vector<VkImageView> _vkSwapchainImageViews;
 
-	std::vector<VkImageView> mSwapchainImageViews;
-
-	std::vector<VkFramebuffer> mFramebuffers;
+	std::vector<VkFramebuffer> _vkFramebuffers;
 
 	VkRenderPass _vkRenderPass;
 
-	VkCommandPool mGraphicsCommandPool;
-	VkCommandPool mTransferCommandPool;
+	VkCommandPool _vkGraphicsCommandPool;
+	VkCommandPool _vkTransferCommandPool;
 
-	std::vector<VkCommandBuffer> mGraphicsCommandBuffers;
+	std::vector<VkCommandBuffer> _vkGraphicsPrimaryCommandBuffers;
+	std::vector<VkCommandBuffer> _vkGraphicsSecondaryCommandBuffers;
 
-	VkSemaphore mSepaphore_Image_Avaible;
+	std::vector<VkFence> _vkSubmitQueueFences;
 
-	VkSemaphore mSepaphore_Render_Finished;
+	VkSemaphore _vkSepaphoreImageAvaible;
+
+	VkSemaphore _vkSepaphoreRenderFinished;
 };

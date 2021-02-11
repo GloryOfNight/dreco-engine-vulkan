@@ -1,9 +1,11 @@
 #include "vk_device.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
+#include <array>
 #include <set>
 #include <vector>
 
@@ -22,26 +24,25 @@ vk_device::~vk_device()
 
 void vk_device::create(const vk_physical_device& physical_device, const vk_queue_family& queue_family)
 {
+	const auto& uniqueQueueIndexes = queue_family.getUniqueQueueIndexes();
+
+	const float priorities{1.0F};
+
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
-	std::set<uint32_t> uniqueQueueFamilies{
-		queue_family.getGraphicsIndex(),
-		queue_family.getPresentIndex(),
-		queue_family.getTransferIndex()};
+	queueCreateInfoList.reserve(uniqueQueueIndexes.size());
 
-	float priorities[]{1.0f};
-
-	for (auto i : uniqueQueueFamilies)
+	for (const auto& i : uniqueQueueIndexes)
 	{
 		VkDeviceQueueCreateInfo deviceQueueInfo{};
 		deviceQueueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		deviceQueueInfo.queueFamilyIndex = i;
 		deviceQueueInfo.queueCount = 1;
-		deviceQueueInfo.pQueuePriorities = priorities;
+		deviceQueueInfo.pQueuePriorities = &priorities;
+
 		queueCreateInfoList.push_back(deviceQueueInfo);
 	}
 
-	const uint32_t deviceExtensionsCount = 1;
-	const char* deviceExtensions[deviceExtensionsCount]{"VK_KHR_swapchain"};
+	const std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
 
 	VkDeviceCreateInfo deviceCreateInfo{};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -50,11 +51,11 @@ void vk_device::create(const vk_physical_device& physical_device, const vk_queue
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfoList.data();
 	deviceCreateInfo.enabledLayerCount = 0;
 	deviceCreateInfo.ppEnabledLayerNames = nullptr;
-	deviceCreateInfo.enabledExtensionCount = deviceExtensionsCount;
-	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
+	deviceCreateInfo.enabledExtensionCount = deviceExtensions.size();
+	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceCreateInfo.pEnabledFeatures = &physical_device.getFeatures();
 
-	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, VK_NULL_HANDLE, &_vkDevice));
+	VK_CHECK(vkCreateDevice(physical_device.get(), &deviceCreateInfo, vkGetAllocator(), &_vkDevice));
 
 	vkGetDeviceQueue(_vkDevice, queue_family.getGraphicsIndex(), 0, &_vkGraphicsQueue);
 	vkGetDeviceQueue(_vkDevice, queue_family.getPresentIndex(), 0, &_vkPresentQueue);
@@ -73,7 +74,7 @@ void vk_device::destroy()
 {
 	if (VK_NULL_HANDLE != _vkDevice)
 	{
-		vkDestroyDevice(_vkDevice, VK_NULL_HANDLE);
+		vkDestroyDevice(_vkDevice, vkGetAllocator());
 		_vkDevice = VK_NULL_HANDLE;
 	}
 }

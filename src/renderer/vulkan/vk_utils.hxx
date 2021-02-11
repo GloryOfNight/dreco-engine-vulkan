@@ -1,9 +1,9 @@
 #pragma once
-#include <assert.h>
+#include <cassert>
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 
 inline const char* vk_resultToChar(VkResult& result);
 
@@ -15,9 +15,20 @@ inline const char* vk_resultToChar(VkResult& result);
 		if (VK_SUCCESS != vkResult)                                                                  \
 		{                                                                                            \
 			const std::string error_message = "VK_CHECK: " + std::string(vk_resultToChar(vkResult)); \
-			std::cerr << error_message;                                                              \
-			throw std::runtime_error(error_message);                                                 \
+			std::cerr << error_message.data();                                                       \
+			throw std::runtime_error(error_message.data());                                          \
 		}                                                                                            \
+	}
+
+#define VK_RETURN_ON_RESULT(op, value)                                                                          \
+	{                                                                                                           \
+		const VkResult vkResult = op;                                                                           \
+		if (value == vkResult)                                                                                  \
+		{                                                                                                       \
+			const std::string error_message = "VK_RETURN_ON_RESULT: " + std::string(vk_resultToChar(vkResult)); \
+			std::cerr << error_message.data();                                                                  \
+			return;                                                                                             \
+		}                                                                                                       \
 	}
 
 inline const char* vk_resultToChar(const VkResult& result)

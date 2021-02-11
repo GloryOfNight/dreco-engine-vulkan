@@ -1,28 +1,23 @@
 #include "vk_surface.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_utils.hxx"
 
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include <vector>
 
-vk_surface::vk_surface(const VkInstance* vkInstance)
-	: _vkInstance{vkInstance}
-	, _vkSurface{VK_NULL_HANDLE}
+vk_surface::vk_surface()
+	: _vkSurface{VK_NULL_HANDLE}
 	, _vkSurfaceCapabilities{}
 	, _vkSurfaceFormat{}
 	, _vkPresentMode{}
 {
 }
 
-vk_surface::~vk_surface()
+void vk_surface::create(const VkInstance vkInstance, SDL_Window* window)
 {
-	destroy();
-}
-
-void vk_surface::create(SDL_Window* window)
-{
-	if (SDL_Vulkan_CreateSurface(window, *_vkInstance, &_vkSurface) != SDL_TRUE)
+	if (SDL_Vulkan_CreateSurface(window, vkInstance, &_vkSurface) != SDL_TRUE)
 	{
 		throw std::runtime_error(std::string("Failed create surface with error: ") + SDL_GetError());
 	}
@@ -35,11 +30,11 @@ void vk_surface::setup(VkPhysicalDevice vkPhysicalDevice)
 	setupSurfaceCapabilities(vkPhysicalDevice);
 }
 
-void vk_surface::destroy()
+void vk_surface::destroy(const VkInstance vkInstance)
 {
 	if (VK_NULL_HANDLE != _vkSurface)
 	{
-		vkDestroySurfaceKHR(*_vkInstance, _vkSurface, VK_NULL_HANDLE);
+		vkDestroySurfaceKHR(vkInstance, _vkSurface, vkGetAllocator());
 		_vkSurface = VK_NULL_HANDLE;
 	}
 }

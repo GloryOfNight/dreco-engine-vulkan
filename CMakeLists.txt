@@ -3,17 +3,24 @@ project(dreco)
 
 set(DRECO_SOURCE_LIST 
 "src/engine/engine.cxx"
+"src/math/vec2.cxx"
 "src/math/vec3.cxx"
 "src/math/mat4.cxx"
 "src/math/transform.cxx"
+"src/renderer/containers/vertex.cxx"
 "src/renderer/vulkan/vk_surface.cxx"
 "src/renderer/vulkan/vk_physical_device.cxx"
 "src/renderer/vulkan/vk_renderer.cxx"
 "src/renderer/vulkan/vk_mesh.cxx"
 "src/renderer/vulkan/vk_device.cxx"
 "src/renderer/vulkan/vk_queue_family.cxx"
+"src/renderer/vulkan/vk_device_memory.cxx"
 "src/renderer/vulkan/vk_buffer.cxx"
-"src/renderer/vulkan/vk_shader_module.cxx")
+"src/renderer/vulkan/vk_shader_module.cxx"
+"src/renderer/vulkan/vk_swapchain.cxx"
+"src/renderer/vulkan/vk_descriptor_set.cxx"
+"src/renderer/vulkan/vk_graphics_pipeline.cxx"
+"src/renderer/vulkan/vk_texture_image.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 

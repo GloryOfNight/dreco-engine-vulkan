@@ -1,19 +1,24 @@
 #pragma once
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 
 struct SDL_Window;
 
 class vk_surface
 {
 public:
-	vk_surface(const VkInstance* vkInstance);
-	~vk_surface();
+	vk_surface();
+	vk_surface(const vk_surface&) = delete;
+	vk_surface(vk_surface&&) = delete;
+	~vk_surface() = default;
 
-	void create(SDL_Window* window);
+	vk_surface& operator=(const vk_surface&) = delete;
+	vk_surface& operator=(vk_surface&&) = delete;
+
+	void create(const VkInstance vkInstance, SDL_Window* window);
 
 	void setup(VkPhysicalDevice vkPhysicalDevice);
 
-	void destroy();
+	void destroy(const VkInstance vkInstance);
 
 	VkSurfaceKHR get() const;
 
@@ -31,8 +36,6 @@ protected:
 	inline void setupSurfaceCapabilities(VkPhysicalDevice vkPhysicaLDevice);
 
 private:
-	const VkInstance* _vkInstance;
-
 	VkSurfaceKHR _vkSurface;
 
 	VkSurfaceCapabilitiesKHR _vkSurfaceCapabilities;

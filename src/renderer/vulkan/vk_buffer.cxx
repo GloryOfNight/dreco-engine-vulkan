@@ -1,16 +1,16 @@
 #include "vk_buffer.hxx"
 
+#include "vk_allocator.hxx"
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
+#include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
 #include <cstring>
 
 vk_buffer::vk_buffer()
-	: _device{nullptr}
-	, _vkBuffer{VK_NULL_HANDLE}
-	, _vkDeviceMemory{VK_NULL_HANDLE}
+	: _vkBuffer{VK_NULL_HANDLE}
 {
 }
 
@@ -19,26 +19,27 @@ vk_buffer::~vk_buffer()
 	destroy();
 }
 
-void vk_buffer::create(const vk_device* device, const vk_buffer_create_info& create_info)
+void vk_buffer::create(const vk_buffer_create_info& create_info)
 {
-	_device = device;
-	createBuffer(create_info, _vkBuffer, _device->get(), _vkDeviceMemory);
+	const VkDevice vkDevice{vk_renderer::get()->getDevice().get()};
+	createBuffer(vkDevice, create_info);
+
+	VkMemoryRequirements memoryRequirements;
+	vkGetBufferMemoryRequirements(vkDevice, _vkBuffer, &memoryRequirements);
+
+	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(create_info.memory_properties_flags));
+
+	bindToMemory(vkDevice, _deviceMemory.get(), 0);
 }
 
 void vk_buffer::destroy()
 {
-	if (_device)
+	if (VK_NULL_HANDLE != _vkBuffer)
 	{
-		destroy(_device->get(), _vkBuffer, _vkDeviceMemory);
+		vkDestroyBuffer(vk_renderer::get()->getDevice().get(), _vkBuffer, vkGetAllocator());
+		_vkBuffer = VK_NULL_HANDLE;
 	}
-}
-
-void vk_buffer::map(const void* data, const VkDeviceSize size)
-{
-	void* region;
-	VK_CHECK(vkMapMemory(_device->get(), _vkDeviceMemory, 0, VK_WHOLE_SIZE, 0, &region));
-	memcpy(region, data, size);
-	vkUnmapMemory(_device->get(), _vkDeviceMemory);
+	_deviceMemory.free();
 }
 
 VkBuffer vk_buffer::get() const
@@ -46,88 +47,68 @@ VkBuffer vk_buffer::get() const
 	return _vkBuffer;
 }
 
-void vk_buffer::destroy(VkDevice vkDevice, VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemery)
+vk_device_memory& vk_buffer::getDeviceMemory()
 {
-	if (VK_NULL_HANDLE != vkDevice)
-	{
-		if (VK_NULL_HANDLE != vkBuffer)
-		{
-			vkDestroyBuffer(vkDevice, vkBuffer, VK_NULL_HANDLE);
-			vkBuffer = VK_NULL_HANDLE;
-		}
-		if (VK_NULL_HANDLE != vkDeviceMemery)
-		{
-			vkFreeMemory(vkDevice, vkDeviceMemery, VK_NULL_HANDLE);
-			vkDeviceMemery = VK_NULL_HANDLE;
-		}
-		vkDevice = VK_NULL_HANDLE;
-	}
+	return _deviceMemory;
 }
 
-void vk_buffer::createBuffer(
-	const vk_buffer_create_info& create_info, VkBuffer& vkBuffer, VkDevice vkDevice, VkDeviceMemory& vkDeviceMemory)
+void vk_buffer::copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDst, const std::vector<VkBufferCopy>& vkBufferCopyRegions)
 {
-	VkBufferCreateInfo bufferCreateInfo{};
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.pNext = nullptr;
-	bufferCreateInfo.flags = 0;
-	bufferCreateInfo.size = create_info.size;
-	bufferCreateInfo.usage = static_cast<VkBufferUsageFlags>(create_info.usage);
-	bufferCreateInfo.sharingMode = create_info.queueFamily->getSharingMode();
-	if (VK_SHARING_MODE_CONCURRENT == bufferCreateInfo.sharingMode)
-	{
-		uint32_t queueFamilyIndexes[3] =
-			{
-				create_info.queueFamily->getGraphicsIndex(),
-				create_info.queueFamily->getPresentIndex(),
-				create_info.queueFamily->getTransferIndex()};
+	vk_renderer* renderer{vk_renderer::get()};
 
-		bufferCreateInfo.queueFamilyIndexCount = 3;
-		bufferCreateInfo.pQueueFamilyIndices = queueFamilyIndexes;
-	}
+	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
 
-	VK_CHECK(vkCreateBuffer(vkDevice, &bufferCreateInfo, VK_NULL_HANDLE, &vkBuffer));
+	vkCmdCopyBuffer(vkCommandBuffer, vkBufferSrc, VkBufferDst, vkBufferCopyRegions.size(), vkBufferCopyRegions.data());
+	vkEndCommandBuffer(vkCommandBuffer);
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(vkDevice, vkBuffer, &memoryRequirements);
-
-	const int32_t memoryTypeIndex = findMemoryTypeIndex(
-		create_info.physicalDevice->getMemoryProperties(),
-		memoryRequirements.memoryTypeBits,
-		static_cast<VkMemoryPropertyFlags>(create_info.memory_properties));
-
-	if (-1 != memoryTypeIndex)
-	{
-		VkMemoryAllocateInfo memoryAllocateInfo{};
-		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memoryAllocateInfo.pNext = nullptr;
-		memoryAllocateInfo.allocationSize = memoryRequirements.size;
-		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-
-		VK_CHECK(vkAllocateMemory(vkDevice, &memoryAllocateInfo, VK_NULL_HANDLE, &vkDeviceMemory));
-
-		vkBindBufferMemory(vkDevice, vkBuffer, vkDeviceMemory, 0);
-	}
-	else
-	{
-		vkDestroyBuffer(vkDevice, vkBuffer, VK_NULL_HANDLE);
-		throw std::runtime_error("No suitable memory find for buffer!");
-	}
+	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
 }
 
-int32_t vk_buffer::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkMemoryProperties,
-	uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags)
+void vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height)
 {
-	for (uint32_t i = 0; i < vkMemoryProperties.memoryTypeCount; ++i)
-	{
-		const bool isRequeredType = (1 << i) & memoryTypeBits;
-		const bool hasRequeredProperties =
-			(vkMemoryProperties.memoryTypes[i].propertyFlags & vkMemoryPropertyFlags) == vkMemoryPropertyFlags;
+	vk_renderer* renderer{vk_renderer::get()};
 
-		if (isRequeredType && hasRequeredProperties)
-		{
-			return static_cast<int32_t>(i);
-		}
+	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
+
+	VkBufferImageCopy copyRegion{};
+	copyRegion.bufferOffset = 0;
+	copyRegion.bufferRowLength = 0;
+	copyRegion.bufferImageHeight = 0;
+	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.imageSubresource.mipLevel = 0;
+	copyRegion.imageSubresource.baseArrayLayer = 0;
+	copyRegion.imageSubresource.layerCount = 1;
+	copyRegion.imageOffset = {0, 0, 0};
+	copyRegion.imageExtent = {width, height, 1};
+
+	vkCmdCopyBufferToImage(vkCommandBuffer, vkBuffer, vkImage, vkImageLayout, 1, &copyRegion);
+
+	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
+}
+
+void vk_buffer::createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info)
+{
+	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
+	std::vector<uint32_t> queueIndexes;
+
+	VkBufferCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.size = create_info.size;
+	createInfo.usage = static_cast<VkBufferUsageFlagBits>(create_info.usage);
+	createInfo.sharingMode = queueFamily.getSharingMode();
+	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
+	{
+		queueIndexes = queueFamily.getUniqueQueueIndexes();
+		createInfo.queueFamilyIndexCount = queueIndexes.size();
+		createInfo.pQueueFamilyIndices = queueIndexes.data();
 	}
-	return -1;
+
+	VK_CHECK(vkCreateBuffer(vkDevice, &createInfo, vkGetAllocator(), &_vkBuffer));
+}
+
+void vk_buffer::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)
+{
+	vkBindBufferMemory(vkDevice, _vkBuffer, vkDeviceMemory, memoryOffset);
 }

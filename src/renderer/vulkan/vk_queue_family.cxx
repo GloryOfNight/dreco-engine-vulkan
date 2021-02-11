@@ -1,12 +1,14 @@
 #include "vk_queue_family.hxx"
 
-#include <vector>
+#include <set>
+
+#define IS_QUEUE_INDEX_VALID(index) (UINT32_MAX != index)
 
 vk_queue_family::vk_queue_family()
 	: isSupported{false}
-	, graphicsIndex{static_cast<uint32_t>(-1)}
-	, transferIndex{static_cast<uint32_t>(-1)}
-	, presentIndex{static_cast<uint32_t>(-1)}
+	, graphicsIndex{UINT32_MAX}
+	, transferIndex{UINT32_MAX}
+	, presentIndex{UINT32_MAX}
 	, sharingMode{VK_SHARING_MODE_CONCURRENT}
 {
 }
@@ -26,7 +28,6 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	for (uint32_t i = 0; i < queueFamilyCount; ++i)
 	{
 		const VkQueueFamilyProperties& queueFamily = queueFamilyProperties[i];
-
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			graphicsIndex = i;
@@ -34,7 +35,7 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 
 		if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
 		{
-			if (false == isIndexValid(transferIndex) || graphicsIndex == transferIndex)
+			if (false == IS_QUEUE_INDEX_VALID(transferIndex) || graphicsIndex == transferIndex)
 			{
 				transferIndex = i;
 			}
@@ -44,14 +45,14 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 		vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &isQueueFamilySupported);
 		if (isQueueFamilySupported)
 		{
-			if (false == isIndexValid(presentIndex) || graphicsIndex == presentIndex || transferIndex == presentIndex)
+			if (false == IS_QUEUE_INDEX_VALID(presentIndex) || graphicsIndex == presentIndex || transferIndex == presentIndex)
 			{
 				presentIndex = i;
 			}
 		}
 	}
 
-	if (isIndexValid(graphicsIndex) && isIndexValid(transferIndex) && isIndexValid(presentIndex))
+	if (IS_QUEUE_INDEX_VALID(graphicsIndex) && IS_QUEUE_INDEX_VALID(transferIndex) && IS_QUEUE_INDEX_VALID(presentIndex))
 	{
 		isSupported = true;
 	}
@@ -87,7 +88,13 @@ VkSharingMode vk_queue_family::getSharingMode() const
 	return sharingMode;
 }
 
-bool vk_queue_family::isIndexValid(uint32_t& index)
+std::vector<uint32_t> vk_queue_family::getQueueIndexes() const
 {
-	return static_cast<uint32_t>(-1) != index;
+	return std::vector<uint32_t>{presentIndex, graphicsIndex, transferIndex};
+}
+
+std::vector<uint32_t> vk_queue_family::getUniqueQueueIndexes() const
+{
+	const std::set<uint32_t> indexesSet{presentIndex, graphicsIndex, transferIndex};
+	return std::vector<uint32_t>(indexesSet.begin(), indexesSet.end());
 }
