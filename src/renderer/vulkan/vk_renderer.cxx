@@ -292,7 +292,7 @@ void vk_renderer::createInstance()
 	std::vector<const char*> instLayers{};
 	for (const auto& vkLayerProperty : avaibleLayers)
 	{
-#define PUSH_LAYER_IF_AVAIBLE(layer)                             \
+#define PUSH_LAYER_IF_AVAIBLE(layer)                      \
 	if (vkLayerProperty.layerName == std::string(#layer)) \
 		instLayers.push_back(#layer);
 
@@ -614,6 +614,12 @@ void vk_renderer::recreateSwapchain()
 {
 	_surface.setup(_physicalDevice.get());
 
+	const VkExtent2D currentExtent{_surface.getCapabilities().currentExtent};
+	if (0 == currentExtent.height || 0 == currentExtent.width == 0)
+	{
+		return;
+	}
+
 	createSwapchain();
 	createImageViews();
 
@@ -622,7 +628,7 @@ void vk_renderer::recreateSwapchain()
 
 	for (vk_mesh* mesh : _meshes)
 	{
-		mesh->recreatePipeline(_vkRenderPass, _surface.getCapabilities().currentExtent);
+		mesh->recreatePipeline(_vkRenderPass, currentExtent);
 	}
 }
 
