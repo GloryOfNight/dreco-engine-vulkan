@@ -615,7 +615,7 @@ void vk_renderer::recreateSwapchain()
 	_surface.setup(_physicalDevice.get());
 
 	const VkExtent2D currentExtent{_surface.getCapabilities().currentExtent};
-	if (0 == currentExtent.height || 0 == currentExtent.width == 0)
+	if (0 == currentExtent.height || 0 == currentExtent.width)
 	{
 		return;
 	}
