@@ -8,6 +8,7 @@
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
+#include "vk_depth_image.hxx"
 
 #include <SDL.h>
 #include <vector>
@@ -110,6 +111,8 @@ private:
 	vk_queue_family _queueFamily;
 
 	vk_device _device;
+
+	vk_depth_image _depth_image;
 
 	VkInstance _vkInstance;
 

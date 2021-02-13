@@ -187,6 +187,16 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	colorBlending.blendConstants[2] = 0.0F;
 	colorBlending.blendConstants[3] = 0.0F;
 
+	VkPipelineDepthStencilStateCreateInfo depthStencil{};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f;
+	depthStencil.maxDepthBounds = 1.0f;
+	depthStencil.stencilTestEnable = VK_FALSE;
+
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
@@ -196,7 +206,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizationState;
 	pipelineInfo.pMultisampleState = &multisampleState;
-	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr;
 	pipelineInfo.layout = _vkPipelineLayout;

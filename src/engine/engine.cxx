@@ -94,6 +94,9 @@ bool engine::startRenderer()
 			mesh->_transform._translation = vec3(1, 1, 1);
 
 			mesh = _renderer->createMesh();
+			mesh->_transform._translation = vec3(0, 0, 0);
+
+			mesh = _renderer->createMesh();
 			mesh->_transform._translation = vec3(-1, -1, 1);
 
 			mesh = _renderer->createMesh();
@@ -102,8 +105,6 @@ bool engine::startRenderer()
 			mesh = _renderer->createMesh();
 			mesh->_transform._translation = vec3(-1, 1, 1);
 
-			mesh = _renderer->createMesh();
-			mesh->_transform._translation = vec3(0, 0, 0);
 		}
 		else
 		{

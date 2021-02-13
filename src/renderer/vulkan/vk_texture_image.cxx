@@ -54,13 +54,13 @@ void vk_texture_image::create()
 	bindToMemory(vkDevice, _deviceMemory.get(), 0);
 
 	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, getImageAspectFlags());
 
 	vk_buffer::copyBufferToImage(stagingBuffer.get(), _vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, getImageAspectFlags());
 
 	createImageView(vkDevice, vkFormat);
 	createSampler(vkDevice);
@@ -111,7 +111,7 @@ vk_device_memory& vk_texture_image::getDeviceMemory()
 
 void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
 	const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
-	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst)
+	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeGraphicsCommands();
@@ -123,7 +123,7 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = vkImage;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.aspectMask = vkAspectFlags;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
@@ -134,6 +134,16 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 	vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineStageFlagsSrc, vkPipelineStageFlagsDst, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 	renderer->endSingleTimeGraphicsCommands(vkCommandBuffer);
+}
+
+VkImageAspectFlags vk_texture_image::getImageAspectFlags() const
+{
+	return VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
+VkImageUsageFlags vk_texture_image::getImageUsageFlags() const
+{
+	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 }
 
 void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height)
@@ -150,8 +160,8 @@ void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFor
 	createInfo.mipLevels = 1;
 	createInfo.arrayLayers = 1;
 	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	createInfo.tiling = VK_IMAGE_TILING_LINEAR;
-	createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	createInfo.usage = getImageUsageFlags();
 	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	createInfo.sharingMode = queueFamily.getSharingMode();
 	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
@@ -160,7 +170,6 @@ void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFor
 		createInfo.queueFamilyIndexCount = queueIndexes.size();
 		createInfo.pQueueFamilyIndices = queueIndexes.data();
 	}
-	
 
 	VK_CHECK(vkCreateImage(vkDevice, &createInfo, vkGetAllocator(), &_vkImage));
 }
@@ -179,7 +188,7 @@ void vk_texture_image::createImageView(const VkDevice vkDevice, const VkFormat v
 	createInfo.image = _vkImage;
 	createInfo.format = vkFormat;
 	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.aspectMask = getImageAspectFlags();
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.baseMipLevel = 0;
 	createInfo.subresourceRange.layerCount = 1;
