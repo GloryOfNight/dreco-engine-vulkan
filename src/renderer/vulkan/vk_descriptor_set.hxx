@@ -2,7 +2,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-class vk_descriptor_set
+class vk_descriptor_set final
 {
 public:
 	vk_descriptor_set();

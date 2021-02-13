@@ -4,7 +4,7 @@
 
 class vk_descriptor_set;
 
-class vk_graphics_pipeline
+class vk_graphics_pipeline final
 {
 public:
 	vk_graphics_pipeline();

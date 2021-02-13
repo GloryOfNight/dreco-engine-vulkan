@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 
-class vk_physical_device
+class vk_physical_device final
 {
 public:
 	vk_physical_device();

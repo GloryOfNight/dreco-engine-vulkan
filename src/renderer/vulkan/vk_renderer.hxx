@@ -16,7 +16,7 @@
 class engine;
 class vk_mesh;
 
-class vk_renderer
+class vk_renderer final
 {
 public:
 	vk_renderer();

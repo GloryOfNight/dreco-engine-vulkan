@@ -6,7 +6,7 @@ class vk_renderer;
 class vk_queue_family;
 class vk_surface;
 
-class vk_swapchain
+class vk_swapchain final
 {
 public:
 	explicit vk_swapchain(vk_renderer& renderer);

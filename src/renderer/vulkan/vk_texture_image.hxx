@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-class vk_texture_image
+class vk_texture_image final
 {
 public:
 	vk_texture_image();

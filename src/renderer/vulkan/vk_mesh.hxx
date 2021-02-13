@@ -16,7 +16,7 @@ class vk_queue_family;
 class vk_graphics_pipeline;
 class vk_physical_device;
 
-class vk_mesh
+class vk_mesh final
 {
 public:
 	vk_mesh();
