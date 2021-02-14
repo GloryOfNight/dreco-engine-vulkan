@@ -19,7 +19,7 @@ class vk_physical_device;
 class vk_mesh final
 {
 public:
-	vk_mesh();
+	vk_mesh(const mesh_data& meshData);
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
 	~vk_mesh();

@@ -120,9 +120,9 @@ void vk_renderer::tick(double deltaTime)
 		const double rotSpeed = 1.F;
 		transform mesh_transform(mesh->_transform);
 		vec3 rotation(mesh_transform._rotation);
-		rotation._x += rotSpeed * deltaTime;
-		rotation._y += rotSpeed * deltaTime;
-		rotation._z += rotSpeed * deltaTime;
+		//rotation._x += rotSpeed * deltaTime;
+		//rotation._y += rotSpeed * deltaTime;
+		//rotation._z += rotSpeed * deltaTime;
 
 		mesh_transform._rotation = rotation;
 
@@ -132,9 +132,9 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-vk_mesh* vk_renderer::createMesh()
+vk_mesh* vk_renderer::createMesh(const mesh_data& meshData)
 {
-	_meshes.push_back(new vk_mesh());
+	_meshes.push_back(new vk_mesh(meshData));
 
 	vk_mesh* newMesh = _meshes.back();
 	newMesh->create();

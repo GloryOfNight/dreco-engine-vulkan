@@ -3,6 +3,7 @@ project(dreco)
 
 set(DRECO_SOURCE_LIST 
 "src/engine/engine.cxx"
+"src/engine/load_scene.hxx"
 "src/math/vec2.cxx"
 "src/math/vec3.cxx"
 "src/math/mat4.cxx"

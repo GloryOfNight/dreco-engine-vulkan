@@ -22,7 +22,7 @@ vk_texture_image::~vk_texture_image()
 void vk_texture_image::create()
 {
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load("content/doge.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load("content/viking_room/textures/Texture1_baseColor.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixels)

@@ -2,6 +2,7 @@
 
 #include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
+#include "load_scene.hxx"
 
 #include <SDL.h>
 #include <iostream>
@@ -90,21 +91,11 @@ bool engine::startRenderer()
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
 
-			auto mesh = _renderer->createMesh();
-			mesh->_transform._translation = vec3(1, 1, 1);
+			mesh_data mesh_data = loadScene("content/viking_room/scene.gltf");
 
-			mesh = _renderer->createMesh();
-			mesh->_transform._translation = vec3(0, 0, 0);
-
-			mesh = _renderer->createMesh();
-			mesh->_transform._translation = vec3(-1, -1, 1);
-
-			mesh = _renderer->createMesh();
-			mesh->_transform._translation = vec3(1, -1, 1);
-
-			mesh = _renderer->createMesh();
-			mesh->_transform._translation = vec3(-1, 1, 1);
-
+			auto mesh = _renderer->createMesh(mesh_data);
+			mesh->_transform._translation = vec3(0, 6, 0);
+			mesh->_transform._rotation = vec3(3.1, -0.5f, 0);
 		}
 		else
 		{

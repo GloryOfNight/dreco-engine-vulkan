@@ -12,8 +12,9 @@
 
 #include <array>
 
-vk_mesh::vk_mesh()
-	: _vkDevice{VK_NULL_HANDLE}
+vk_mesh::vk_mesh(const mesh_data& meshData)
+	: _mesh{meshData}
+	, _vkDevice{VK_NULL_HANDLE}
 	, _vkCommandBuffer{VK_NULL_HANDLE}
 	, _transform{}
 {
@@ -27,8 +28,6 @@ vk_mesh::~vk_mesh()
 void vk_mesh::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
-
-	_mesh = mesh_data::createBox();
 
 	const VkExtent2D currentExtent{renderer->getSurface().getCapabilities().currentExtent};
 	const vk_device* vkDevice{&renderer->getDevice()};
@@ -90,7 +89,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
 {
 	_ubo._model = mat4::makeTransform(_transform);
-	_ubo._view = mat4::makeTranslation(vec3{0, 0, 3.0F});
+	_ubo._view = mat4::makeTranslation(vec3{0, 0, 32.0F});
 
 	const VkExtent2D vkCurrentExtent = vk_renderer::get()->getSurface().getCapabilities().currentExtent;
 	_ubo._projection = mat4::makeProjection(0.1F, 100, static_cast<float>(vkCurrentExtent.width) / static_cast<float>(vkCurrentExtent.height), 45.F);

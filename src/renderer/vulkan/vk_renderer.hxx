@@ -36,7 +36,7 @@ public:
 
 	void tick(double deltaTime);
 
-	vk_mesh* createMesh();
+	vk_mesh* createMesh(const mesh_data& meshData);
 
 	VkCommandBuffer createSecondaryCommandBuffer();
 
