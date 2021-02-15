@@ -95,7 +95,7 @@ bool engine::startRenderer()
 
 			auto mesh = _renderer->createMesh(mesh_data);
 			mesh->_transform._translation = vec3(0, 6, 0);
-			mesh->_transform._rotation = vec3(3.1, -0.5f, 0);
+			mesh->_transform._rotation = vec3(3, 0, 0);
 		}
 		else
 		{

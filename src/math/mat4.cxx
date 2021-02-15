@@ -80,7 +80,7 @@ mat4 mat4::makeRotation(const vec3& vec)
 	mat4 matZ(matZraw);
 	// clang-format on
 
-	return matX * matY * matZ;
+	return matZ * matY * matX;
 }
 
 mat4 mat4::makeScale(const vec3& vec)
