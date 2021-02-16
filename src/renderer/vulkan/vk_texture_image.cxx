@@ -114,13 +114,14 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags)
 {
 	vk_renderer* renderer{vk_renderer::get()};
+	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
 	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeGraphicsCommands();
-
+	
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = vkLayoutOld;
 	barrier.newLayout = vkLayoutNew;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_EXCLUSIVE ? queueFamily.getPresentIndex() : VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = vkImage;
 	barrier.subresourceRange.aspectMask = vkAspectFlags;

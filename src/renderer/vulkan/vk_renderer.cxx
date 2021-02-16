@@ -598,7 +598,7 @@ void vk_renderer::drawFrame()
 	submitInfo.pWaitDstStageMask = waitStages.data();
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &_vkGraphicsPrimaryCommandBuffers[imageIndex];
-	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.signalSemaphoreCount = signalSemaphores.size();
 	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
 	VK_CHECK(vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, _vkSubmitQueueFences[imageIndex]));
@@ -606,7 +606,7 @@ void vk_renderer::drawFrame()
 	std::array<VkSwapchainKHR, 1> swapchains{_vkSwapchain};
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.waitSemaphoreCount = signalSemaphores.size();
 	presentInfo.pWaitSemaphores = signalSemaphores.data();
 	presentInfo.swapchainCount = swapchains.size();
 	presentInfo.pSwapchains = swapchains.data();
