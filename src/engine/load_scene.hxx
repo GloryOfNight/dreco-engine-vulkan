@@ -17,8 +17,8 @@ static mesh_data loadScene(const char* sceneFile)
 	TinyGLTF loader;
 	std::string err;
 	std::string warn;
-	TINYGLTF_COMPONENT_TYPE_BYTE;
-	bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile);
+
+	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile);
 	if (!result)
 	{
 		return {};
@@ -30,9 +30,9 @@ static mesh_data loadScene(const char* sceneFile)
 	{
 		for (const auto& primitive : mesh.primitives)
 		{
-			int vertPosAccessor{-1};
-			int texCoordAccessor{-1};
-			int indexAccessor{primitive.indices};
+			uint32_t vertPosAccessor{UINT32_MAX};
+			uint32_t texCoordAccessor{UINT32_MAX};
+			uint32_t indexAccessor{static_cast<uint32_t>(primitive.indices)};
 			for (const auto& attr : primitive.attributes)
 			{
 				if (attr.first == "POSITION")
@@ -50,7 +50,7 @@ static mesh_data loadScene(const char* sceneFile)
 			newMesh._indexes.resize(model.accessors[indexAccessor].count);
 
 			const size_t accessorsSize{model.accessors.size()};
-			for (size_t i = 0; i < accessorsSize; ++i)
+			for (uint32_t i = 0; i < accessorsSize; ++i)
 			{
 				TINYGLTF_TYPE_SCALAR;
 				const auto& accessor{model.accessors[i]};
@@ -76,7 +76,7 @@ static mesh_data loadScene(const char* sceneFile)
 					}
 					else if (i == indexAccessor)
 					{
-						const int* indexPos = reinterpret_cast<const int*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+						const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
 						newMesh._indexes[k] = indexPos[k];
 					}
 				}
@@ -85,4 +85,5 @@ static mesh_data loadScene(const char* sceneFile)
 			return newMesh;
 		}
 	}
+	return mesh_data{};
 }

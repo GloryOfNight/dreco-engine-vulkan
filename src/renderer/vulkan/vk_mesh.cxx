@@ -2,7 +2,6 @@
 
 #include "core/utils/file_utils.hxx"
 
-#include "vk_allocator.hxx"
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
@@ -13,10 +12,10 @@
 #include <array>
 
 vk_mesh::vk_mesh(const mesh_data& meshData)
-	: _mesh{meshData}
+	: _transform{}
+	, _mesh{meshData}
 	, _vkDevice{VK_NULL_HANDLE}
 	, _vkCommandBuffer{VK_NULL_HANDLE}
-	, _transform{}
 {
 }
 
@@ -29,7 +28,6 @@ void vk_mesh::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
-	const VkExtent2D currentExtent{renderer->getSurface().getCapabilities().currentExtent};
 	const vk_device* vkDevice{&renderer->getDevice()};
 	const vk_queue_family* vkQueueFamily{&renderer->getQueueFamily()};
 	const vk_physical_device* vkPhysicalDevice{&renderer->getPhysicalDevice()};
