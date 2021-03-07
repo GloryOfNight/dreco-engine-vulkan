@@ -419,7 +419,7 @@ void vk_renderer::createImageViews()
 
 void vk_renderer::createRenderPass()
 {
-	std::array<VkAttachmentDescription, 2> attachmentsDescriptions;
+	std::array<VkAttachmentDescription, 2> attachmentsDescriptions{};
 
 	VkAttachmentDescription& colorAttachment = attachmentsDescriptions[0];
 	colorAttachment.format = _surface.getFormat().format;
