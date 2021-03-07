@@ -237,8 +237,8 @@ void vk_renderer::endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandB
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &vkCommandBuffer;
 
-	vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(_device.getGraphicsQueue());
+	VK_CHECK(vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
+	VK_CHECK(vkQueueWaitIdle(_device.getGraphicsQueue()));
 	vkFreeCommandBuffers(_device.get(), _vkGraphicsCommandPool, 1, &vkCommandBuffer);
 }
 
@@ -590,14 +590,15 @@ void vk_renderer::drawFrame()
 	std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	std::array<VkSemaphore, 1> waitSemaphores = {_vkSepaphoreImageAvaible};
 	std::array<VkSemaphore, 1> signalSemaphores = {_vkSepaphoreRenderFinished};
+	std::array<VkCommandBuffer, 1> commandBuffers = {_vkGraphicsPrimaryCommandBuffers[imageIndex]};
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size());
 	submitInfo.pWaitSemaphores = waitSemaphores.data();
 	submitInfo.pWaitDstStageMask = waitStages.data();
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &_vkGraphicsPrimaryCommandBuffers[imageIndex];
+	submitInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+	submitInfo.pCommandBuffers = commandBuffers.data();
 	submitInfo.signalSemaphoreCount = signalSemaphores.size();
 	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
@@ -673,7 +674,7 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
 	std::array<VkClearValue, 2> clearValues;
-	clearValues[0].color = {0.0F, 0.0F, 0.0F, 1.0F};
+	clearValues[0].color = {{0.0F, 0.0F, 0.0F, 1.0F}};
 	clearValues[1].depthStencil = {1.0F, 0};
 
 	VkRenderPassBeginInfo renderPassInfo{};
