@@ -57,7 +57,7 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 		isSupported = true;
 	}
 
-	if (graphicsIndex == transferIndex && transferIndex == presentIndex)
+	if (graphicsIndex != transferIndex && transferIndex != presentIndex)
 	{
 		sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
