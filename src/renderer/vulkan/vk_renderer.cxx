@@ -101,12 +101,13 @@ void vk_renderer::init()
 
 	createSwapchain();
 	createImageViews();
-	createRenderPass();
 
 	createCommandPool();
 	createPrimaryCommandBuffers();
-
 	_depth_image.create();
+
+	createRenderPass();
+
 	createFramebuffers();
 
 	createFences();
@@ -117,7 +118,7 @@ void vk_renderer::tick(double deltaTime)
 {
 	for (auto& mesh : _meshes)
 	{
-		static double rotSpeed = 0.5F;
+		static double rotSpeed = 0.5757575757F;
 		transform mesh_transform(mesh->_transform);
 		vec3 rotation(mesh_transform._rotation);
 		//rotation._x += rotSpeed * deltaTime;
@@ -432,7 +433,7 @@ void vk_renderer::createRenderPass()
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentDescription& depthAttachment = attachmentsDescriptions[1];
-	depthAttachment.format = VK_FORMAT_D24_UNORM_S8_UINT;
+	depthAttachment.format = _depth_image.getFormat();
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

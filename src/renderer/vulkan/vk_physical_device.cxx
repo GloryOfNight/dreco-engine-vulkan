@@ -13,7 +13,6 @@ vk_physical_device::vk_physical_device()
 
 void vk_physical_device::setup(const VkInstance vkInstance, VkSurfaceKHR vkSurface)
 {
-	
 	uint32_t gpuCount{0};
 	vkEnumeratePhysicalDevices(vkInstance, &gpuCount, nullptr);
 	std::vector<VkPhysicalDevice> gpuList(gpuCount);
@@ -73,4 +72,24 @@ const VkPhysicalDeviceFeatures& vk_physical_device::getFeatures() const
 const VkPhysicalDeviceMemoryProperties& vk_physical_device::getMemoryProperties() const
 {
 	return _vkPhysicalDeviceMemoryProperties;
+}
+
+VkFormat vk_physical_device::findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling, const VkFormatFeatureFlags features) const
+{
+	for (VkFormat format : candidates)
+	{
+		VkFormatProperties props;
+		vkGetPhysicalDeviceFormatProperties(_vkPhysicalDevice, format, &props);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+		{
+			return format;
+		}
+	}
+
+	return VkFormat::VK_FORMAT_UNDEFINED;
 }

@@ -4,11 +4,11 @@
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
+#include "vk_depth_image.hxx"
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
-#include "vk_depth_image.hxx"
 
 #include <SDL.h>
 #include <vector>
