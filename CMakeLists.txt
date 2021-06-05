@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16.2)
 project(dreco)
 
 set(DRECO_SOURCE_LIST 
+"src/core/world_object.cxx"
+"src/core/world_object.hxx"
 "src/engine/engine.cxx"
 "src/engine/load_scene.hxx"
 "src/math/vec2.cxx"
@@ -22,7 +24,7 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_descriptor_set.cxx"
 "src/renderer/vulkan/vk_graphics_pipeline.cxx"
 "src/renderer/vulkan/vk_texture_image.cxx"
-"src/renderer/vulkan/vk_depth_image.cxx")
+"src/renderer/vulkan/vk_depth_image.cxx" "src/core/camera.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 

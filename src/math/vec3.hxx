@@ -12,3 +12,5 @@ struct DRECO_DECLSPEC vec3
 	float _y;
 	float _z;
 };
+
+vec3 operator+(const vec3& first, const vec3& second);

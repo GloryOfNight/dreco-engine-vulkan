@@ -1,6 +1,7 @@
 #include "vk_mesh.hxx"
 
 #include "core/utils/file_utils.hxx"
+#include "engine/engine.hxx"
 
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
@@ -39,7 +40,7 @@ void vk_mesh::create()
 	createVertexBuffer(vkQueueFamily, vkPhysicalDevice);
 	createIndexBuffer(vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
-	
+
 	_textureImage.create(_mesh._material._textureUri);
 
 	createDescriptorSet();
@@ -86,11 +87,11 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 
 void vk_mesh::beforeSubmitUpdate()
 {
-	_ubo._model = mat4::makeTransform(_transform);
-	_ubo._view = mat4::makeTranslation(vec3{0, 0, 32.0F});
+	camera* camera{engine::get()->getCamera()};
 
-	const VkExtent2D vkCurrentExtent = vk_renderer::get()->getSurface().getCapabilities().currentExtent;
-	_ubo._projection = mat4::makeProjection(0.1F, 100, static_cast<float>(vkCurrentExtent.width) / static_cast<float>(vkCurrentExtent.height), 45.F);
+	_ubo._model = mat4::makeTransform(_transform);
+	_ubo._view = camera->getView();
+	_ubo._projection = camera->getProjection();
 
 	_uniformBuffer.getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }
@@ -136,7 +137,6 @@ void vk_mesh::createDescriptorSet()
 
 void vk_mesh::createGraphicsPipeline()
 {
-	
 }
 
 void vk_mesh::createVertexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)

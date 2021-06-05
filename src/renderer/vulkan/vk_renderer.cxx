@@ -132,7 +132,7 @@ void vk_renderer::tick(double deltaTime)
 		{
 			rotSpeed = -rotSpeed;
 		}
-		mesh_transform._rotation = rotation;
+		//mesh_transform._rotation = rotation;
 
 		mesh->_transform = mesh_transform;
 		mesh->beforeSubmitUpdate();
@@ -566,16 +566,17 @@ void vk_renderer::createSemaphores()
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	if (const VkResult result = vkAcquireNextImageKHR(_device.get(), _vkSwapchain, UINT32_MAX, _vkSepaphoreImageAvaible, VK_NULL_HANDLE, &imageIndex);
-		VK_SUCCESS != result && VK_SUBOPTIMAL_KHR != result)
+	const VkResult acquireNextImageResult = vkAcquireNextImageKHR(_device.get(), _vkSwapchain, UINT32_MAX, _vkSepaphoreImageAvaible, VK_NULL_HANDLE, &imageIndex);
+
+	if (VK_SUCCESS != acquireNextImageResult && VK_SUBOPTIMAL_KHR != acquireNextImageResult)
 	{
-		if (VK_ERROR_OUT_OF_DATE_KHR == result)
+		if (VK_ERROR_OUT_OF_DATE_KHR == acquireNextImageResult)
 		{
 			recreateSwapchain();
 		}
 		else
 		{
-			VK_RETURN_ON_RESULT(result, VK_TIMEOUT);
+			VK_RETURN_ON_RESULT(acquireNextImageResult, VK_TIMEOUT);
 		}
 		return;
 	}
@@ -616,6 +617,11 @@ void vk_renderer::drawFrame()
 	presentInfo.pResults = nullptr;
 
 	vkQueuePresentKHR(_device.getPresentQueue(), &presentInfo);
+
+	if (VK_SUBOPTIMAL_KHR == acquireNextImageResult)
+	{
+		recreateSwapchain();
+	}
 }
 
 void vk_renderer::cleanupSwapchain(VkSwapchainKHR& swapchain)

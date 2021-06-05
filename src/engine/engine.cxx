@@ -2,6 +2,7 @@
 
 #include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
+
 #include "load_scene.hxx"
 
 #include <SDL.h>
@@ -11,16 +12,22 @@ static inline engine* gEngine{nullptr};
 
 engine::engine()
 	: _renderer{nullptr}
-	, isRunning{false}
-	, lastTickTime{0}
+	, _camera{nullptr}
+	, _isRunning{false}
+	, _lastTickTime{0}
 {
 }
 
 engine::~engine()
 {
-	if (isRunning)
+	if (_isRunning)
 	{
 		stop();
+	}
+
+	if (nullptr != _camera)
+	{
+		delete _camera;
 	}
 }
 
@@ -34,15 +41,20 @@ vk_renderer* engine::getRenderer() const
 	return _renderer;
 }
 
+camera* engine::getCamera() const
+{
+	return _camera;
+}
+
 void engine::run()
 {
-	if (isRunning)
+	if (_isRunning)
 	{
 		std::cerr << "Egnine already running, abording. \n";
 		return;
 	}
 
-	if (gEngine != nullptr && gEngine->isRunning)
+	if (gEngine != nullptr && gEngine->_isRunning)
 	{
 		std::cerr << "Another engine instance already running, abording. \n";
 		return;
@@ -58,13 +70,14 @@ void engine::run()
 
 	if (true == startRenderer())
 	{
+		_camera = new camera();
 		startMainLoop();
 	}
 }
 
 void engine::stop()
 {
-	if (false == isRunning)
+	if (false == _isRunning)
 	{
 		std::cerr << "Engine aren't running, abording. \n";
 		return;
@@ -116,15 +129,60 @@ void engine::stopRenderer()
 
 void engine::startMainLoop()
 {
-	lastTickTime = SDL_GetPerformanceCounter();
+	_lastTickTime = SDL_GetPerformanceCounter();
 
-	isRunning = true;
-	while (isRunning)
+	_isRunning = true;
+	while (_isRunning)
 	{
 		double DeltaTime{0};
 		calculateNewDeltaTime(DeltaTime);
 
 		_renderer->tick(DeltaTime);
+
+		const float speed = 100.F;
+
+		{ // rotating camera with mouse input
+			if (SDL_GetMouseFocus() == _renderer->getWindow())
+			{
+				SDL_PumpEvents();
+				static int mousePosX{0};
+				static int mousePosY{0};
+				int newMousePosX{0};
+				int newMousePosY{0};
+				const auto mouseState{SDL_GetMouseState(&newMousePosX, &newMousePosY)};
+
+				if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
+				{
+					const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - 1;
+					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
+
+					const vec3 camRot = _camera->getTransform()._rotation;
+					const float camRotX = camRot._x + cofY * (speed * DeltaTime);
+					const float camRotY = camRot._y + cofX * (speed * DeltaTime) * -1;
+
+					_camera->setRotation(vec3(camRotX, camRotY, 0));
+				}
+				else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
+				{
+					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
+					const vec3 camPos = _camera->getTransform()._translation;
+					const float camPosZ = (camPos._z + ((speed * 10) * DeltaTime * cofY));
+					_camera->setPosition(vec3(camPos._x, camPos._y, camPosZ));
+				}
+				else if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE))
+				{
+					const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - 1;
+					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
+
+					const vec3 camPos = _camera->getTransform()._translation;
+					const float camPosX = camPos._x + ((speed * 10) * DeltaTime * cofX);
+					const float camPosY = camPos._y + (((speed * 10) * DeltaTime * cofY) * -1);
+					_camera->setPosition(vec3(camPosX, camPosY, camPos._z));
+				}
+				mousePosX = newMousePosX;
+				mousePosY = newMousePosY;
+			}
+		}
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
@@ -133,44 +191,51 @@ void engine::startMainLoop()
 			{
 				stop();
 			}
-			//else if (event.type == SDL_KEYDOWN)
-			//{
-			//	const float speed = 100.F;
-			//	if (event.key.keysym.sym == SDLK_w)
-			//	{
-			//	}
-			//	else if (event.key.keysym.sym == SDLK_s)
-			//	{
-			//	}
+			else if (event.type == SDL_KEYDOWN)
+			{
+				const transform cameraTranform = _camera->getTransform();
 
-			//	if (event.key.keysym.sym == SDLK_d)
-			//	{
-			//	}
-			//	else if (event.key.keysym.sym == SDLK_a)
-			//	{
-			//	}
+				if (event.key.keysym.sym == SDLK_w)
+				{
+					_camera->setPosition(cameraTranform._translation + vec3(0, 0, speed * DeltaTime));
+				}
+				else if (event.key.keysym.sym == SDLK_s)
+				{
+					_camera->setPosition(cameraTranform._translation + vec3(0, 0, -speed * DeltaTime));
+				}
 
-			//	if (event.key.keysym.sym == SDLK_e)
-			//	{
-			//	}
-			//	else if (event.key.keysym.sym == SDLK_q)
-			//	{
-			//	}
-			//}
+				if (event.key.keysym.sym == SDLK_d)
+				{
+					_camera->setPosition(cameraTranform._translation + vec3(speed * DeltaTime, 0, 0));
+				}
+				else if (event.key.keysym.sym == SDLK_a)
+				{
+					_camera->setPosition(cameraTranform._translation + vec3(-speed * DeltaTime, 0, 0));
+				}
+
+				if (event.key.keysym.sym == SDLK_e)
+				{
+					_camera->setPosition(cameraTranform._translation + vec3(0, speed * DeltaTime, 0));
+				}
+				else if (event.key.keysym.sym == SDLK_q)
+				{
+					_camera->setPosition(cameraTranform._translation + vec3(0, -speed * DeltaTime, 0));
+				}
+			}
 		}
 	}
 }
 
 void engine::stopMainLoop()
 {
-	isRunning = false;
+	_isRunning = false;
 }
 
 void engine::calculateNewDeltaTime(double& NewDeltaTime)
 {
 	const uint64_t now{SDL_GetPerformanceCounter()};
 
-	NewDeltaTime = static_cast<double>(now - lastTickTime) / static_cast<double>(SDL_GetPerformanceFrequency());
+	NewDeltaTime = static_cast<double>(now - _lastTickTime) / static_cast<double>(SDL_GetPerformanceFrequency());
 
-	lastTickTime = now;
+	_lastTickTime = now;
 }
