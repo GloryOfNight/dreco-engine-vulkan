@@ -5,7 +5,7 @@
 class vk_depth_image : public vk_texture_image
 {
 public:
-	void create() override;
+	void create();
 
 	void recreate();
 

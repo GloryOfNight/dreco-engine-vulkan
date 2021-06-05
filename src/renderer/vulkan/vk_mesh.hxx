@@ -35,7 +35,7 @@ public:
 
 	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex);
 
-	void beforeSubmitUpdate(const uint32_t imageIndex);
+	void beforeSubmitUpdate();
 
 	transform _transform;
 

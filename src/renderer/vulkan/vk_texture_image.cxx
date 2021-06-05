@@ -19,10 +19,10 @@ vk_texture_image::~vk_texture_image()
 	destroy();
 }
 
-void vk_texture_image::create()
+void vk_texture_image::create(const std::string_view& textureUri)
 {
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load("content/viking_room/textures/Texture1_baseColor.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(textureUri.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{

@@ -40,7 +40,7 @@ void vk_mesh::create()
 	createIndexBuffer(vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
 	
-	_textureImage.create();
+	_textureImage.create(_mesh._material._textureUri);
 
 	createDescriptorSet();
 	_graphicsPipeline.create(_descriptorSet);
@@ -84,7 +84,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
 }
 
-void vk_mesh::beforeSubmitUpdate(const uint32_t imageIndex)
+void vk_mesh::beforeSubmitUpdate()
 {
 	_ubo._model = mat4::makeTransform(_transform);
 	_ubo._view = mat4::makeTranslation(vec3{0, 0, 32.0F});

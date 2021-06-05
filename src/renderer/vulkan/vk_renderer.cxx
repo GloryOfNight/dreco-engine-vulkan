@@ -135,7 +135,7 @@ void vk_renderer::tick(double deltaTime)
 		mesh_transform._rotation = rotation;
 
 		mesh->_transform = mesh_transform;
-		mesh->beforeSubmitUpdate(0);
+		mesh->beforeSubmitUpdate();
 	}
 	drawFrame();
 }

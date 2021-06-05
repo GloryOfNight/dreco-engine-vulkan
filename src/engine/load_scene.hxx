@@ -24,6 +24,9 @@ static mesh_data loadScene(const char* sceneFile)
 		return {};
 	}
 
+	std::string coreFolder = std::string(sceneFile);
+	coreFolder = coreFolder.substr(0, coreFolder.find_last_of("/") + 1);
+
 	std::vector<mesh_data> meshes;
 
 	for (const auto& mesh : model.meshes)
@@ -45,9 +48,13 @@ static mesh_data loadScene(const char* sceneFile)
 				}
 			}
 
+			const auto textureIndex{model.materials[primitive.material].values["baseColorTexture"].TextureIndex()};
+			const auto imageIndex{model.textures[textureIndex].source};
+
 			mesh_data newMesh{};
 			newMesh._vertexes.resize(model.accessors[vertPosAccessor].count);
 			newMesh._indexes.resize(model.accessors[indexAccessor].count);
+			newMesh._material._textureUri = coreFolder + model.images[imageIndex].uri;
 
 			const size_t accessorsSize{model.accessors.size()};
 			for (uint32_t i = 0; i < accessorsSize; ++i)
