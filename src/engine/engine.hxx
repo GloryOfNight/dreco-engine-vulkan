@@ -45,6 +45,4 @@ private:
 	camera* _camera;
 
 	bool _isRunning;
-
-	uint64_t _lastTickTime;
 };

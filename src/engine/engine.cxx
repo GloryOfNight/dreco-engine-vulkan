@@ -6,6 +6,7 @@
 #include "load_scene.hxx"
 
 #include <SDL.h>
+#include <chrono>
 #include <iostream>
 
 static inline engine* gEngine{nullptr};
@@ -14,7 +15,6 @@ engine::engine()
 	: _renderer{nullptr}
 	, _camera{nullptr}
 	, _isRunning{false}
-	, _lastTickTime{0}
 {
 }
 
@@ -129,8 +129,6 @@ void engine::stopRenderer()
 
 void engine::startMainLoop()
 {
-	_lastTickTime = SDL_GetPerformanceCounter();
-
 	_isRunning = true;
 	while (_isRunning)
 	{
@@ -233,9 +231,11 @@ void engine::stopMainLoop()
 
 void engine::calculateNewDeltaTime(double& NewDeltaTime)
 {
-	const uint64_t now{SDL_GetPerformanceCounter()};
+	static std::chrono::time_point past = std::chrono::steady_clock::now();
+	const std::chrono::time_point now  = std::chrono::steady_clock::now();
 
-	NewDeltaTime = static_cast<double>(now - _lastTickTime) / static_cast<double>(SDL_GetPerformanceFrequency());
+	const auto Milliseconds{std::chrono::duration_cast<std::chrono::milliseconds>(now - past).count()};
+	past = now;
 
-	_lastTickTime = now;
+	NewDeltaTime = Milliseconds / 1000.F;
 }
