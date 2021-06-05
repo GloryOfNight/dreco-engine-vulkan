@@ -38,7 +38,7 @@ private:
 
 	void stopMainLoop();
 
-	void calculateNewDeltaTime(double& NewDeltaTime);
+	double calculateNewDeltaTime();
 
 	vk_renderer* _renderer;
 
