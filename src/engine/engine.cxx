@@ -145,11 +145,15 @@ void engine::startMainLoop()
 				int newMousePosY{0};
 				const auto mouseState{SDL_GetMouseState(&newMousePosX, &newMousePosY)};
 
+				int windowSizeX{0};
+				int windowSizeY{0};
+				SDL_GetWindowSize(_renderer->getWindow(), &windowSizeX, &windowSizeY);
+
+				const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - (windowSizeX / windowSizeY);
+				const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
+
 				if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
 				{
-					const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - 1;
-					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
-
 					const vec3 camRot = _camera.getTransform()._rotation;
 					const float camRotX = camRot._x + cofY * (speed * deltaTime);
 					const float camRotY = camRot._y + cofX * (speed * deltaTime) * -1;
@@ -158,16 +162,12 @@ void engine::startMainLoop()
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
 				{
-					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
 					const vec3 camPos = _camera.getTransform()._translation;
 					const float camPosZ = (camPos._z + ((speed * 10) * deltaTime * cofY));
 					_camera.setPosition(vec3(camPos._x, camPos._y, camPosZ));
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE))
 				{
-					const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - 1;
-					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
-
 					const vec3 camPos = _camera.getTransform()._translation;
 					const float camPosX = camPos._x + ((speed * 10) * deltaTime * cofX);
 					const float camPosY = camPos._y + (((speed * 10) * deltaTime * cofY) * -1);
@@ -181,7 +181,7 @@ void engine::startMainLoop()
 		// event poll not working very well with high frame rate (>60)
 		// TODO: input state machine, should do job just fine
 		SDL_Event event;
-		while (SDL_PollEvent(&event)) 
+		while (SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_QUIT)
 			{
