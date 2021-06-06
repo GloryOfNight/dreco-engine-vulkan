@@ -1,9 +1,8 @@
 #include "engine.hxx"
 
+#include "core/loaders/gltf_loader.hxx"
 #include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
-
-#include "load_scene.hxx"
 
 #include <SDL.h>
 #include <chrono>
@@ -13,7 +12,6 @@ static inline engine* gEngine{nullptr};
 
 engine::engine()
 	: _renderer{nullptr}
-	, _camera{nullptr}
 	, _isRunning{false}
 {
 }
@@ -23,11 +21,6 @@ engine::~engine()
 	if (_isRunning)
 	{
 		stop();
-	}
-
-	if (nullptr != _camera)
-	{
-		delete _camera;
 	}
 }
 
@@ -41,9 +34,9 @@ vk_renderer* engine::getRenderer() const
 	return _renderer;
 }
 
-camera* engine::getCamera() const
+const camera* engine::getCamera() const
 {
-	return _camera;
+	return &_camera;
 }
 
 void engine::run()
@@ -70,7 +63,6 @@ void engine::run()
 
 	if (true == startRenderer())
 	{
-		_camera = new camera();
 		startMainLoop();
 	}
 }
@@ -104,7 +96,7 @@ bool engine::startRenderer()
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
 
-			mesh_data mesh_data = loadScene("content/viking_room/scene.gltf");
+			mesh_data mesh_data = gltf_loader::loadScene("content/viking_room/scene.gltf");
 
 			auto mesh = _renderer->createMesh(mesh_data);
 			mesh->_transform._translation = vec3(0, 6, 0);
@@ -135,7 +127,7 @@ void engine::startMainLoop()
 		const double deltaTime = calculateNewDeltaTime();
 		if (deltaTime == 0.0)
 		{
-			continue;
+			continue; // skip tick if delta time zero
 		}
 
 		_renderer->tick(deltaTime);
@@ -157,36 +149,38 @@ void engine::startMainLoop()
 					const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - 1;
 					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
 
-					const vec3 camRot = _camera->getTransform()._rotation;
+					const vec3 camRot = _camera.getTransform()._rotation;
 					const float camRotX = camRot._x + cofY * (speed * deltaTime);
 					const float camRotY = camRot._y + cofX * (speed * deltaTime) * -1;
 
-					_camera->setRotation(vec3(camRotX, camRotY, 0));
+					_camera.setRotation(vec3(camRotX, camRotY, 0));
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
 				{
 					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
-					const vec3 camPos = _camera->getTransform()._translation;
+					const vec3 camPos = _camera.getTransform()._translation;
 					const float camPosZ = (camPos._z + ((speed * 10) * deltaTime * cofY));
-					_camera->setPosition(vec3(camPos._x, camPos._y, camPosZ));
+					_camera.setPosition(vec3(camPos._x, camPos._y, camPosZ));
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE))
 				{
 					const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - 1;
 					const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
 
-					const vec3 camPos = _camera->getTransform()._translation;
+					const vec3 camPos = _camera.getTransform()._translation;
 					const float camPosX = camPos._x + ((speed * 10) * deltaTime * cofX);
 					const float camPosY = camPos._y + (((speed * 10) * deltaTime * cofY) * -1);
-					_camera->setPosition(vec3(camPosX, camPosY, camPos._z));
+					_camera.setPosition(vec3(camPosX, camPosY, camPos._z));
 				}
 				mousePosX = newMousePosX;
 				mousePosY = newMousePosY;
 			}
 		}
 
+		// event poll not working very well with high frame rate (>60)
+		// TODO: input state machine, should do job just fine
 		SDL_Event event;
-		while (SDL_PollEvent(&event))
+		while (SDL_PollEvent(&event)) 
 		{
 			if (event.type == SDL_QUIT)
 			{
@@ -194,33 +188,33 @@ void engine::startMainLoop()
 			}
 			else if (event.type == SDL_KEYDOWN)
 			{
-				const transform cameraTranform = _camera->getTransform();
+				const transform cameraTranform = _camera.getTransform();
 
 				if (event.key.keysym.sym == SDLK_w)
 				{
-					_camera->setPosition(cameraTranform._translation + vec3(0, 0, speed * deltaTime));
+					_camera.setPosition(cameraTranform._translation + vec3(0, 0, speed * deltaTime));
 				}
 				else if (event.key.keysym.sym == SDLK_s)
 				{
-					_camera->setPosition(cameraTranform._translation + vec3(0, 0, -speed * deltaTime));
+					_camera.setPosition(cameraTranform._translation + vec3(0, 0, -speed * deltaTime));
 				}
 
 				if (event.key.keysym.sym == SDLK_d)
 				{
-					_camera->setPosition(cameraTranform._translation + vec3(speed * deltaTime, 0, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(speed * deltaTime, 0, 0));
 				}
 				else if (event.key.keysym.sym == SDLK_a)
 				{
-					_camera->setPosition(cameraTranform._translation + vec3(-speed * deltaTime, 0, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(-speed * deltaTime, 0, 0));
 				}
 
 				if (event.key.keysym.sym == SDLK_e)
 				{
-					_camera->setPosition(cameraTranform._translation + vec3(0, speed * deltaTime, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(0, speed * deltaTime, 0));
 				}
 				else if (event.key.keysym.sym == SDLK_q)
 				{
-					_camera->setPosition(cameraTranform._translation + vec3(0, -speed * deltaTime, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(0, -speed * deltaTime, 0));
 				}
 			}
 		}

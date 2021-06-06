@@ -2,10 +2,10 @@
 
 #include "vk_texture_image.hxx"
 
-class vk_depth_image : public vk_texture_image
+class vk_depth_image final : public vk_texture_image
 {
 public:
-	void create();
+	void create() override;
 
 	void recreate();
 

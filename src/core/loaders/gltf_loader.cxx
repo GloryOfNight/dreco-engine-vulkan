@@ -1,6 +1,5 @@
-#pragma once
+#include "gltf_loader.hxx"
 
-#include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/vertex.hxx"
 
 #define TINYGLTF_IMPLEMENTATION
@@ -9,7 +8,7 @@
 
 #include <vector>
 
-static mesh_data loadScene(const char* sceneFile)
+mesh_data gltf_loader::loadScene(const char* sceneFile)
 {
 	using namespace tinygltf;
 

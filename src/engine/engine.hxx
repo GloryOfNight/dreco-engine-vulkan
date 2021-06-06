@@ -1,5 +1,5 @@
 #pragma once
-#include "core/camera.hxx"
+#include "core/objects/camera.hxx"
 #include "math/vec3.hxx"
 
 #include "dreco.h"
@@ -23,7 +23,7 @@ public:
 
 	vk_renderer* getRenderer() const;
 
-	camera* getCamera() const;
+	const camera* getCamera() const;
 
 	void run();
 
@@ -42,7 +42,7 @@ private:
 
 	vk_renderer* _renderer;
 
-	camera* _camera;
+	camera _camera;
 
 	bool _isRunning;
 };

@@ -13,6 +13,8 @@ public:
 	vk_texture_image(vk_texture_image&&) = delete;
 	virtual ~vk_texture_image();
 
+	virtual void create();
+
 	virtual void create(const std::string_view& textureUri);
 
 	void destroy();

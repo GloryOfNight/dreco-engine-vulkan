@@ -7,6 +7,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#define VK_TEXTURE_PLACEHOLDER_URI "content/doge.jpg"
+
 vk_texture_image::vk_texture_image()
 	: _vkImage{VK_NULL_HANDLE}
 	, _vkImageView{VK_NULL_HANDLE}
@@ -19,6 +21,11 @@ vk_texture_image::~vk_texture_image()
 	destroy();
 }
 
+void vk_texture_image::create()
+{
+	create(VK_TEXTURE_PLACEHOLDER_URI);
+}
+
 void vk_texture_image::create(const std::string_view& textureUri)
 {
 	int texWidth, texHeight, texChannels;
@@ -26,7 +33,8 @@ void vk_texture_image::create(const std::string_view& textureUri)
 
 	if (!pixels)
 	{
-		throw std::runtime_error("failed to load texture image!");
+		std::cerr << "Failed to load texture: " << textureUri << "; Using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
+		pixels = stbi_load(VK_TEXTURE_PLACEHOLDER_URI, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	}
 
 	vk_renderer* renderer{vk_renderer::get()};

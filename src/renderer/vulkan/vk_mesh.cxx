@@ -87,7 +87,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint3
 
 void vk_mesh::beforeSubmitUpdate()
 {
-	camera* camera{engine::get()->getCamera()};
+	const camera* camera{engine::get()->getCamera()};
 
 	_ubo._model = mat4::makeTransform(_transform);
 	_ubo._view = camera->getView();
