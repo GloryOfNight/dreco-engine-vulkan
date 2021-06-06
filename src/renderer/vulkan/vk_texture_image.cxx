@@ -40,11 +40,11 @@ void vk_texture_image::create(const std::string_view& textureUri)
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice{renderer->getDevice().get()};
 
-	const VkFormat vkFormat = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
+	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
 	createImage(vkDevice, vkFormat, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	VkMemoryRequirements memoryRequirements;
+	VkMemoryRequirements memoryRequirements{};
 	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
 
 	vk_buffer_create_info info;
@@ -54,7 +54,7 @@ void vk_texture_image::create(const std::string_view& textureUri)
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
 
-	stagingBuffer.getDeviceMemory().map(pixels, memoryRequirements.size);
+	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);
 
 	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
 

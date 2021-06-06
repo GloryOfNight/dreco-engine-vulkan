@@ -8,7 +8,7 @@
 
 #include <vector>
 
-mesh_data gltf_loader::loadScene(const char* sceneFile)
+std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 {
 	using namespace tinygltf;
 
@@ -17,7 +17,7 @@ mesh_data gltf_loader::loadScene(const char* sceneFile)
 	std::string err;
 	std::string warn;
 
-	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile);
+	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
 	if (!result)
 	{
 		return {};
@@ -27,6 +27,7 @@ mesh_data gltf_loader::loadScene(const char* sceneFile)
 	coreFolder = coreFolder.substr(0, coreFolder.find_last_of("/") + 1);
 
 	std::vector<mesh_data> meshes;
+	meshes.reserve(model.meshes.size());
 
 	for (const auto& mesh : model.meshes)
 	{
@@ -58,7 +59,6 @@ mesh_data gltf_loader::loadScene(const char* sceneFile)
 			const size_t accessorsSize{model.accessors.size()};
 			for (uint32_t i = 0; i < accessorsSize; ++i)
 			{
-				TINYGLTF_TYPE_SCALAR;
 				const auto& accessor{model.accessors[i]};
 				const auto& bufferView{model.bufferViews[accessor.bufferView]};
 				const auto& buffer{model.buffers[bufferView.buffer]};
@@ -88,8 +88,8 @@ mesh_data gltf_loader::loadScene(const char* sceneFile)
 				}
 			}
 
-			return newMesh;
+			meshes.push_back(newMesh);
 		}
 	}
-	return mesh_data{};
+	return meshes;
 }

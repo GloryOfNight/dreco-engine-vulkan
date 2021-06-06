@@ -96,11 +96,12 @@ bool engine::startRenderer()
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
 
-			mesh_data mesh_data = gltf_loader::loadScene("content/viking_room/scene.gltf");
-
-			auto mesh = _renderer->createMesh(mesh_data);
-			mesh->_transform._translation = vec3(0, 6, 0);
-			mesh->_transform._rotation = vec3(3, 0, 0);
+			std::vector<mesh_data> meshes_data = gltf_loader::loadScene("content/viking_room/scene.gltf");
+			for (auto mesh : meshes_data)
+			{
+				auto newMesh = _renderer->createMesh(mesh);
+				newMesh->_transform._rotation = vec3(3, 0, 0);
+			}
 		}
 		else
 		{
