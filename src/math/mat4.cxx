@@ -23,7 +23,7 @@ constexpr float mat4::size() noexcept
 
 mat4 mat4::makeTransform(const transform& t)
 {
-	return makeScale(t._scale) * makeRotation(t._rotation) * makeTranslation(t._translation);
+	return makeScale(t._scale) * makeTranslation(t._translation) * makeRotation(t._rotation);
 }
 
 mat4 mat4::makeTranslation(const vec3& vec)
@@ -80,7 +80,7 @@ mat4 mat4::makeRotation(const vec3& vec)
 	mat4 matZ(matZraw);
 	// clang-format on
 
-	return matX * matY * matZ;
+	return matZ * matY * matX;
 }
 
 mat4 mat4::makeScale(const vec3& vec)

@@ -8,7 +8,7 @@ enum class vk_device_memory_properties : VkFlags
 	DEVICE_ONLY = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 };
 
-class vk_device_memory
+class vk_device_memory final
 {
 public:
 	vk_device_memory();

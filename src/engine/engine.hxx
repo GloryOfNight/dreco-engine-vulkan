@@ -1,4 +1,5 @@
 #pragma once
+#include "core/objects/camera.hxx"
 #include "math/vec3.hxx"
 
 #include "dreco.h"
@@ -22,6 +23,8 @@ public:
 
 	vk_renderer* getRenderer() const;
 
+	const camera* getCamera() const;
+
 	void run();
 
 	void stop();
@@ -35,11 +38,11 @@ private:
 
 	void stopMainLoop();
 
-	void calculateNewDeltaTime(double& NewDeltaTime);
+	double calculateNewDeltaTime();
 
 	vk_renderer* _renderer;
 
-	bool isRunning;
+	camera _camera;
 
-	uint64_t lastTickTime;
+	bool _isRunning;
 };

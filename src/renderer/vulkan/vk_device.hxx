@@ -4,7 +4,7 @@
 class vk_physical_device;
 class vk_queue_family;
 
-class vk_device
+class vk_device final
 {
 public:
 	vk_device();

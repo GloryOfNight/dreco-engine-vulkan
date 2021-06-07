@@ -2,7 +2,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-class vk_queue_family
+class vk_queue_family final
 {
 public:
 	vk_queue_family();

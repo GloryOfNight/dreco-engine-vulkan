@@ -3,6 +3,12 @@ project(dreco)
 
 set(DRECO_SOURCE_LIST 
 "src/engine/engine.cxx"
+"src/core/loaders/gltf_loader.cxx"
+"src/core/loaders/gltf_loader.hxx"
+"src/core/objects/camera.cxx"
+"src/core/objects/camera.hxx"
+"src/core/objects/world_object.cxx"
+"src/core/objects/world_object.hxx"
 "src/math/vec2.cxx"
 "src/math/vec3.cxx"
 "src/math/mat4.cxx"
@@ -20,7 +26,8 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_swapchain.cxx"
 "src/renderer/vulkan/vk_descriptor_set.cxx"
 "src/renderer/vulkan/vk_graphics_pipeline.cxx"
-"src/renderer/vulkan/vk_texture_image.cxx")
+"src/renderer/vulkan/vk_texture_image.cxx"
+"src/renderer/vulkan/vk_depth_image.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST})
 
@@ -28,18 +35,24 @@ find_package(SDL2 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS NO
+)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories("thirdparty")
 
 if (UNIX)
 target_link_libraries(${PROJECT_NAME} PRIVATE vulkan)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 elseif(MSVC)
 target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDRECO_DECLSPEC=__declspec(dllexport)")
 target_link_libraries(${PROJECT_NAME} PRIVATE $ENV{VULKAN_SDK}/Lib/vulkan-1.lib)
 target_include_directories(${PROJECT_NAME} PRIVATE $ENV{VULKAN_SDK}/Include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std:c++17")
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC

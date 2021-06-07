@@ -7,6 +7,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#define VK_TEXTURE_PLACEHOLDER_URI "content/doge.jpg"
+
 vk_texture_image::vk_texture_image()
 	: _vkImage{VK_NULL_HANDLE}
 	, _vkImageView{VK_NULL_HANDLE}
@@ -21,23 +23,28 @@ vk_texture_image::~vk_texture_image()
 
 void vk_texture_image::create()
 {
+	create(VK_TEXTURE_PLACEHOLDER_URI);
+}
+
+void vk_texture_image::create(const std::string_view& textureUri)
+{
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load("content/doge.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
+	stbi_uc* pixels = stbi_load(textureUri.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	if (!pixels)
 	{
-		throw std::runtime_error("failed to load texture image!");
+		std::cerr << "Failed to load texture: " << textureUri << "; Using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
+		pixels = stbi_load(VK_TEXTURE_PLACEHOLDER_URI, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	}
 
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice{renderer->getDevice().get()};
 
-	const VkFormat vkFormat = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
+	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
 	createImage(vkDevice, vkFormat, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	VkMemoryRequirements memoryRequirements;
+	VkMemoryRequirements memoryRequirements{};
 	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
 
 	vk_buffer_create_info info;
@@ -47,20 +54,20 @@ void vk_texture_image::create()
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
 
-	stagingBuffer.getDeviceMemory().map(pixels, memoryRequirements.size);
+	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);
 
 	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
 
 	bindToMemory(vkDevice, _deviceMemory.get(), 0);
 
 	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, getImageAspectFlags());
 
 	vk_buffer::copyBufferToImage(stagingBuffer.get(), _vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, getImageAspectFlags());
 
 	createImageView(vkDevice, vkFormat);
 	createSampler(vkDevice);
@@ -111,19 +118,20 @@ vk_device_memory& vk_texture_image::getDeviceMemory()
 
 void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
 	const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
-	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst)
+	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags)
 {
 	vk_renderer* renderer{vk_renderer::get()};
+	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
 	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeGraphicsCommands();
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = vkLayoutOld;
 	barrier.newLayout = vkLayoutNew;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.srcQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_CONCURRENT ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
+	barrier.dstQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_CONCURRENT ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
 	barrier.image = vkImage;
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.aspectMask = vkAspectFlags;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
@@ -134,6 +142,16 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 	vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineStageFlagsSrc, vkPipelineStageFlagsDst, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
 	renderer->endSingleTimeGraphicsCommands(vkCommandBuffer);
+}
+
+VkImageAspectFlags vk_texture_image::getImageAspectFlags() const
+{
+	return VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
+VkImageUsageFlags vk_texture_image::getImageUsageFlags() const
+{
+	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 }
 
 void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height)
@@ -150,8 +168,8 @@ void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFor
 	createInfo.mipLevels = 1;
 	createInfo.arrayLayers = 1;
 	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	createInfo.tiling = VK_IMAGE_TILING_LINEAR;
-	createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	createInfo.usage = getImageUsageFlags();
 	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	createInfo.sharingMode = queueFamily.getSharingMode();
 	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
@@ -160,7 +178,6 @@ void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFor
 		createInfo.queueFamilyIndexCount = queueIndexes.size();
 		createInfo.pQueueFamilyIndices = queueIndexes.data();
 	}
-	
 
 	VK_CHECK(vkCreateImage(vkDevice, &createInfo, vkGetAllocator(), &_vkImage));
 }
@@ -179,7 +196,7 @@ void vk_texture_image::createImageView(const VkDevice vkDevice, const VkFormat v
 	createInfo.image = _vkImage;
 	createInfo.format = vkFormat;
 	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.aspectMask = getImageAspectFlags();
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.baseMipLevel = 0;
 	createInfo.subresourceRange.layerCount = 1;

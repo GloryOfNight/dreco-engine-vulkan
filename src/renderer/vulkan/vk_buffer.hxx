@@ -24,7 +24,7 @@ struct vk_buffer_create_info
 	VkDeviceSize size;
 };
 
-class vk_buffer
+class vk_buffer final
 {
 public:
 	vk_buffer();

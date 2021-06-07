@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vk_device_memory.hxx"
+#include "renderer/containers/material.hxx"
 
 #include <vulkan/vulkan.h>
 
@@ -10,9 +11,11 @@ public:
 	vk_texture_image();
 	vk_texture_image(const vk_texture_image&) = delete;
 	vk_texture_image(vk_texture_image&&) = delete;
-	~vk_texture_image();
+	virtual ~vk_texture_image();
 
-	void create();
+	virtual void create();
+
+	virtual void create(const std::string_view& textureUri);
 
 	void destroy();
 
@@ -26,9 +29,13 @@ public:
 
 	static void transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
 		const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst, 
-		const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst);
+		const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags);
 
 protected:
+	virtual VkImageAspectFlags getImageAspectFlags() const;
+
+	virtual VkImageUsageFlags getImageUsageFlags() const;
+
 	void createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height);
 
 	void bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset);
@@ -37,7 +44,6 @@ protected:
 
 	void createSampler(const VkDevice vkDevice);
 
-private:
 	VkImage _vkImage;
 
 	vk_device_memory _deviceMemory;

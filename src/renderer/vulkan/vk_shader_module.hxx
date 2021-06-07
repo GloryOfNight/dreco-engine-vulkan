@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 
-class vk_shader_module
+class vk_shader_module final
 {
 public:
 	vk_shader_module();

@@ -16,10 +16,10 @@ class vk_queue_family;
 class vk_graphics_pipeline;
 class vk_physical_device;
 
-class vk_mesh
+class vk_mesh final
 {
 public:
-	vk_mesh();
+	vk_mesh(const mesh_data& meshData);
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
 	~vk_mesh();
@@ -35,7 +35,7 @@ public:
 
 	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex);
 
-	void beforeSubmitUpdate(const uint32_t imageIndex);
+	void beforeSubmitUpdate();
 
 	transform _transform;
 

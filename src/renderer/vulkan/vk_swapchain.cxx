@@ -30,10 +30,7 @@ uint32_t vk_swapchain::getImageCount() const
 void vk_swapchain::createSwapchain(const vk_queue_family& queueFamily, const vk_surface& surface, VkDevice device)
 {
 	VkSharingMode sharingMode{queueFamily.getSharingMode()};
-	std::vector<uint32_t> queueFamilyIndexes{
-		queueFamily.getGraphicsIndex(),
-		queueFamily.getTransferIndex(),
-		queueFamily.getPresentIndex()};
+	std::vector<uint32_t> queueFamilyIndexes{queueFamily.getQueueIndexes()};
 
 	const VkSurfaceFormatKHR& surfaceFormat{surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{surface.getCapabilities()};
@@ -63,7 +60,7 @@ void vk_swapchain::createSwapchain(const vk_queue_family& queueFamily, const vk_
 
 	if (VK_SUCCESS == createResult && swapchainCreateInfo.oldSwapchain != VK_NULL_HANDLE)
 	{
-		//cleanupSwapchain(swapchainCreateInfo.oldSwapchain); TODO
+		vkDestroySwapchainKHR(device, swapchainCreateInfo.oldSwapchain, nullptr);
 	}
 }
 

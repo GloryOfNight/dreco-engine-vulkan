@@ -3,7 +3,7 @@
 
 struct SDL_Window;
 
-class vk_surface
+class vk_surface final
 {
 public:
 	vk_surface();

@@ -50,7 +50,6 @@ void vk_device_memory::free()
 void vk_device_memory::map(const void* data, const VkDeviceSize size)
 {
 	const VkDevice vkDevice = vk_renderer::get()->getDevice().get();
-
 	void* region;
 	VK_CHECK(vkMapMemory(vkDevice, _vkDeviceMemory, 0, VK_WHOLE_SIZE, 0, &region));
 	memcpy(region, data, size);

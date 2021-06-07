@@ -86,7 +86,7 @@ void vk_surface::setupPresentModes(VkPhysicalDevice vkPhysicaLDevice)
 	for (const auto& vkPresentMode : vkPresentModes)
 	{
 		_vkPresentMode = vkPresentMode;
-		if (VK_PRESENT_MODE_IMMEDIATE_KHR == vkPresentMode)
+		if (VK_PRESENT_MODE_MAILBOX_KHR == vkPresentMode)
 		{
 			break;
 		}

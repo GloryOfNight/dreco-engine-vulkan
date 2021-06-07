@@ -95,7 +95,6 @@ inline const char* vk_resultToChar(const VkResult& result)
 		break;
 	default:
 		code = "UNIPLEMENTED";
-		break;
 	}
 	return code;
 }

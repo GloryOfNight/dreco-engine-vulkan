@@ -4,6 +4,7 @@
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
+#include "vk_depth_image.hxx"
 #include "vk_device.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
@@ -16,7 +17,7 @@
 class engine;
 class vk_mesh;
 
-class vk_renderer
+class vk_renderer final
 {
 public:
 	vk_renderer();
@@ -35,7 +36,7 @@ public:
 
 	void tick(double deltaTime);
 
-	vk_mesh* createMesh();
+	vk_mesh* createMesh(const mesh_data& meshData);
 
 	VkCommandBuffer createSecondaryCommandBuffer();
 
@@ -110,6 +111,8 @@ private:
 	vk_queue_family _queueFamily;
 
 	vk_device _device;
+
+	vk_depth_image _depth_image;
 
 	VkInstance _vkInstance;
 

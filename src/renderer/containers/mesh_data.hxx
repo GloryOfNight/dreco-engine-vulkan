@@ -1,4 +1,5 @@
 #pragma once
+#include "material.hxx"
 #include "vertex.hxx"
 
 #include <cstdint>
@@ -8,6 +9,8 @@ struct mesh_data
 {
 	std::vector<vertex> _vertexes;
 	std::vector<uint32_t> _indexes;
+
+	material _material;
 
 	static mesh_data createSprite()
 	{
