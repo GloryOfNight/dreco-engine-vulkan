@@ -1,8 +1,10 @@
 #pragma once
 
-#include "vk_device_memory.hxx"
 #include "renderer/containers/material.hxx"
 
+#include "vk_device_memory.hxx"
+
+#include <string_view>
 #include <vulkan/vulkan.h>
 
 class vk_texture_image
@@ -28,7 +30,7 @@ public:
 	vk_device_memory& getDeviceMemory();
 
 	static void transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
-		const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst, 
+		const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
 		const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags);
 
 protected:

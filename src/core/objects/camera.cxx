@@ -10,6 +10,8 @@ mat4 camera::getView() const
 
 	viewTransform._rotation._pitch = -viewTransform._rotation._pitch;
 
+	viewTransform._scale._x = -viewTransform._scale._x;
+
 	return mat4::makeTransform(viewTransform);
 }
 
