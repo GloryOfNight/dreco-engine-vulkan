@@ -11,6 +11,7 @@ set(DRECO_SOURCE_LIST
 "src/core/objects/world_object.hxx"
 "src/math/vec2.cxx"
 "src/math/vec3.cxx"
+"src/math/rotator.cxx"
 "src/math/mat4.cxx"
 "src/math/transform.cxx"
 "src/renderer/containers/vertex.cxx"

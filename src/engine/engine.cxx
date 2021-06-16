@@ -100,7 +100,7 @@ bool engine::startRenderer()
 			for (auto mesh : meshes_data)
 			{
 				auto newMesh = _renderer->createMesh(mesh);
-				newMesh->_transform._rotation = vec3(180.F, 0, 0);
+				newMesh->_transform._rotation = rotator(180.F, 0, 0);
 			}
 		}
 		else
@@ -155,11 +155,11 @@ void engine::startMainLoop()
 
 				if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
 				{
-					const vec3 camRot = _camera.getTransform()._rotation;
-					const float camRotX = camRot._x + cofY * (camRotSpeed * deltaTime);
-					const float camRotY = camRot._y + cofX * (camRotSpeed * deltaTime) * -1;
+					const rotator camRot = _camera.getTransform()._rotation;
+					const float camRotX = camRot._pitch + cofY * (camRotSpeed * deltaTime);
+					const float camRotY = camRot._yaw + cofX * (camRotSpeed * deltaTime) * -1;
 
-					_camera.setRotation(vec3(camRotX, camRotY, 0));
+					_camera.setRotation(rotator(camRotX, camRotY, 0));
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
 				{

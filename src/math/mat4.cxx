@@ -1,5 +1,6 @@
 #include "mat4.hxx"
 
+#include "rotator.hxx"
 #include "transform.hxx"
 #include "vec3.hxx"
 
@@ -40,14 +41,14 @@ mat4 mat4::makeTranslation(const vec3& vec)
 	return mat4(mat);
 }
 
-mat4 mat4::makeRotation(const vec3& vec)
+mat4 mat4::makeRotation(const rotator& rot)
 {
 	// clang-format off
 	const vec3 radians
 	{
-		static_cast<float>(vec._x * M_PI) / 180.F, 
-		static_cast<float>(vec._y * M_PI) / 180.F, 
-		static_cast<float>(vec._z * M_PI) / 180.F
+		static_cast<float>(rot._pitch * M_PI) / 180.F, 
+		static_cast<float>(rot._yaw * M_PI)   / 180.F, 
+		static_cast<float>(rot._roll * M_PI)  / 180.F
 	};
 
 	float cos_x = std::cos(radians._x);

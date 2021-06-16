@@ -10,7 +10,7 @@ public:
 
 	void setPosition(const vec3& pos);
 
-	void setRotation(const vec3& rot);
+	void setRotation(const rotator& rot);
 
 	void setScale(const vec3& scale);
 
