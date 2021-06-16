@@ -100,7 +100,7 @@ bool engine::startRenderer()
 			for (auto mesh : meshes_data)
 			{
 				auto newMesh = _renderer->createMesh(mesh);
-				newMesh->_transform._rotation = vec3(3, 0, 0);
+				newMesh->_transform._rotation = vec3(180.F, 0, 0);
 			}
 		}
 		else
@@ -133,7 +133,8 @@ void engine::startMainLoop()
 
 		_renderer->tick(deltaTime);
 
-		const float speed = 100.F;
+		const float camMoveSpeed = 100.F;
+		const float camRotSpeed = 1800.F;
 
 		{ // rotating camera with mouse input
 			if (SDL_GetMouseFocus() == _renderer->getWindow())
@@ -155,22 +156,22 @@ void engine::startMainLoop()
 				if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
 				{
 					const vec3 camRot = _camera.getTransform()._rotation;
-					const float camRotX = camRot._x + cofY * (speed * deltaTime);
-					const float camRotY = camRot._y + cofX * (speed * deltaTime) * -1;
+					const float camRotX = camRot._x + cofY * (camRotSpeed * deltaTime);
+					const float camRotY = camRot._y + cofX * (camRotSpeed * deltaTime) * -1;
 
 					_camera.setRotation(vec3(camRotX, camRotY, 0));
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
 				{
 					const vec3 camPos = _camera.getTransform()._translation;
-					const float camPosZ = (camPos._z + ((speed * 10) * deltaTime * cofY));
+					const float camPosZ = (camPos._z + ((camRotSpeed * 10) * deltaTime * cofY));
 					_camera.setPosition(vec3(camPos._x, camPos._y, camPosZ));
 				}
 				else if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE))
 				{
 					const vec3 camPos = _camera.getTransform()._translation;
-					const float camPosX = camPos._x + ((speed * 10) * deltaTime * cofX);
-					const float camPosY = camPos._y + (((speed * 10) * deltaTime * cofY) * -1);
+					const float camPosX = camPos._x + ((camRotSpeed * 10) * deltaTime * cofX);
+					const float camPosY = camPos._y + (((camRotSpeed * 10) * deltaTime * cofY) * -1);
 					_camera.setPosition(vec3(camPosX, camPosY, camPos._z));
 				}
 				mousePosX = newMousePosX;
@@ -193,29 +194,29 @@ void engine::startMainLoop()
 
 				if (event.key.keysym.sym == SDLK_w)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, 0, speed * deltaTime));
+					_camera.setPosition(cameraTranform._translation + vec3(0, 0, camMoveSpeed * deltaTime));
 				}
 				else if (event.key.keysym.sym == SDLK_s)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, 0, -speed * deltaTime));
+					_camera.setPosition(cameraTranform._translation + vec3(0, 0, -camMoveSpeed * deltaTime));
 				}
 
 				if (event.key.keysym.sym == SDLK_d)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(speed * deltaTime, 0, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(camMoveSpeed * deltaTime, 0, 0));
 				}
 				else if (event.key.keysym.sym == SDLK_a)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(-speed * deltaTime, 0, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(-camMoveSpeed * deltaTime, 0, 0));
 				}
 
 				if (event.key.keysym.sym == SDLK_e)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, speed * deltaTime, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(0, camMoveSpeed * deltaTime, 0));
 				}
 				else if (event.key.keysym.sym == SDLK_q)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, -speed * deltaTime, 0));
+					_camera.setPosition(cameraTranform._translation + vec3(0, -camMoveSpeed * deltaTime, 0));
 				}
 			}
 		}

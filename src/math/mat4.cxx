@@ -42,16 +42,23 @@ mat4 mat4::makeTranslation(const vec3& vec)
 
 mat4 mat4::makeRotation(const vec3& vec)
 {
-	float cos_x = std::cos(vec._x);
-	float sin_x = std::sin(vec._x);
-
-	float cos_y = std::cos(vec._y);
-	float sin_y = std::sin(vec._y);
-
-	float cos_z = std::cos(vec._z);
-	float sin_z = std::sin(vec._z);
-
 	// clang-format off
+	const vec3 radians
+	{
+		static_cast<float>(vec._x * M_PI) / 180.F, 
+		static_cast<float>(vec._y * M_PI) / 180.F, 
+		static_cast<float>(vec._z * M_PI) / 180.F
+	};
+
+	float cos_x = std::cos(radians._x);
+	float sin_x = std::sin(radians._x);
+
+	float cos_y = std::cos(radians._y);
+	float sin_y = std::sin(radians._y);
+
+	float cos_z = std::cos(radians._z);
+	float sin_z = std::sin(radians._z);
+
 	const mat4d matXraw =
 		{{
 			{1, 0, 0, 0},
