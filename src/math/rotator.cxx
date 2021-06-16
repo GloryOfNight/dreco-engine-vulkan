@@ -52,3 +52,8 @@ rotator operator+(const rotator& first, const rotator& second)
 {
 	return rotator(first._pitch + second._pitch, first._yaw + second._yaw, first._roll + second._roll);
 }
+
+rotator operator-(const rotator& first, const rotator& second)
+{
+	return rotator(first._pitch - second._pitch, first._yaw - second._yaw, first._roll - second._roll);
+}

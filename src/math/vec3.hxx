@@ -8,6 +8,8 @@ struct DRECO_DECLSPEC vec3
 
 	vec3(const float& x, const float& y, const float& z);
 
+	static float dot(const vec3& first, const vec3& second);
+
 	float _x;
 	float _y;
 	float _z;

@@ -100,7 +100,7 @@ bool engine::startRenderer()
 			for (auto mesh : meshes_data)
 			{
 				auto newMesh = _renderer->createMesh(mesh);
-				newMesh->_transform._rotation = rotator(180.F, 0, 0);
+				newMesh->_transform._rotation = rotator(0, 0, 0);
 			}
 		}
 		else

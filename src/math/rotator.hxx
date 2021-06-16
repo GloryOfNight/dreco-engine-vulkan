@@ -24,3 +24,4 @@ struct rotator
 };
 
 rotator operator+(const rotator& first, const rotator& second);
+rotator operator-(const rotator& first, const rotator& second);

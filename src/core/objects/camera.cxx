@@ -5,7 +5,10 @@ mat4 camera::getView() const
 {
 	transform viewTransform = getTransform();
 	viewTransform._translation._x = -viewTransform._translation._x;
+	viewTransform._translation._y = -viewTransform._translation._y;
 	viewTransform._translation._z = -viewTransform._translation._z;
+
+	viewTransform._rotation._pitch = -viewTransform._rotation._pitch;
 
 	return mat4::makeTransform(viewTransform);
 }
