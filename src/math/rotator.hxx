@@ -1,14 +1,26 @@
 #pragma once
 
-struct rotator 
+struct vec3;
+
+struct rotator
 {
-    rotator() = default;
+	rotator() = default;
 
-    rotator(const float pitch, const float yaw = 0.0F, const float roll = 0.0F);
+	rotator(const float pitch, const float yaw = 0.0F, const float roll = 0.0F);
 
-    float _pitch;
+	vec3 toForwardVector() const;
 
-    float _yaw;
+	vec3 toRightDirection() const;
 
-    float _roll;
+	rotator toRadians() const;
+
+	void clamp();
+
+	float _pitch;
+
+	float _yaw;
+
+	float _roll;
 };
+
+rotator operator+(const rotator& first, const rotator& second);

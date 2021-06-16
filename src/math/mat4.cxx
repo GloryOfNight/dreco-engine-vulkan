@@ -43,23 +43,18 @@ mat4 mat4::makeTranslation(const vec3& vec)
 
 mat4 mat4::makeRotation(const rotator& rot)
 {
+	const rotator radians = rot.toRadians();
+
+	float cos_x = std::cos(radians._pitch);
+	float sin_x = std::sin(radians._pitch);
+
+	float cos_y = std::cos(radians._yaw);
+	float sin_y = std::sin(radians._yaw);
+
+	float cos_z = std::cos(radians._roll);
+	float sin_z = std::sin(radians._roll);
+
 	// clang-format off
-	const vec3 radians
-	{
-		static_cast<float>(rot._pitch * M_PI) / 180.F, 
-		static_cast<float>(rot._yaw * M_PI)   / 180.F, 
-		static_cast<float>(rot._roll * M_PI)  / 180.F
-	};
-
-	float cos_x = std::cos(radians._x);
-	float sin_x = std::sin(radians._x);
-
-	float cos_y = std::cos(radians._y);
-	float sin_y = std::sin(radians._y);
-
-	float cos_z = std::cos(radians._z);
-	float sin_z = std::sin(radians._z);
-
 	const mat4d matXraw =
 		{{
 			{1, 0, 0, 0},
@@ -165,4 +160,18 @@ mat4 operator*(const mat4& a, const mat4& b)
 	}};
 	// clang-format on
 	return mat4(mat);
+}
+
+vec3 mat4::getAxis(const matAxis axis) const
+{
+	switch (axis)
+	{
+	case matAxis::X:
+		return vec3(_mat[0][0], _mat[0][1], _mat[0][2]);
+	case matAxis::Y:
+		return vec3(_mat[1][0], _mat[1][1], _mat[1][2]);
+	case matAxis::Z:
+		return vec3(_mat[2][0], _mat[2][1], _mat[2][2]);
+	}
+	return vec3();
 }

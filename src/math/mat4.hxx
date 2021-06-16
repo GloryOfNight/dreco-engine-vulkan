@@ -6,6 +6,13 @@ struct vec3;
 struct rotator;
 struct transform;
 
+enum matAxis
+{
+	X,
+	Y,
+	Z
+};
+
 struct mat4
 {
 	typedef std::array<std::array<float, 4>, 4> mat4d;
@@ -27,6 +34,8 @@ struct mat4
 	static mat4 makeIdentity();
 
 	static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
+
+	vec3 getAxis(const matAxis axis) const;
 
 	mat4d _mat;
 };

@@ -194,20 +194,20 @@ void engine::startMainLoop()
 
 				if (event.key.keysym.sym == SDLK_w)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, 0, camMoveSpeed * deltaTime));
+					_camera.setPosition(cameraTranform._translation + (camFowVec * (camMoveSpeed * deltaTime)));
 				}
 				else if (event.key.keysym.sym == SDLK_s)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, 0, -camMoveSpeed * deltaTime));
+					_camera.setPosition(cameraTranform._translation + (camFowVec * (-camMoveSpeed * deltaTime)));
 				}
 
 				if (event.key.keysym.sym == SDLK_d)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(camMoveSpeed * deltaTime, 0, 0));
+					_camera.setPosition(cameraTranform._translation + camRightVec * (camMoveSpeed * deltaTime));
 				}
 				else if (event.key.keysym.sym == SDLK_a)
 				{
-					_camera.setPosition(cameraTranform._translation + vec3(-camMoveSpeed * deltaTime, 0, 0));
+					_camera.setPosition(cameraTranform._translation + camRightVec * (-camMoveSpeed * deltaTime));
 				}
 
 				if (event.key.keysym.sym == SDLK_e)

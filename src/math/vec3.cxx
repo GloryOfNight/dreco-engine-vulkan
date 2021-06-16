@@ -18,3 +18,13 @@ vec3 operator+(const vec3& first, const vec3& second)
 {
 	return vec3(first._x + second._x, first._y + second._y, first._z + second._z);
 }
+
+vec3 operator*(const vec3& first, const vec3& second)
+{
+	return vec3(first._x * second._x, first._y * second._y, first._z * second._z);
+}
+
+vec3 operator*(const vec3& first, const float value)
+{
+	return vec3(first._x * value, first._y * value, first._z * value);
+}
