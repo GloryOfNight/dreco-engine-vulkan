@@ -179,6 +179,9 @@ void engine::startMainLoop()
 			}
 		}
 
+		const vec3 camFowVec = _camera.getTransform()._rotation.toForwardVector();
+		const vec3 camRightVec = _camera.getTransform()._rotation.toRightDirection();
+
 		// event poll not working very well with high frame rate (>60)
 		// TODO: input state machine, should do job just fine
 		SDL_Event event;
