@@ -3,6 +3,8 @@ project(dreco)
 
 set(DRECO_SOURCE_LIST 
 "src/engine/engine.cxx"
+"src/core/threads/thread_pool.cxx"
+"src/core/threads/thread_pool.hxx"
 "src/core/loaders/gltf_loader.cxx"
 "src/core/loaders/gltf_loader.hxx"
 "src/core/objects/camera.cxx"

@@ -96,12 +96,23 @@ bool engine::startRenderer()
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
 
-			std::vector<mesh_data> meshes_data = gltf_loader::loadScene("content/viking_room/scene.gltf");
-			for (auto mesh : meshes_data)
+			thread_task thr_task;
+			std::vector<mesh_data>* meshes_ptr = new std::vector<mesh_data>();
+			thr_task.job = [meshes_ptr]()
 			{
-				auto newMesh = _renderer->createMesh(mesh);
-				newMesh->_transform._rotation = rotator(0, 0, 0);
-			}
+				*meshes_ptr = gltf_loader::loadScene("content/viking_room/scene.gltf");
+			};
+			thr_task.callback = [this, meshes_ptr]()
+			{
+				for (auto& mesh : *meshes_ptr)
+				{
+					auto newMesh = _renderer->createMesh(mesh);
+					newMesh->_transform._rotation = rotator(0, 0, 0);
+				}
+				delete meshes_ptr;
+			};
+
+			_thr_pool.queueTask(thr_task);
 		}
 		else
 		{
@@ -130,7 +141,7 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
-
+		_thr_pool.tick();
 		_renderer->tick(deltaTime);
 
 		const float camMoveSpeed = 100.F;

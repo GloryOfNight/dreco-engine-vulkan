@@ -1,6 +1,7 @@
 #pragma once
 #include "core/objects/camera.hxx"
 #include "math/vec3.hxx"
+#include "core/threads/thread_pool.hxx"
 
 #include "dreco.h"
 
@@ -30,6 +31,8 @@ public:
 	void stop();
 
 private:
+	thread_pool _thr_pool;
+
 	bool startRenderer();
 
 	void stopRenderer();
