@@ -195,29 +195,33 @@ void engine::startMainLoop()
 				const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - (windowSizeX / windowSizeY);
 				const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
 
-				if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
+				const bool isCoefsNormal = std::isnormal(cofX) && std::isnormal(cofY);
+				if (isCoefsNormal)
 				{
-					const rotator camRot = _camera.getTransform()._rotation;
-					const float camRotX = camRot._pitch + cofY * (camRotSpeed * deltaTime);
-					const float camRotY = camRot._yaw + cofX * (camRotSpeed * deltaTime) * -1;
+					if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
+					{
+						const rotator camRot = _camera.getTransform()._rotation;
+						const float camRotX = camRot._pitch + cofY * (camRotSpeed * deltaTime);
+						const float camRotY = camRot._yaw + cofX * (camRotSpeed * deltaTime) * -1;
 
-					_camera.setRotation(rotator(camRotX, camRotY, 0));
+						_camera.setRotation(rotator(camRotX, camRotY, 0));
+					}
+					else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
+					{
+						const vec3 camPos = _camera.getTransform()._translation;
+						const float camPosZ = (camPos._z + ((camRotSpeed * 10) * deltaTime * cofY));
+						_camera.setPosition(vec3(camPos._x, camPos._y, camPosZ));
+					}
+					else if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE))
+					{
+						const vec3 camPos = _camera.getTransform()._translation;
+						const float camPosX = camPos._x + ((camRotSpeed * 10) * deltaTime * cofX);
+						const float camPosY = camPos._y + (((camRotSpeed * 10) * deltaTime * cofY) * -1);
+						_camera.setPosition(vec3(camPosX, camPosY, camPos._z));
+					}
+					mousePosX = newMousePosX;
+					mousePosY = newMousePosY;
 				}
-				else if (mouseState & SDL_BUTTON(SDL_BUTTON_RIGHT))
-				{
-					const vec3 camPos = _camera.getTransform()._translation;
-					const float camPosZ = (camPos._z + ((camRotSpeed * 10) * deltaTime * cofY));
-					_camera.setPosition(vec3(camPos._x, camPos._y, camPosZ));
-				}
-				else if (mouseState & SDL_BUTTON(SDL_BUTTON_MIDDLE))
-				{
-					const vec3 camPos = _camera.getTransform()._translation;
-					const float camPosX = camPos._x + ((camRotSpeed * 10) * deltaTime * cofX);
-					const float camPosY = camPos._y + (((camRotSpeed * 10) * deltaTime * cofY) * -1);
-					_camera.setPosition(vec3(camPosX, camPosY, camPos._z));
-				}
-				mousePosX = newMousePosX;
-				mousePosY = newMousePosY;
 			}
 		}
 
