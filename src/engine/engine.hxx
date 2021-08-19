@@ -31,17 +31,21 @@ public:
 	void stop();
 
 private:
-	thread_pool _thr_pool;
-
 	bool startRenderer();
 
 	void stopRenderer();
 
 	void startMainLoop();
 
+	void preMainLoop();
+
 	void stopMainLoop();
 
+	void postMainLoop();
+
 	double calculateNewDeltaTime();
+
+	thread_pool* _thread_pool;
 
 	vk_renderer* _renderer;
 

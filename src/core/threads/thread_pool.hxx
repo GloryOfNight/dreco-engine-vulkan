@@ -1,29 +1,47 @@
 #pragma once
 
+#include <functional>
+#include <queue>
 #include <thread>
 #include <vector>
-#include <queue>
-#include <functional>
+
+class thread_pool;
 
 struct thread_task
 {
-    thread_task(){};
+	friend thread_pool;
 
-    std::function<void()> job;
+	virtual ~thread_task(){};
 
-    std::function<void()> callback;
-};
+	virtual void init() = 0;
 
-class thread_pool 
-{
-public:
-    thread_pool();
-    ~thread_pool();
+	virtual void doJob() = 0;
 
-    void tick();
+	virtual void compeleted() = 0;
 
-    void queueTask(const thread_task& task);
+	uint64_t getId() const
+	{
+		return id;
+	}
 
 private:
-    std::vector<std::thread> _threads;
+	uint64_t id{UINT64_MAX};
+};
+
+class thread_pool
+{
+public:
+	thread_pool();
+	~thread_pool();
+
+	void tick(const double& deltaTime);
+
+	void queueTask(thread_task* task);
+
+private:
+    void processCompletedTasks();
+
+	std::vector<std::thread> _threads;
+
+	uint64_t _totalTaskCount;
 };

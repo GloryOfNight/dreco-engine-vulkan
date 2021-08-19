@@ -10,8 +10,44 @@
 
 static inline engine* gEngine{nullptr};
 
+struct async_task_load_scene : public thread_task
+{
+	async_task_load_scene(const std::string_view& sceneFile)
+		: file(sceneFile)
+	{
+	}
+
+	virtual void init() override{};
+
+	virtual void doJob() override
+	{
+		scene = gltf_loader::loadScene(file);
+	};
+
+	virtual void compeleted() override
+	{
+		if (auto* eng = engine::get())
+		{
+			if (auto* renderer = eng->getRenderer())
+			{
+				for (auto& mesh : scene)
+				{
+					auto newMesh = renderer->createMesh(mesh);
+					newMesh->_transform._rotation = rotator(0, 0, 0);
+				}
+			}
+		}
+	};
+
+private:
+	std::string file;
+
+	std::vector<mesh_data> scene;
+};
+
 engine::engine()
-	: _renderer{nullptr}
+	: _thread_pool{nullptr}
+	, _renderer{nullptr}
 	, _isRunning{false}
 {
 }
@@ -95,24 +131,6 @@ bool engine::startRenderer()
 			_renderer->getVersion(major, minor, &patch);
 
 			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
-
-			thread_task thr_task;
-			std::vector<mesh_data>* meshes_ptr = new std::vector<mesh_data>();
-			thr_task.job = [meshes_ptr]()
-			{
-				*meshes_ptr = gltf_loader::loadScene("content/viking_room/scene.gltf");
-			};
-			thr_task.callback = [this, meshes_ptr]()
-			{
-				for (auto& mesh : *meshes_ptr)
-				{
-					auto newMesh = _renderer->createMesh(mesh);
-					newMesh->_transform._rotation = rotator(0, 0, 0);
-				}
-				delete meshes_ptr;
-			};
-
-			_thr_pool.queueTask(thr_task);
 		}
 		else
 		{
@@ -131,8 +149,20 @@ void engine::stopRenderer()
 	}
 }
 
+void engine::preMainLoop()
+{
+	if (_thread_pool == nullptr)
+	{
+		_thread_pool = new thread_pool();
+	}
+
+	_thread_pool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+}
+
 void engine::startMainLoop()
 {
+	preMainLoop();
+
 	_isRunning = true;
 	while (_isRunning)
 	{
@@ -141,7 +171,8 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
-		_thr_pool.tick();
+		_thread_pool->tick(deltaTime);
+
 		_renderer->tick(deltaTime);
 
 		const float camMoveSpeed = 100.F;
@@ -235,6 +266,15 @@ void engine::startMainLoop()
 			}
 		}
 	}
+	_isRunning = false;
+
+	postMainLoop();
+}
+
+void engine::postMainLoop()
+{
+	delete _thread_pool;
+	_thread_pool = nullptr;
 }
 
 void engine::stopMainLoop()
