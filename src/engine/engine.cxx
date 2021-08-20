@@ -222,10 +222,6 @@ void engine::startMainLoop()
 					mousePosX = newMousePosX;
 					mousePosY = newMousePosY;
 				}
-				else 
-				{
-					std::cout << "not normal floats" << std::endl;
-				}
 			}
 		}
 
