@@ -195,8 +195,8 @@ void engine::startMainLoop()
 				const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - (windowSizeX / windowSizeY);
 				const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
 
-				const bool isCoefsNormal = std::isnormal(cofX) && std::isnormal(cofY);
-				if (isCoefsNormal)
+				const bool isCoefValid = !((std::isnan(cofX) || std::isinf(cofX)) || (std::isnan(cofY) || std::isinf(cofY)));
+				if (isCoefValid)
 				{
 					if (mouseState & SDL_BUTTON(SDL_BUTTON_LEFT))
 					{
@@ -221,6 +221,10 @@ void engine::startMainLoop()
 					}
 					mousePosX = newMousePosX;
 					mousePosY = newMousePosY;
+				}
+				else 
+				{
+					std::cout << "not normal floats" << std::endl;
 				}
 			}
 		}
