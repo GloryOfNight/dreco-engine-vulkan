@@ -91,7 +91,7 @@ void thread_pool::queueTask(thread_task* task)
 
 void thread_pool::processCompletedTasks()
 {
-	while (completedTasks.size() > 0)
+	while (!completedTasks.empty())
 	{
 		std::lock_guard<std::mutex> guard(completedTasksMutex);
 

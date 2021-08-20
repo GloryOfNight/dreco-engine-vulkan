@@ -44,7 +44,10 @@ void vk_physical_device::setup(const VkInstance vkInstance, VkSurfaceKHR vkSurfa
 			vkGetPhysicalDeviceProperties(gpu, &_vkPhysicalDeviceProperties);
 			vkGetPhysicalDeviceFeatures(gpu, &_vkPhysicalDeviceFeatures);
 			vkGetPhysicalDeviceMemoryProperties(_vkPhysicalDevice, &_vkPhysicalDeviceMemoryProperties);
-			break;
+			if (VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU == _vkPhysicalDeviceProperties.deviceType)
+			{
+				break;
+			}
 		}
 	}
 
