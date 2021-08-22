@@ -1,6 +1,7 @@
 #pragma once
 
 #include "renderer/containers/material.hxx"
+#include "renderer/containers/texture_data.hxx"
 
 #include "vk_device_memory.hxx"
 
@@ -17,7 +18,7 @@ public:
 
 	virtual void create();
 
-	virtual void create(const std::string_view& textureUri);
+	virtual void create(const texture_data& textureData);
 
 	void destroy();
 

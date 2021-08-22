@@ -54,7 +54,9 @@ std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 			mesh_data newMesh{};
 			newMesh._vertexes.resize(model.accessors[vertPosAccessor].count);
 			newMesh._indexes.resize(model.accessors[indexAccessor].count);
-			newMesh._material._textureUri = coreFolder + model.images[imageIndex].uri;
+
+			const std::string textureUri = coreFolder + model.images[imageIndex].uri;
+			newMesh._material._texData = texture_data::createNew(textureUri);
 
 			const size_t accessorsSize{model.accessors.size()};
 			for (uint32_t i = 0; i < accessorsSize; ++i)

@@ -157,6 +157,7 @@ void engine::preMainLoop()
 	}
 
 	_thread_pool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+	_thread_pool->queueTask(new async_task_load_scene("content/dark/scene.gltf"));
 }
 
 void engine::startMainLoop()

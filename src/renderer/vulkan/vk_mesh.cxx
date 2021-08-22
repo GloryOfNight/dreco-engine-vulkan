@@ -23,6 +23,10 @@ vk_mesh::vk_mesh(const mesh_data& meshData)
 vk_mesh::~vk_mesh()
 {
 	destroy();
+
+	// temp solution
+	delete _mesh._material._texData;
+	_mesh._material._texData = nullptr;
 }
 
 void vk_mesh::create()
@@ -41,7 +45,7 @@ void vk_mesh::create()
 	createIndexBuffer(vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
 
-	_textureImage.create(_mesh._material._textureUri);
+	_textureImage.create(*_mesh._material._texData);
 
 	createDescriptorSet();
 	_graphicsPipeline.create(_descriptorSet);

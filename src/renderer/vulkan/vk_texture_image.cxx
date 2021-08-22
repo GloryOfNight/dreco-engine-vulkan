@@ -4,9 +4,6 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
-
 #define VK_TEXTURE_PLACEHOLDER_URI "content/doge.jpg"
 
 vk_texture_image::vk_texture_image()
@@ -23,18 +20,22 @@ vk_texture_image::~vk_texture_image()
 
 void vk_texture_image::create()
 {
-	create(VK_TEXTURE_PLACEHOLDER_URI);
+	auto* texture = texture_data::createNew(VK_TEXTURE_PLACEHOLDER_URI);
+	create(*texture);
+	delete texture;
 }
 
-void vk_texture_image::create(const std::string_view& textureUri)
+void vk_texture_image::create(const texture_data& textureData)
 {
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load(textureUri.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	unsigned char* pixels{nullptr};
+	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
 
 	if (!pixels)
 	{
-		std::cerr << "Failed to load texture: " << textureUri << "; Using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
-		pixels = stbi_load(VK_TEXTURE_PLACEHOLDER_URI, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		std::cerr << "vk_texture_image: Failed to load texture data, using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
+		create();
+		return;
 	}
 
 	vk_renderer* renderer{vk_renderer::get()};
@@ -71,8 +72,6 @@ void vk_texture_image::create(const std::string_view& textureUri)
 
 	createImageView(vkDevice, vkFormat);
 	createSampler(vkDevice);
-
-	stbi_image_free(pixels);
 }
 
 void vk_texture_image::destroy()

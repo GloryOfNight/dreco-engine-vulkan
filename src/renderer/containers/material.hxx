@@ -1,8 +1,11 @@
 #pragma once
 
-#include <string>
+#include "texture_data.hxx"
 
 struct material
 {
-	std::string _textureUri;
+	material()
+		: _texData{nullptr} {};
+
+	texture_data* _texData;
 };

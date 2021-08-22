@@ -17,6 +17,7 @@ set(DRECO_SOURCE_LIST
 "src/math/mat4.cxx"
 "src/math/transform.cxx"
 "src/renderer/containers/vertex.cxx"
+"src/renderer/containers/texture_data.cxx"
 "src/renderer/vulkan/vk_surface.cxx"
 "src/renderer/vulkan/vk_physical_device.cxx"
 "src/renderer/vulkan/vk_renderer.cxx"
