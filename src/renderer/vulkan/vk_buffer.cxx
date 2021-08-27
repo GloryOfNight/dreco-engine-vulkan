@@ -59,7 +59,6 @@ void vk_buffer::copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDs
 	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
 
 	vkCmdCopyBuffer(vkCommandBuffer, vkBufferSrc, VkBufferDst, vkBufferCopyRegions.size(), vkBufferCopyRegions.data());
-	vkEndCommandBuffer(vkCommandBuffer);
 
 	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
 }
