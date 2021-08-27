@@ -54,7 +54,7 @@ static void thread_loop()
 thread_pool::thread_pool()
 	: _totalTaskCount{0}
 {
-	const auto num = std::thread::hardware_concurrency();
+	const auto num = std::thread::hardware_concurrency() / 2;
 
 	_threads.resize(num);
 	for (auto i = 0U; i < num; ++i)

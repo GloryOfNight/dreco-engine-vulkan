@@ -335,8 +335,7 @@ void vk_renderer::createSwapchain()
 {
 	const VkSharingMode sharingMode{_queueFamily.getSharingMode()};
 
-	const std::vector<uint32_t> queueFamilyIndexes =
-		VK_SHARING_MODE_CONCURRENT == sharingMode ? _queueFamily.getUniqueQueueIndexes() : _queueFamily.getQueueIndexes();
+	const std::vector<uint32_t> queueFamilyIndexes =_queueFamily.getUniqueQueueIndexes();
 
 	const VkSurfaceFormatKHR& surfaceFormat{_surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{_surface.getCapabilities()};
@@ -346,15 +345,23 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.pNext = nullptr;
 	swapchainCreateInfo.flags = 0;
 	swapchainCreateInfo.surface = _surface.get();
-	swapchainCreateInfo.minImageCount = surfaceCapabilities.minImageCount;
+	swapchainCreateInfo.minImageCount = surfaceCapabilities.maxImageCount >= 3 ? 3 : surfaceCapabilities.minImageCount;
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.imageExtent = surfaceCapabilities.currentExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	swapchainCreateInfo.imageSharingMode = sharingMode;
-	swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
-	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
+	if (VK_SHARING_MODE_CONCURRENT == sharingMode)
+	{
+		swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
+		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
+	}
+	else 
+	{
+		swapchainCreateInfo.queueFamilyIndexCount = 1;
+		swapchainCreateInfo.pQueueFamilyIndices = &queueFamilyIndexes[0];
+	}
 	swapchainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.presentMode = _surface.getPresentMode();
