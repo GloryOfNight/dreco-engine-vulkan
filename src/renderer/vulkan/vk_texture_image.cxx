@@ -121,7 +121,7 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
-	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeGraphicsCommands();
+	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeTransferCommands();
 
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -140,7 +140,7 @@ void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkForm
 
 	vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineStageFlagsSrc, vkPipelineStageFlagsDst, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	renderer->endSingleTimeGraphicsCommands(vkCommandBuffer);
+	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
 }
 
 VkImageAspectFlags vk_texture_image::getImageAspectFlags() const

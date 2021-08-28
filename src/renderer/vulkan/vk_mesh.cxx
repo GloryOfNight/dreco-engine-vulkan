@@ -16,7 +16,6 @@ vk_mesh::vk_mesh(const mesh_data& meshData)
 	: _transform{}
 	, _mesh{meshData}
 	, _vkDevice{VK_NULL_HANDLE}
-	, _vkCommandBuffer{VK_NULL_HANDLE}
 {
 }
 
@@ -36,10 +35,8 @@ void vk_mesh::create()
 	const vk_device* vkDevice{&renderer->getDevice()};
 	const vk_queue_family* vkQueueFamily{&renderer->getQueueFamily()};
 	const vk_physical_device* vkPhysicalDevice{&renderer->getPhysicalDevice()};
-	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
 
 	_vkDevice = vkDevice->get();
-	_vkCommandBuffer = renderer->createSecondaryCommandBuffer();
 
 	createVertexBuffer(vkQueueFamily, vkPhysicalDevice);
 	createIndexBuffer(vkQueueFamily, vkPhysicalDevice);
@@ -49,14 +46,11 @@ void vk_mesh::create()
 
 	createDescriptorSet();
 	_graphicsPipeline.create(_descriptorSet);
-
-	writeCommandBuffer(vkRenderPass);
 }
 
 void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
 {
 	_graphicsPipeline.recreatePipeline();
-	writeCommandBuffer(vkRenderPass);
 }
 
 void vk_mesh::destroy()
@@ -74,7 +68,7 @@ void vk_mesh::destroy()
 	}
 }
 
-void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex)
+void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
 {
 	vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.get());
 
@@ -173,24 +167,4 @@ void vk_mesh::createUniformBuffers(const vk_queue_family* queueFamily, const vk_
 	buffer_create_info.size = sizeof(uniforms);
 
 	_uniformBuffer.create(buffer_create_info);
-}
-
-void vk_mesh::writeCommandBuffer(const VkRenderPass vkRenderPass)
-{
-	VkCommandBufferInheritanceInfo inheritanceInfo{};
-	inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-	inheritanceInfo.pNext = nullptr;
-	inheritanceInfo.renderPass = vkRenderPass;
-	inheritanceInfo.framebuffer = VK_NULL_HANDLE;
-	inheritanceInfo.subpass = 0;
-	inheritanceInfo.pipelineStatistics = 0;
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = &inheritanceInfo;
-
-	VK_CHECK(vkBeginCommandBuffer(_vkCommandBuffer, &beginInfo));
-	bindToCmdBuffer(_vkCommandBuffer, 0);
-	VK_CHECK(vkEndCommandBuffer(_vkCommandBuffer));
 }

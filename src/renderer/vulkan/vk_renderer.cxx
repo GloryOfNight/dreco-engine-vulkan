@@ -33,10 +33,8 @@ vk_renderer::vk_renderer()
 	, _vkSwapchainImageViews{VK_NULL_HANDLE}
 	, _vkFramebuffers{}
 	, _vkRenderPass{VK_NULL_HANDLE}
-	, _vkGraphicsCommandPool{VK_NULL_HANDLE}
+	, _vkGraphicsCommandPools{}
 	, _vkTransferCommandPool{VK_NULL_HANDLE}
-	, _vkGraphicsPrimaryCommandBuffers{}
-	, _vkGraphicsSecondaryCommandBuffers{}
 	, _vkSubmitQueueFences{}
 	, _vkSepaphoreImageAvaible{}
 	, _vkSepaphoreRenderFinished{}
@@ -62,7 +60,11 @@ vk_renderer::~vk_renderer()
 
 	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
 	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
-	vkDestroyCommandPool(_device.get(), _vkGraphicsCommandPool, vkGetAllocator());
+
+	for (auto pool : _vkGraphicsCommandPools)
+	{
+		vkDestroyCommandPool(_device.get(), pool, vkGetAllocator());
+	}
 	vkDestroyCommandPool(_device.get(), _vkTransferCommandPool, vkGetAllocator());
 
 	_depthImage.destroy();
@@ -82,7 +84,7 @@ vk_renderer* vk_renderer::get()
 		return eng->getRenderer();
 	}
 	return nullptr;
-}	
+}
 
 bool vk_renderer::isSupported()
 {
@@ -103,8 +105,9 @@ void vk_renderer::init()
 	createSwapchain();
 	createImageViews();
 
-	createCommandPool();
+	createCommandPools();
 	createPrimaryCommandBuffers();
+
 	_depthImage.create();
 	_msaaImage.create();
 
@@ -189,43 +192,6 @@ vk_physical_device& vk_renderer::getPhysicalDevice()
 vk_queue_family& vk_renderer::getQueueFamily()
 {
 	return _queueFamily;
-}
-
-VkCommandBuffer vk_renderer::beginSingleTimeGraphicsCommands()
-{
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.pNext = nullptr;
-	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = 1;
-	commandBufferAllocateInfo.commandPool = _vkGraphicsCommandPool;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo commandBufferBeginInfo{};
-	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandBufferBeginInfo.pNext = nullptr;
-	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	commandBufferBeginInfo.pInheritanceInfo = nullptr;
-
-	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-
-	return commandBuffer;
-}
-
-void vk_renderer::endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandBuffer)
-{
-	vkEndCommandBuffer(vkCommandBuffer);
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &vkCommandBuffer;
-
-	VK_CHECK(vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
-	VK_CHECK(vkQueueWaitIdle(_device.getGraphicsQueue()));
-	vkFreeCommandBuffers(_device.get(), _vkGraphicsCommandPool, 1, &vkCommandBuffer);
 }
 
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
@@ -508,48 +474,38 @@ void vk_renderer::createFramebuffers()
 	}
 }
 
-void vk_renderer::createCommandPool()
+void vk_renderer::createCommandPools()
 {
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getGraphicsIndex();
-	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &_vkGraphicsCommandPool));
-
-	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getTransferIndex();
 	commandPoolCreateInfo.flags = 0;
 
+	_vkGraphicsCommandPools.resize(_vkSwapchainImageViews.size());
+	for (auto& pool : _vkGraphicsCommandPools)
+	{
+		VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &pool));
+	}
+
+	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getTransferIndex();
 	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &_vkTransferCommandPool));
 }
 
 void vk_renderer::createPrimaryCommandBuffers()
 {
-	_vkGraphicsPrimaryCommandBuffers.resize(_vkSwapchainImageViews.size());
+	const size_t size = _vkGraphicsCommandPools.size();
+	_vkGraphicsCommandBuffers.resize(size);
+	for (size_t i = 0; i < size; ++i)
+	{
+		VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferAllocateInfo.pNext = nullptr;
+		commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferAllocateInfo.commandBufferCount = 1;
+		commandBufferAllocateInfo.commandPool = _vkGraphicsCommandPools[i];
 
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = _vkGraphicsCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(_vkGraphicsPrimaryCommandBuffers.size());
-
-	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, _vkGraphicsPrimaryCommandBuffers.data()));
-}
-
-VkCommandBuffer vk_renderer::createSecondaryCommandBuffer()
-{
-	_vkGraphicsSecondaryCommandBuffers.push_back(VK_NULL_HANDLE);
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = _vkGraphicsCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-	allocInfo.commandBufferCount = 1;
-
-	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, &_vkGraphicsSecondaryCommandBuffers.back()));
-
-	return _vkGraphicsSecondaryCommandBuffers.back();
+		vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &_vkGraphicsCommandBuffers[i]);
+	}
 }
 
 inline void vk_renderer::createFences()
@@ -595,13 +551,14 @@ void vk_renderer::drawFrame()
 	VK_CHECK(result);
 
 	vkResetFences(_device.get(), 1, &_vkSubmitQueueFences[imageIndex]);
+	vkResetCommandPool(_device.get(), _vkGraphicsCommandPools[imageIndex], 0);
 
-	prepareCommandBuffer(imageIndex);
+	VkCommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
 
 	std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	std::array<VkSemaphore, 1> waitSemaphores = {_vkSepaphoreImageAvaible};
 	std::array<VkSemaphore, 1> signalSemaphores = {_vkSepaphoreRenderFinished};
-	std::array<VkCommandBuffer, 1> commandBuffers = {_vkGraphicsPrimaryCommandBuffers[imageIndex]};
+	std::array<VkCommandBuffer, 1> commandBuffers = {commandBuffer};
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -680,16 +637,17 @@ void vk_renderer::recreateSwapchain()
 	}
 }
 
-void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
+VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 {
-	VkCommandBuffer& commandBuffer = _vkGraphicsPrimaryCommandBuffers[imageIndex];
+	VkCommandBuffer commandBuffer = _vkGraphicsCommandBuffers[imageIndex];
 
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	beginInfo.pInheritanceInfo = nullptr;
+	VkCommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	commandBufferBeginInfo.pNext = nullptr;
+	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
 
-	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
 	std::array<VkClearValue, 2> clearValues;
 	clearValues[0].color = {{0.0F, 0.0F, 0.0F, 1.0F}};
@@ -704,12 +662,14 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	if (!_vkGraphicsSecondaryCommandBuffers.empty())
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	for (auto& mesh : _meshes)
 	{
-		vkCmdExecuteCommands(commandBuffer, _vkGraphicsSecondaryCommandBuffers.size(), _vkGraphicsSecondaryCommandBuffers.data());
+		mesh->bindToCmdBuffer(commandBuffer);
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
 	VK_CHECK(vkEndCommandBuffer(commandBuffer));
+
+	return commandBuffer;
 }
