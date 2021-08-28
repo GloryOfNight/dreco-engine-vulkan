@@ -51,7 +51,7 @@ void vk_texture_image::create(const texture_data& textureData)
 	vk_buffer_create_info info;
 	info.memory_properties_flags = vk_device_memory_properties::HOST;
 	info.size = memoryRequirements.size;
-	info.usage = vk_buffer_usage::TRANSFER_SRC;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
 

@@ -9,17 +9,9 @@ class vk_device;
 class vk_physical_device;
 class vk_queue_family;
 
-enum class vk_buffer_usage : VkFlags
-{
-	TRANSFER_SRC = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-	UNIFORM = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-	INDEX = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-	VERTEX = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-};
-
 struct vk_buffer_create_info
 {
-	vk_buffer_usage usage;
+	VkFlags usage;
 	vk_device_memory_properties memory_properties_flags;
 	VkDeviceSize size;
 };

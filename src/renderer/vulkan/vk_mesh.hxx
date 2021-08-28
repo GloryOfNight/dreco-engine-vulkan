@@ -42,11 +42,7 @@ public:
 protected:
 	void createDescriptorSet();
 
-	void createGraphicsPipeline();
-
-	void createVertexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
-
-	void createIndexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createVIBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
@@ -55,9 +51,8 @@ private:
 
 	uniforms _ubo;
 
-	vk_buffer _vertexBuffer;
-
-	vk_buffer _indexBuffer;
+	vk_buffer _viBuffer;
+	VkDeviceSize _indexBufferOffset;
 
 	vk_buffer _uniformBuffer;
 
