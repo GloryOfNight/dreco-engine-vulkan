@@ -65,7 +65,8 @@ vk_renderer::~vk_renderer()
 	vkDestroyCommandPool(_device.get(), _vkGraphicsCommandPool, vkGetAllocator());
 	vkDestroyCommandPool(_device.get(), _vkTransferCommandPool, vkGetAllocator());
 
-	_depth_image.destroy();
+	_depthImage.destroy();
+	_msaaImage.destroy();
 	_device.destroy();
 	_surface.destroy(_vkInstance);
 
@@ -81,7 +82,7 @@ vk_renderer* vk_renderer::get()
 		return eng->getRenderer();
 	}
 	return nullptr;
-}
+}	
 
 bool vk_renderer::isSupported()
 {
@@ -104,7 +105,8 @@ void vk_renderer::init()
 
 	createCommandPool();
 	createPrimaryCommandBuffers();
-	_depth_image.create();
+	_depthImage.create();
+	_msaaImage.create();
 
 	createRenderPass();
 
@@ -335,7 +337,7 @@ void vk_renderer::createSwapchain()
 {
 	const VkSharingMode sharingMode{_queueFamily.getSharingMode()};
 
-	const std::vector<uint32_t> queueFamilyIndexes =_queueFamily.getUniqueQueueIndexes();
+	const std::vector<uint32_t> queueFamilyIndexes = _queueFamily.getUniqueQueueIndexes();
 
 	const VkSurfaceFormatKHR& surfaceFormat{_surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{_surface.getCapabilities()};
@@ -357,7 +359,7 @@ void vk_renderer::createSwapchain()
 		swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
 		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
 	}
-	else 
+	else
 	{
 		swapchainCreateInfo.queueFamilyIndexCount = 1;
 		swapchainCreateInfo.pQueueFamilyIndices = &queueFamilyIndexes[0];
@@ -410,27 +412,39 @@ void vk_renderer::createImageViews()
 
 void vk_renderer::createRenderPass()
 {
-	std::array<VkAttachmentDescription, 2> attachmentsDescriptions{};
+	std::array<VkAttachmentDescription, 3> attachmentsDescriptions{};
+
+	const VkSampleCountFlagBits samples = _physicalDevice.getMaxSupportedSampleCount();
 
 	VkAttachmentDescription& colorAttachment = attachmentsDescriptions[0];
 	colorAttachment.format = _surface.getFormat().format;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.samples = samples;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentDescription& depthAttachment = attachmentsDescriptions[1];
-	depthAttachment.format = _depth_image.getFormat();
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.format = _depthImage.getFormat();
+	depthAttachment.samples = samples;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentDescription& colorAttachmentResolve = attachmentsDescriptions[2];
+	colorAttachmentResolve.format = colorAttachment.format;
+	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;
@@ -440,11 +454,16 @@ void vk_renderer::createRenderPass()
 	depthAttachmentRef.attachment = 1;
 	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentReference colorAttachmentResolveRef{};
+	colorAttachmentResolveRef.attachment = 2;
+	colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription subpassDescription{};
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpassDescription.colorAttachmentCount = 1;
 	subpassDescription.pColorAttachments = &colorAttachmentRef;
 	subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
+	subpassDescription.pResolveAttachments = &colorAttachmentResolveRef;
 
 	VkSubpassDependency subpassDependecy{};
 	subpassDependecy.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -474,7 +493,7 @@ void vk_renderer::createFramebuffers()
 
 	for (size_t i = 0; i < _vkSwapchainImageViews.size(); ++i)
 	{
-		const std::array<VkImageView, 2> attachments{_vkSwapchainImageViews[i], _depth_image.getImageView()};
+		const std::array<VkImageView, 3> attachments{_msaaImage.getImageView(), _depthImage.getImageView(), _vkSwapchainImageViews[i]};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -650,7 +669,9 @@ void vk_renderer::recreateSwapchain()
 
 	createRenderPass();
 
-	_depth_image.recreate();
+	_depthImage.recreate();
+	_msaaImage.recreate();
+
 	createFramebuffers();
 
 	for (vk_mesh* mesh : _meshes)

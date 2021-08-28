@@ -85,6 +85,8 @@ void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice, const v
 
 void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
 {
+	const VkSampleCountFlagBits samples = vk_renderer::get()->getPhysicalDevice().getMaxSupportedSampleCount();
+
 	const std::string vertShaderCode = file_utils::read_file("shaders/vert.spv");
 	const std::string fragShaderCode = file_utils::read_file("shaders/frag.spv");
 
@@ -160,7 +162,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	VkPipelineMultisampleStateCreateInfo multisampleState{};
 	multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleState.sampleShadingEnable = VK_FALSE;
-	multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampleState.rasterizationSamples = samples;
 	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
 	multisampleState.alphaToCoverageEnable = VK_FALSE;

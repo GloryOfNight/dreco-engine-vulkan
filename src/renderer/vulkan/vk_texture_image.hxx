@@ -39,7 +39,7 @@ protected:
 
 	virtual VkImageUsageFlags getImageUsageFlags() const;
 
-	void createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height);
+	void createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height, const VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
 
 	void bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset);
 

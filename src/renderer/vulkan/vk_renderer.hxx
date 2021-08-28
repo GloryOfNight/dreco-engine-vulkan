@@ -6,6 +6,7 @@
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
 #include "vk_device.hxx"
+#include "vk_msaa_image.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
@@ -112,7 +113,9 @@ private:
 
 	vk_device _device;
 
-	vk_depth_image _depth_image;
+	vk_msaa_image _msaaImage;
+
+	vk_depth_image _depthImage;
 
 	VkInstance _vkInstance;
 

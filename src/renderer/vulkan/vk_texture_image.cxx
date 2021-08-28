@@ -153,7 +153,7 @@ VkImageUsageFlags vk_texture_image::getImageUsageFlags() const
 	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 }
 
-void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height)
+void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height, const VkSampleCountFlagBits samples)
 {
 	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
 	std::vector<uint32_t> queueIndexes;
@@ -166,7 +166,7 @@ void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFor
 	createInfo.extent = VkExtent3D{width, height, 1};
 	createInfo.mipLevels = 1;
 	createInfo.arrayLayers = 1;
-	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	createInfo.samples = samples;
 	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	createInfo.usage = getImageUsageFlags();
 	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;

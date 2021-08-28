@@ -19,6 +19,8 @@ public:
 
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling, const VkFormatFeatureFlags formatFeatires) const;
 
+	VkSampleCountFlagBits getMaxSupportedSampleCount() const;
+
 private:
 	VkPhysicalDevice _vkPhysicalDevice;
 
