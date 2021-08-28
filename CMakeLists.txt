@@ -30,6 +30,7 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_swapchain.cxx"
 "src/renderer/vulkan/vk_descriptor_set.cxx"
 "src/renderer/vulkan/vk_graphics_pipeline.cxx"
+"src/renderer/vulkan/vk_image.cxx"
 "src/renderer/vulkan/vk_texture_image.cxx"
 "src/renderer/vulkan/vk_msaa_image.cxx"
 "src/renderer/vulkan/vk_depth_image.cxx")
