@@ -5,8 +5,8 @@
 #include <iostream>
 #include <mutex>
 
-std::atomic<bool> threadLoopCondition = true;
-std::atomic<bool> threadTaskAwaible = false;
+std::atomic<bool> threadLoopCondition{true};
+std::atomic<bool> threadTaskAwaible{false};
 
 std::queue<thread_task*> waitingTasks;
 std::mutex waitingTasksMutex;
@@ -26,7 +26,7 @@ static bool thread_pop_task(thread_task** task)
 
 static void thread_complete_task(thread_task* const task)
 {
-	std::lock_guard<std::mutex> guard(waitingTasksMutex);
+	std::lock_guard<std::mutex> guard(completedTasksMutex);
 	completedTasks.push(task);
 }
 
@@ -36,7 +36,7 @@ static void thread_loop()
 	{
 		if (threadTaskAwaible && waitingTasksMutex.try_lock())
 		{
-			thread_task* task;
+			thread_task* task{nullptr};
 			const bool result = thread_pop_task(&task);
 			waitingTasksMutex.unlock();
 
