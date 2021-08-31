@@ -14,6 +14,7 @@ vk_queue_family::vk_queue_family()
 }
 
 vk_queue_family::vk_queue_family(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface)
+	: vk_queue_family()
 {
 	setup(vkPhysicalDevice, vkSurface);
 }

@@ -29,7 +29,7 @@ public:
 
 	void create(const vk_buffer_create_info& create_info);
 
-	virtual void destroy();
+	void destroy();
 
 	VkBuffer get() const;
 

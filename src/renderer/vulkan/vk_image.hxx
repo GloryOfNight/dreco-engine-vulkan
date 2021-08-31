@@ -6,7 +6,7 @@
 class vk_image
 {
 public:
-    virtual ~vk_image() {destroy();};
+    virtual ~vk_image() = default;
 	virtual void create() = 0;
 
     virtual void destroy();

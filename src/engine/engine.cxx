@@ -192,7 +192,7 @@ void engine::startMainLoop()
 				int windowSizeY{0};
 				SDL_GetWindowSize(_renderer->getWindow(), &windowSizeX, &windowSizeY);
 
-				const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - (windowSizeX / windowSizeY);
+				const float cofX = static_cast<float>(mousePosX) / static_cast<float>(newMousePosX) - static_cast<float>(windowSizeX / windowSizeY);
 				const float cofY = static_cast<float>(mousePosY) / static_cast<float>(newMousePosY) - 1;
 
 				const bool isCoefValid = !((std::isnan(cofX) || std::isinf(cofX)) || (std::isnan(cofY) || std::isinf(cofY)));
@@ -270,7 +270,6 @@ void engine::startMainLoop()
 			}
 		}
 	}
-	_isRunning = false;
 
 	postMainLoop();
 }

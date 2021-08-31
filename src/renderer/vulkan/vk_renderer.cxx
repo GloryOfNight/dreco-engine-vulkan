@@ -24,6 +24,7 @@
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
 	, _meshes{}
+	, _window{nullptr}
 	, _surface()
 	, _physicalDevice()
 	, _queueFamily()

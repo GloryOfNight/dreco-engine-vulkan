@@ -13,14 +13,14 @@ public:
 	vk_device_memory();
 	vk_device_memory(const vk_device_memory&) = delete;
 	vk_device_memory(vk_device_memory&&) = delete;
-	virtual ~vk_device_memory();
+	~vk_device_memory();
 
 	vk_device_memory& operator=(const vk_device_memory&) = delete;
 	vk_device_memory& operator=(vk_device_memory&&) = delete;
 
 	void allocate(const VkMemoryRequirements& vkMemoryRequirements, const VkMemoryPropertyFlags vkMemoryPropertyFlags);
 
-	virtual void free();
+	void free();
 
 	void map(const void* data, const VkDeviceSize size, const VkDeviceSize offset = 0);
 
