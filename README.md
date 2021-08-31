@@ -1,4 +1,6 @@
 # Dreco Engine - Vulkan
+Project for personal fun of writing vulkan renderer and an game egnine (probably).
+
 Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) with some core changes:
 - Full support for 3rd space, new matrixes
 - Vulkan as primary rendering API (really fun thing to try)
