@@ -122,10 +122,6 @@ void vk_renderer::init()
 
 void vk_renderer::tick(double deltaTime)
 {
-	for (auto& mesh : _meshes)
-	{
-		mesh->beforeSubmitUpdate();
-	}
 	drawFrame();
 }
 
@@ -666,6 +662,7 @@ VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	for (auto& mesh : _meshes)
 	{
+		mesh->beforeSubmitUpdate();
 		mesh->bindToCmdBuffer(commandBuffer);
 	}
 	vkCmdEndRenderPass(commandBuffer);
