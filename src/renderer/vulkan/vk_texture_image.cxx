@@ -39,7 +39,7 @@ void vk_texture_image::create(const texture_data& textureData)
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice{renderer->getDevice().get()};
 
-	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
 	createImage(vkDevice, vkFormat, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
