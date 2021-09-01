@@ -35,6 +35,7 @@
 .vs/*
 build/*
 bin/*
+install/*
 out/*
 
 # CMake files
