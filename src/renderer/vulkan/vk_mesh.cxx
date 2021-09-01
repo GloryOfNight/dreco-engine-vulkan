@@ -15,8 +15,8 @@
 vk_mesh::vk_mesh(const mesh_data& meshData)
 	: _transform{}
 	, _mesh{meshData}
-	, _vkDevice{VK_NULL_HANDLE}
 	, _indexBufferOffset{0}
+	, _vkDevice{VK_NULL_HANDLE}
 {
 }
 
