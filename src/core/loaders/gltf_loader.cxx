@@ -6,6 +6,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
+#include <filesystem>
+#include <iostream>
 #include <vector>
 
 std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
@@ -20,7 +22,13 @@ std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
 	if (!result)
 	{
+		std::cerr << __FUNCTION__ << ": " << "Err: " << err;
+		std::cout << __FUNCTION__ << ": " << "Verb: " << "Current working directory: " << std::filesystem::current_path() << std::endl;
 		return {};
+	}
+	else if (!warn.empty())
+	{
+		std::cout << __FUNCTION__ << ": " << "Warn: " << warn << std::endl;
 	}
 
 	std::string coreFolder = std::string(sceneFile);
