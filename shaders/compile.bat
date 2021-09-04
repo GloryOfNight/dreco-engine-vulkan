@@ -1,2 +1,2 @@
-%VULKAN_SDK%/bin/glslc.exe shader.frag -o frag.spv
-%VULKAN_SDK%/bin/glslc.exe shader.vert -o vert.spv
+%VULKAN_SDK%/bin/glslc.exe basic.frag -o basic.frag.spv
+%VULKAN_SDK%/bin/glslc.exe basic.vert -o basic.vert.spv

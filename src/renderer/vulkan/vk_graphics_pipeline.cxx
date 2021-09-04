@@ -87,8 +87,8 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 {
 	const VkSampleCountFlagBits samples = vk_renderer::get()->getPhysicalDevice().getMaxSupportedSampleCount();
 
-	const std::string vertShaderCode = file_utils::read_file("shaders/vert.spv");
-	const std::string fragShaderCode = file_utils::read_file("shaders/frag.spv");
+	const std::string vertShaderCode = file_utils::read_file("shaders/basic.vert.spv");
+	const std::string fragShaderCode = file_utils::read_file("shaders/basic.frag.spv");
 
 	vk_shader_module vertShaderStage;
 	vertShaderStage.create(vkDevice, vertShaderCode.data(), vertShaderCode.size());

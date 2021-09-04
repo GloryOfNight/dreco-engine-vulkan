@@ -10,8 +10,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES ENABLE_EXPORTS TRUE)
 target_link_libraries(${PROJECT_NAME} dreco)
 
 set(BINARY_SHADER_LIST 
-"${CMAKE_SOURCE_DIR}/shaders/frag.spv"
-"${CMAKE_SOURCE_DIR}/shaders/vert.spv")
+"${CMAKE_SOURCE_DIR}/shaders/basic.frag.spv"
+"${CMAKE_SOURCE_DIR}/shaders/basic.vert.spv")
 
 set(CONTENT_DIR
 "${CMAKE_SOURCE_DIR}/content")
