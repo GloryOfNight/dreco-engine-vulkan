@@ -98,7 +98,8 @@ endif()
 add_subdirectory(examples/triangle)
 
 install(TARGETS dreco triangle
-        RUNTIME DESTINATION ${CMAKE_INSTALL_RPATH})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_RPATH}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_RPATH})
 
 if (MSVC)
 ## Find SDL2 dll file (required by executable)
