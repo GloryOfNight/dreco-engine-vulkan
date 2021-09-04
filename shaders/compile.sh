@@ -1,2 +1,2 @@
 glslc basic.frag -o basic.frag.spv
-glslc baisc.vert -o baisc.vert.spv
+glslc basic.vert -o basic.vert.spv
