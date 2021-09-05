@@ -16,17 +16,24 @@ jobs:
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    
-    - name: install vulkan sdk
-      run: powershell -c "Invoke-WebRequest -Uri 'https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe' -OutFile 'vulkan-sdk.exe'" && vulkan-sdk.exe
-    
-    - name: vcpkg setup
-      run: git clone https://github.com/microsoft/vcpkg.git && vcpkg/bootstrap-vcpkg.bat -disableMetrics
+    - name: Install SDL2
+      run: sudo apt install libsdl2-dev
+    - name: Install Vulkan SDK
+      run: wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add - && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.148-bionic.list https://packages.lunarg.com/vulkan/1.2.148/lunarg-vulkan-1.2.148-bionic.list && sudo apt update && sudo apt install vulkan-sdk
       
-    - name: vcpkg install sdl2
-      run: vcpkg/vcpkg  install sdl2:x64-windows
+    - uses: actions/checkout@v2    
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
       
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      shell: bash
+      # Execute the build.  You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config $BUILD_TYPE
