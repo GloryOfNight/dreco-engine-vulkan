@@ -21,12 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
+    - name: install vulkan sdk
+      run: powershell -c "Invoke-WebRequest -Uri 'https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe' -OutFile 'vulkan-sdk.exe'" && vulkan-sdk.exe
+    
     - name: vcpkg setup
       run: git clone https://github.com/microsoft/vcpkg.git && vcpkg/bootstrap-vcpkg.bat -disableMetrics
       
     - name: vcpkg install sdl2
       run: vcpkg/vcpkg  install sdl2:x64-windows
-      
-    - name: vcpkg install vulkan
-      run: wget https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe && vulkan-sdk.exe
       
