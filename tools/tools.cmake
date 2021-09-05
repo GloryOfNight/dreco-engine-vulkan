@@ -4,7 +4,7 @@ else()
 set(TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY")
 endif()
 
-# compile tools
+# configure and compile tools
 execute_process(COMMAND "cmake" 
 "${TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM}=${CMAKE_SOURCE_DIR}/bin/tools" 
 "-S" "${CMAKE_SOURCE_DIR}/tools/shader_list_generator" 
@@ -12,7 +12,7 @@ execute_process(COMMAND "cmake"
 execute_process(COMMAND "cmake" "--build" "${CMAKE_SOURCE_DIR}/tools/build" "--config" "Release")
 
 
-# execute shader_list_generator and compile shaders
+# everytime configuration happend, gather all shaders files and recompile required ones
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/build/generated/")
 set(GENERATED_SHADER_LIST_PATH "${CMAKE_SOURCE_DIR}/build/generated/shader_list.cmake")
 
@@ -29,5 +29,5 @@ foreach(shader_path shader_name IN ZIP_LISTS SHADER_COMPILE_PATH_LIST SHADER_COM
 set (SHADER_SOURCE_FILE "${shader_path}/${shader_name}")
 set (SHADER_OUTPUT_FILE "${shader_path}/${shader_name}.spv")
 message(STATUS "Compiling shader: ${SHADER_SOURCE_FILE} -> ${SHADER_OUTPUT_FILE}")
-add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD COMMAND ${Vulkan_GLSLC_EXECUTABLE} "${SHADER_SOURCE_FILE}" "-o" "${SHADER_OUTPUT_FILE}")
+execute_process(COMMAND ${Vulkan_GLSLC_EXECUTABLE} "${SHADER_SOURCE_FILE}" "-o" "${SHADER_OUTPUT_FILE}")
 endforeach()
