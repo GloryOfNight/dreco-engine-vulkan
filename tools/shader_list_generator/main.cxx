@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 		const bool isSourceShaderFile = findIsSourceShader(p.path().extension().string());
 		if (isSourceShaderFile)
 		{
-			const std::string binPathStr = p.path().string() + ".spv";
+			const std::string binPathStr = p.path().generic_string() + ".spv";
 			fs::path binPath = binPathStr;
 			totalShaderFiles.push_back(binPathStr);
 
