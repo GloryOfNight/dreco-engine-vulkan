@@ -1,5 +1,6 @@
 #pragma once
 #include "math/transform.hxx"
+#include "core/containers/mesh.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
@@ -19,7 +20,7 @@ class vk_physical_device;
 class vk_mesh final
 {
 public:
-	vk_mesh(const mesh_data& meshData);
+	vk_mesh();
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
 	~vk_mesh();
@@ -27,7 +28,7 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create();
+	void create(const mesh& m);
 
 	void recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
 
@@ -42,17 +43,17 @@ public:
 protected:
 	void createDescriptorSet();
 
-	void createVIBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 private:
-	mesh_data _mesh;
+	VkDeviceSize _vertsBufferSize{0};
+	VkDeviceSize _indxsBufferSize{0};
 
 	uniforms _ubo;
 
 	vk_buffer _viBuffer;
-	VkDeviceSize _indexBufferOffset;
 
 	vk_buffer _uniformBuffer;
 

@@ -13,7 +13,7 @@ static inline engine* gEngine{nullptr};
 struct async_task_load_scene : public thread_task
 {
 	async_task_load_scene(const std::string_view& sceneFile)
-		: file(sceneFile)
+		: _file(sceneFile)
 	{
 	}
 
@@ -21,7 +21,7 @@ struct async_task_load_scene : public thread_task
 
 	virtual void doJob() override
 	{
-		scene = gltf_loader::loadScene(file);
+		_scene = gltf_loader::loadScene(_file);
 	};
 
 	virtual void compeleted() override
@@ -30,19 +30,15 @@ struct async_task_load_scene : public thread_task
 		{
 			if (auto* renderer = eng->getRenderer())
 			{
-				for (auto& mesh : scene)
-				{
-					auto newMesh = renderer->createMesh(mesh);
-					newMesh->_transform._rotation = rotator(0, 0, 0);
-				}
+				renderer->loadScene(_scene);
 			}
 		}
 	};
 
 private:
-	std::string file;
+	std::string _file;
 
-	std::vector<mesh_data> scene;
+	scene _scene;
 };
 
 engine::engine()

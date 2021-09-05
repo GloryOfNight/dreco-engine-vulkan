@@ -3,10 +3,12 @@ project(dreco)
 
 set(DRECO_HEADER_LIST 
 "src/engine/engine.hxx"
+"src/core/containers/scene.hxx"
 "src/core/threads/thread_pool.hxx"
 "src/core/loaders/gltf_loader.hxx"
 "src/core/objects/camera.hxx"
 "src/core/objects/world_object.hxx"
+"src/core/managers/resource_manager.hxx"
 "src/math/vec2.hxx"
 "src/math/vec3.hxx"
 "src/math/rotator.hxx"
@@ -37,6 +39,7 @@ set(DRECO_SOURCE_LIST
 "src/core/loaders/gltf_loader.cxx"
 "src/core/objects/camera.cxx"
 "src/core/objects/world_object.cxx"
+"src/core/managers/resource_manager.cxx"
 "src/math/vec2.cxx"
 "src/math/vec3.cxx"
 "src/math/rotator.cxx"

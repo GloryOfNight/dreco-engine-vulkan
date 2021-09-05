@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <vulkan/vulkan.h>
 
 enum class vk_device_memory_properties : VkFlags
@@ -10,6 +11,13 @@ enum class vk_device_memory_properties : VkFlags
 class vk_device_memory final
 {
 public:
+	struct map_memory_region
+	{
+		const void* data{nullptr};
+		const VkDeviceSize size{0};
+		const VkDeviceSize offset{0};
+	};
+
 	vk_device_memory();
 	vk_device_memory(const vk_device_memory&) = delete;
 	vk_device_memory(vk_device_memory&&) = delete;
@@ -23,6 +31,8 @@ public:
 	void free();
 
 	void map(const void* data, const VkDeviceSize size, const VkDeviceSize offset = 0);
+
+	void map(std::vector<map_memory_region>& regions, const VkDeviceSize offset = 0);
 
 	VkDeviceMemory get() const;
 

@@ -1,5 +1,6 @@
 #pragma once
 #include "math/vec3.hxx"
+#include "core/containers/scene.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
@@ -37,7 +38,7 @@ public:
 
 	void tick(double deltaTime);
 
-	vk_mesh* createMesh(const mesh_data& meshData);
+	void loadScene(const scene& newScene);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 

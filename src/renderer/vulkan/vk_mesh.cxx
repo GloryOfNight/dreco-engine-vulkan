@@ -12,24 +12,18 @@
 
 #include <array>
 
-vk_mesh::vk_mesh(const mesh_data& meshData)
+vk_mesh::vk_mesh()
 	: _transform{}
-	, _mesh{meshData}
-	, _indexBufferOffset{0}
 	, _vkDevice{VK_NULL_HANDLE}
 {
 }
 
 vk_mesh::~vk_mesh()
 {
-	destroy();
-
-	// temp solution
-	delete _mesh._material._texData;
-	_mesh._material._texData = nullptr;
+	destroy();	
 }
 
-void vk_mesh::create()
+void vk_mesh::create(const mesh& m)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
@@ -39,10 +33,10 @@ void vk_mesh::create()
 
 	_vkDevice = vkDevice->get();
 
-	createVIBuffer(vkQueueFamily, vkPhysicalDevice);
+	createVIBuffer(m, vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
 
-	_textureImage.create(*_mesh._material._texData);
+	_textureImage.create();
 
 	createDescriptorSet();
 	_graphicsPipeline.create(_descriptorSet);
@@ -74,12 +68,12 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
 	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
 	std::array<VkDeviceSize, 1> offsets{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
-	vkCmdBindIndexBuffer(vkCommandBuffer, _viBuffer.get(), _indexBufferOffset, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(vkCommandBuffer, _viBuffer.get(), _vertsBufferSize, VK_INDEX_TYPE_UINT32);
 
 	const VkDescriptorSet vkDescriptorSet{_descriptorSet.get()};
 	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.getLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
 
-	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_mesh._indexes.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
 }
 
 void vk_mesh::beforeSubmitUpdate()
@@ -132,21 +126,35 @@ void vk_mesh::createDescriptorSet()
 	_descriptorSet.update(writeDescriptorSets);
 }
 
-void vk_mesh::createVIBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
+void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
-	const size_t vertBufferSize = sizeof(_mesh._vertexes[0]) * _mesh._vertexes.size();
-	const size_t indxBufferSize = sizeof(_mesh._indexes[0]) * _mesh._indexes.size();
-	_indexBufferOffset = vertBufferSize;
+	_vertsBufferSize = 0;
+	_indxsBufferSize = 0;
+
+	const size_t primitivesSize = m._primitives.size();
+	std::vector<vk_device_memory::map_memory_region> vertsRegions(primitivesSize);
+	std::vector<vk_device_memory::map_memory_region> indxsRegions(primitivesSize);
+	for (const mesh::primitive& prim : m._primitives)
+	{
+		const size_t vertBufferSize = sizeof(prim._vertexes[0]) * prim._vertexes.size();
+		vertsRegions.push_back({prim._vertexes.data(), vertBufferSize, _vertsBufferSize});
+		_vertsBufferSize += vertBufferSize;
+
+		const size_t indxBufferSize = sizeof(prim._indexes[0]) * prim._indexes.size();
+		indxsRegions.push_back({prim._indexes.data(), indxBufferSize, _indxsBufferSize});
+		_indxsBufferSize += indxBufferSize;
+	}
 
 	vk_buffer_create_info buffer_create_info{};
 	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
-	buffer_create_info.size = vertBufferSize + indxBufferSize;
+	buffer_create_info.size = _vertsBufferSize + _indxsBufferSize;
 
 	vk_buffer temp_buffer;
 	temp_buffer.create(buffer_create_info);
-	temp_buffer.getDeviceMemory().map(_mesh._vertexes.data(), vertBufferSize, 0);
-	temp_buffer.getDeviceMemory().map(_mesh._indexes.data(), indxBufferSize, _indexBufferOffset);
+
+	temp_buffer.getDeviceMemory().map(vertsRegions);
+	temp_buffer.getDeviceMemory().map(indxsRegions, _vertsBufferSize);
 	
 	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE_ONLY;

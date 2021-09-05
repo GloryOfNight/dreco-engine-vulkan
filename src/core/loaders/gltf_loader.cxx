@@ -1,16 +1,16 @@
 #include "gltf_loader.hxx"
 
-#include "renderer/containers/vertex.hxx"
-
 #define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#define TINYGLTF_NO_EXTERNAL_IMAGE
 #include "tinygltf/tiny_gltf.h"
 
 #include <filesystem>
 #include <iostream>
 #include <vector>
 
-std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
+scene gltf_loader::loadScene(const std::string_view& sceneFile)
 {
 	using namespace tinygltf;
 
@@ -34,13 +34,27 @@ std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 	std::string coreFolder = std::string(sceneFile);
 	coreFolder = coreFolder.substr(0, coreFolder.find_last_of("/") + 1);
 
-	std::vector<mesh_data> meshes;
-	meshes.reserve(model.meshes.size());
+	const size_t totalMeshes = model.meshes.size();
+	const size_t totalImages = model.images.size();
+	const size_t totalMaterials = model.materials.size();
 
-	for (const auto& mesh : model.meshes)
+	scene newScene{};
+	newScene._meshes.resize(totalMeshes);
+	newScene._images.resize(totalImages);
+	newScene._materials.resize(totalMaterials);
+
+	for (size_t i = 0; i < totalMeshes; ++i)
 	{
-		for (const auto& primitive : mesh.primitives)
+		const size_t totalMeshPrimites = model.meshes[i].primitives.size();
+		newScene._meshes[i]._primitives.resize(totalMeshPrimites);
+
+		for (size_t k = 0; k < totalMeshPrimites; ++k)
 		{
+			auto& sceneMeshPrimitive = newScene._meshes[i]._primitives[k];
+			const auto& primitive = model.meshes[i].primitives[k];
+
+			sceneMeshPrimitive._material = &newScene._materials[static_cast<size_t>(primitive.material)];
+
 			uint32_t vertPosAccessor{UINT32_MAX};
 			uint32_t texCoordAccessor{UINT32_MAX};
 			uint32_t indexAccessor{static_cast<uint32_t>(primitive.indices)};
@@ -56,50 +70,53 @@ std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 				}
 			}
 
-			const auto textureIndex{model.materials[primitive.material].values["baseColorTexture"].TextureIndex()};
-			const auto imageIndex{model.textures[textureIndex].source};
-
-			mesh_data newMesh{};
-			newMesh._vertexes.resize(model.accessors[vertPosAccessor].count);
-			newMesh._indexes.resize(model.accessors[indexAccessor].count);
-
-			const std::string textureUri = coreFolder + model.images[imageIndex].uri;
-			newMesh._material._texData = texture_data::createNew(textureUri);
+			sceneMeshPrimitive._vertexes.resize(model.accessors[vertPosAccessor].count);
+			sceneMeshPrimitive._indexes.resize(model.accessors[indexAccessor].count);
 
 			const size_t accessorsSize{model.accessors.size()};
-			for (uint32_t i = 0; i < accessorsSize; ++i)
+			for (size_t j = 0; j < accessorsSize; ++j)
 			{
-				const auto& accessor{model.accessors[i]};
+				const auto& accessor{model.accessors[j]};
 				const auto& bufferView{model.bufferViews[accessor.bufferView]};
 				const auto& buffer{model.buffers[bufferView.buffer]};
 
 				const float* positions = reinterpret_cast<const float*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
 
-				for (size_t k = 0; k < accessor.count; ++k)
+				for (size_t q = 0; q < accessor.count; ++q)
 				{
-					if (i == vertPosAccessor)
+					if (j == vertPosAccessor)
 					{
-						vec3& pos{newMesh._vertexes[k]._pos};
-						pos._x = positions[k * 3 + 0];
-						pos._y = positions[k * 3 + 1];
-						pos._z = positions[k * 3 + 2];
+						vec3& pos{sceneMeshPrimitive._vertexes[q]._pos};
+						pos._x = positions[q * 3 + 0];
+						pos._y = positions[q * 3 + 1];
+						pos._z = positions[q * 3 + 2];
 					}
-					else if (i == texCoordAccessor)
+					else if (j == texCoordAccessor)
 					{
-						vec2& texCoor{newMesh._vertexes[k]._texCoord};
-						texCoor._x = positions[k * 2 + 0];
-						texCoor._y = positions[k * 2 + 1];
+						vec2& texCoor{sceneMeshPrimitive._vertexes[q]._texCoord};
+						texCoor._x = positions[q * 2 + 0];
+						texCoor._y = positions[q * 2 + 1];
 					}
-					else if (i == indexAccessor)
+					else if (j == indexAccessor)
 					{
 						const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-						newMesh._indexes[k] = indexPos[k];
+						sceneMeshPrimitive._indexes[q] = indexPos[q];
 					}
 				}
 			}
-
-			meshes.push_back(newMesh);
 		}
 	}
-	return meshes;
+
+	for (size_t i = 0; i < totalImages; ++i)
+	{
+		newScene._images[i]._uri = model.images[i].uri;
+	}
+
+	for (size_t i = 0; i < totalMaterials; ++i)
+	{
+		newScene._materials[i]._doubleSided = model.materials[i].doubleSided;
+		newScene._materials[i]._baseColorTexture = &newScene._images[model.materials[i].pbrMetallicRoughness.baseColorTexture.index];
+	}
+
+	return newScene;
 }

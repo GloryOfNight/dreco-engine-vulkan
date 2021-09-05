@@ -10,7 +10,7 @@ struct mesh_data
 	std::vector<vertex> _vertexes;
 	std::vector<uint32_t> _indexes;
 
-	material _material;
+	material_data _material;
 
 	static mesh_data createSprite()
 	{

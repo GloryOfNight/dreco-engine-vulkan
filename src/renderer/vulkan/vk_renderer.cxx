@@ -125,14 +125,14 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-vk_mesh* vk_renderer::createMesh(const mesh_data& meshData)
+void vk_renderer::loadScene(const scene& newScene)
 {
-	_meshes.push_back(new vk_mesh(meshData));
-
-	vk_mesh* newMesh = _meshes.back();
-	newMesh->create();
-
-	return newMesh;
+	for (auto& mesh : newScene._meshes)
+	{
+		vk_mesh* newMesh = new vk_mesh();
+		newMesh->create(mesh);
+		_meshes.push_back(newMesh);
+	}
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
