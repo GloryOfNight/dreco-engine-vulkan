@@ -133,12 +133,12 @@ mat4 operator*(const mat4& a, const mat4& b)
 	constexpr size_t N = 4;
 
 	mat4::mat4d c;
-	for (int i = 0; i < N; i++)
+	for (size_t i = 0; i < N; i++)
 	{
-		for (int j = 0; j < N; j++)
+		for (size_t j = 0; j < N; j++)
 		{
 			float num = 0;
-			for (int k = 0; k < N; k++)
+			for (size_t k = 0; k < N; k++)
 			{
 				num += a._mat[i][k] * b._mat[k][j];
 			}
