@@ -1,0 +1,9 @@
+project(shader_list_generator)
+
+add_executable(${PROJECT_NAME} main.cxx)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED 17
+)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
