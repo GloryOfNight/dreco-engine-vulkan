@@ -33,7 +33,7 @@ public:
 
 	void destroy();
 
-	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex);
+	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer);
 
 	void beforeSubmitUpdate();
 
@@ -42,24 +42,17 @@ public:
 protected:
 	void createDescriptorSet();
 
-	void createGraphicsPipeline();
-
-	void createVertexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
-
-	void createIndexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createVIBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
 	void createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
-
-	void writeCommandBuffer(const VkRenderPass vkRenderPass);
 
 private:
 	mesh_data _mesh;
 
 	uniforms _ubo;
 
-	vk_buffer _vertexBuffer;
-
-	vk_buffer _indexBuffer;
+	vk_buffer _viBuffer;
+	VkDeviceSize _indexBufferOffset;
 
 	vk_buffer _uniformBuffer;
 
@@ -70,6 +63,4 @@ private:
 	vk_descriptor_set _descriptorSet;
 
 	VkDevice _vkDevice;
-
-	VkCommandBuffer _vkCommandBuffer;
 };

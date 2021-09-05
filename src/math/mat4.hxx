@@ -3,6 +3,7 @@
 #include <cstddef>
 
 struct vec3;
+struct rotator;
 struct transform;
 
 struct mat4
@@ -19,7 +20,7 @@ struct mat4
 
 	static mat4 makeTranslation(const vec3& vec);
 
-	static mat4 makeRotation(const vec3& vec);
+	static mat4 makeRotation(const rotator& rot);
 
 	static mat4 makeScale(const vec3& vec);
 
@@ -27,7 +28,11 @@ struct mat4
 
 	static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
 
+	static mat4 makeInverse(const mat4& mat);
+
 	mat4d _mat;
 };
 
 mat4 operator*(const mat4& a, const mat4& b);
+
+mat4 operator*(const mat4& mat, const float val);

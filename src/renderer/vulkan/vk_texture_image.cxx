@@ -4,15 +4,10 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
-
 #define VK_TEXTURE_PLACEHOLDER_URI "content/doge.jpg"
 
 vk_texture_image::vk_texture_image()
-	: _vkImage{VK_NULL_HANDLE}
-	, _vkImageView{VK_NULL_HANDLE}
-	, _vkSampler{VK_NULL_HANDLE}
+	: _vkSampler{VK_NULL_HANDLE}
 {
 }
 
@@ -23,24 +18,28 @@ vk_texture_image::~vk_texture_image()
 
 void vk_texture_image::create()
 {
-	create(VK_TEXTURE_PLACEHOLDER_URI);
+	auto* texture = texture_data::createNew(VK_TEXTURE_PLACEHOLDER_URI);
+	create(*texture);
+	delete texture;
 }
 
-void vk_texture_image::create(const std::string_view& textureUri)
+void vk_texture_image::create(const texture_data& textureData)
 {
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load(textureUri.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	unsigned char* pixels{nullptr};
+	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
 
 	if (!pixels)
 	{
-		std::cerr << "Failed to load texture: " << textureUri << "; Using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
-		pixels = stbi_load(VK_TEXTURE_PLACEHOLDER_URI, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		std::cerr << "vk_texture_image: Failed to load texture data, using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
+		create();
+		return;
 	}
 
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice{renderer->getDevice().get()};
 
-	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_SRGB;
+	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
 	createImage(vkDevice, vkFormat, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
@@ -50,7 +49,7 @@ void vk_texture_image::create(const std::string_view& textureUri)
 	vk_buffer_create_info info;
 	info.memory_properties_flags = vk_device_memory_properties::HOST;
 	info.size = memoryRequirements.size;
-	info.usage = vk_buffer_usage::TRANSFER_SRC;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
 
@@ -71,8 +70,6 @@ void vk_texture_image::create(const std::string_view& textureUri)
 
 	createImageView(vkDevice, vkFormat);
 	createSampler(vkDevice);
-
-	stbi_image_free(pixels);
 }
 
 void vk_texture_image::destroy()
@@ -83,65 +80,12 @@ void vk_texture_image::destroy()
 		vkDestroySampler(vkDevice, _vkSampler, vkGetAllocator());
 		_vkSampler = VK_NULL_HANDLE;
 	}
-	if (VK_NULL_HANDLE != _vkImageView)
-	{
-		vkDestroyImageView(vkDevice, _vkImageView, vkGetAllocator());
-		_vkImageView = VK_NULL_HANDLE;
-	}
-	if (VK_NULL_HANDLE != _vkImage)
-	{
-		vkDestroyImage(vkDevice, _vkImage, vkGetAllocator());
-		_vkImage = VK_NULL_HANDLE;
-	}
-	_deviceMemory.free();
-}
-
-VkImage vk_texture_image::get() const
-{
-	return _vkImage;
-}
-
-VkImageView vk_texture_image::getImageView() const
-{
-	return _vkImageView;
+	vk_image::destroy();
 }
 
 VkSampler vk_texture_image::getSampler() const
 {
 	return _vkSampler;
-}
-
-vk_device_memory& vk_texture_image::getDeviceMemory()
-{
-	return _deviceMemory;
-}
-
-void vk_texture_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
-	const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
-	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags)
-{
-	vk_renderer* renderer{vk_renderer::get()};
-	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
-	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeGraphicsCommands();
-
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = vkLayoutOld;
-	barrier.newLayout = vkLayoutNew;
-	barrier.srcQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_CONCURRENT ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-	barrier.dstQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_CONCURRENT ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-	barrier.image = vkImage;
-	barrier.subresourceRange.aspectMask = vkAspectFlags;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.srcAccessMask = vkAccessFlagsSrc;
-	barrier.dstAccessMask = vkAccessFlagsDst;
-
-	vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineStageFlagsSrc, vkPipelineStageFlagsDst, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-	renderer->endSingleTimeGraphicsCommands(vkCommandBuffer);
 }
 
 VkImageAspectFlags vk_texture_image::getImageAspectFlags() const
@@ -152,57 +96,6 @@ VkImageAspectFlags vk_texture_image::getImageAspectFlags() const
 VkImageUsageFlags vk_texture_image::getImageUsageFlags() const
 {
 	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-}
-
-void vk_texture_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height)
-{
-	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-	std::vector<uint32_t> queueIndexes;
-
-	VkImageCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.imageType = VK_IMAGE_TYPE_2D;
-	createInfo.format = vkFormat;
-	createInfo.extent = VkExtent3D{width, height, 1};
-	createInfo.mipLevels = 1;
-	createInfo.arrayLayers = 1;
-	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	createInfo.usage = getImageUsageFlags();
-	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	createInfo.sharingMode = queueFamily.getSharingMode();
-	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
-	{
-		queueIndexes = queueFamily.getUniqueQueueIndexes();
-		createInfo.queueFamilyIndexCount = queueIndexes.size();
-		createInfo.pQueueFamilyIndices = queueIndexes.data();
-	}
-
-	VK_CHECK(vkCreateImage(vkDevice, &createInfo, vkGetAllocator(), &_vkImage));
-}
-
-void vk_texture_image::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)
-{
-	VK_CHECK(vkBindImageMemory(vkDevice, _vkImage, vkDeviceMemory, memoryOffset));
-}
-
-void vk_texture_image::createImageView(const VkDevice vkDevice, const VkFormat vkFormat)
-{
-	VkImageViewCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.image = _vkImage;
-	createInfo.format = vkFormat;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.subresourceRange.aspectMask = getImageAspectFlags();
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.layerCount = 1;
-	createInfo.subresourceRange.levelCount = 1;
-
-	VK_CHECK(vkCreateImageView(vkDevice, &createInfo, vkGetAllocator(), &_vkImageView));
 }
 
 void vk_texture_image::createSampler(const VkDevice vkDevice)

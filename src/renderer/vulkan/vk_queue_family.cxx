@@ -9,11 +9,12 @@ vk_queue_family::vk_queue_family()
 	, graphicsIndex{UINT32_MAX}
 	, transferIndex{UINT32_MAX}
 	, presentIndex{UINT32_MAX}
-	, sharingMode{VK_SHARING_MODE_CONCURRENT}
+	, sharingMode{VK_SHARING_MODE_EXCLUSIVE}
 {
 }
 
 vk_queue_family::vk_queue_family(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface)
+	: vk_queue_family()
 {
 	setup(vkPhysicalDevice, vkSurface);
 }
@@ -28,26 +29,42 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	for (uint32_t i = 0; i < queueFamilyCount; ++i)
 	{
 		const VkQueueFamilyProperties& queueFamily = queueFamilyProperties[i];
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-		{
-			graphicsIndex = i;
-		}
+		// Old way for VK_SHARING_MODE_CONCURRENT
+		// sharingMode = VK_SHARING_MODE_CONCURRENT;
+		// if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		// {
+		// 	graphicsIndex = i;
+		// }
+		// if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+		// {
+		// 	if (false == IS_QUEUE_INDEX_VALID(transferIndex) || graphicsIndex == transferIndex)
+		// 	{
+		// 		transferIndex = i;
+		// 	}
+		// }
+		// VkBool32 isQueueFamilySupported;
+		// vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &isQueueFamilySupported);
+		// if (isQueueFamilySupported)
+		// {
+		// 	if (false == IS_QUEUE_INDEX_VALID(presentIndex) || graphicsIndex == presentIndex || transferIndex == presentIndex)
+		// 	{
+		// 		presentIndex = i;
+		// 	}
+		// }
+		// if (graphicsIndex == transferIndex && transferIndex == presentIndex)
+		// {
+		// 	sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		// }
 
-		if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+		const auto queueFlags = queueFamily.queueFlags;
+		if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueFlags & VK_QUEUE_TRANSFER_BIT))
 		{
-			if (false == IS_QUEUE_INDEX_VALID(transferIndex) || graphicsIndex == transferIndex)
+			VkBool32 isQueueFamilySupported;
+			vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &isQueueFamilySupported);
+			if (isQueueFamilySupported)
 			{
-				transferIndex = i;
-			}
-		}
-
-		VkBool32 isQueueFamilySupported;
-		vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &isQueueFamilySupported);
-		if (isQueueFamilySupported)
-		{
-			if (false == IS_QUEUE_INDEX_VALID(presentIndex) || graphicsIndex == presentIndex || transferIndex == presentIndex)
-			{
-				presentIndex = i;
+				graphicsIndex = transferIndex = presentIndex = i;
+				break;
 			}
 		}
 	}
@@ -55,11 +72,6 @@ void vk_queue_family::setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSu
 	if (IS_QUEUE_INDEX_VALID(graphicsIndex) && IS_QUEUE_INDEX_VALID(transferIndex) && IS_QUEUE_INDEX_VALID(presentIndex))
 	{
 		isSupported = true;
-	}
-
-	if (graphicsIndex == transferIndex && transferIndex == presentIndex)
-	{
-		sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	}
 }
 

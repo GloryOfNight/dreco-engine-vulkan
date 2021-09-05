@@ -31,15 +31,9 @@
 *.out
 *.app
 
-# Binary Shaders
-*.spv
-
 # Folders
 .vs/*
 build/*
-tools/build*
-bin/*
-install/*
 out/*
 
 # CMake files

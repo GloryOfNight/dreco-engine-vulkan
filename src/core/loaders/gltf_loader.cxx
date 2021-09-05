@@ -6,6 +6,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
+#include <filesystem>
+#include <iostream>
 #include <vector>
 
 std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
@@ -20,7 +22,13 @@ std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
 	if (!result)
 	{
+		std::cerr << __FUNCTION__ << ": " << "Err: " << err;
+		std::cout << __FUNCTION__ << ": " << "Verb: " << "Current working directory: " << std::filesystem::current_path() << std::endl;
 		return {};
+	}
+	else if (!warn.empty())
+	{
+		std::cout << __FUNCTION__ << ": " << "Warn: " << warn << std::endl;
 	}
 
 	std::string coreFolder = std::string(sceneFile);
@@ -54,7 +62,9 @@ std::vector<mesh_data> gltf_loader::loadScene(const std::string_view& sceneFile)
 			mesh_data newMesh{};
 			newMesh._vertexes.resize(model.accessors[vertPosAccessor].count);
 			newMesh._indexes.resize(model.accessors[indexAccessor].count);
-			newMesh._material._textureUri = coreFolder + model.images[imageIndex].uri;
+
+			const std::string textureUri = coreFolder + model.images[imageIndex].uri;
+			newMesh._material._texData = texture_data::createNew(textureUri);
 
 			const size_t accessorsSize{model.accessors.size()};
 			for (uint32_t i = 0; i < accessorsSize; ++i)

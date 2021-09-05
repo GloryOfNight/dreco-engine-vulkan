@@ -85,8 +85,10 @@ void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice, const v
 
 void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
 {
-	const std::string vertShaderCode = file_utils::read_file("shaders/vert.spv");
-	const std::string fragShaderCode = file_utils::read_file("shaders/frag.spv");
+	const VkSampleCountFlagBits samples = vk_renderer::get()->getPhysicalDevice().getMaxSupportedSampleCount();
+
+	const std::string vertShaderCode = file_utils::read_file("shaders/basic.vert.spv");
+	const std::string fragShaderCode = file_utils::read_file("shaders/basic.frag.spv");
 
 	vk_shader_module vertShaderStage;
 	vertShaderStage.create(vkDevice, vertShaderCode.data(), vertShaderCode.size());
@@ -160,21 +162,21 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	VkPipelineMultisampleStateCreateInfo multisampleState{};
 	multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleState.sampleShadingEnable = VK_FALSE;
-	multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampleState.rasterizationSamples = samples;
 	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
 	multisampleState.alphaToCoverageEnable = VK_FALSE;
 	multisampleState.alphaToOneEnable = VK_FALSE;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.blendEnable = VK_TRUE;
 	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_SUBTRACT;
 
 	VkPipelineColorBlendStateCreateInfo colorBlending{};
 	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

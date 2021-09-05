@@ -1,8 +1,8 @@
 #pragma once
 
-#include "vk_texture_image.hxx"
+#include "vk_image.hxx"
 
-class vk_depth_image final : public vk_texture_image
+class vk_depth_image final : public vk_image
 {
 public:
 	void create() override;

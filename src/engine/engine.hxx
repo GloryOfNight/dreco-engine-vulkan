@@ -1,6 +1,7 @@
 #pragma once
 #include "core/objects/camera.hxx"
 #include "math/vec3.hxx"
+#include "core/threads/thread_pool.hxx"
 
 #include "dreco.h"
 
@@ -36,9 +37,15 @@ private:
 
 	void startMainLoop();
 
+	void preMainLoop();
+
 	void stopMainLoop();
 
+	void postMainLoop();
+
 	double calculateNewDeltaTime();
+
+	thread_pool* _thread_pool;
 
 	vk_renderer* _renderer;
 

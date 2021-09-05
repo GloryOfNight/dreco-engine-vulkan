@@ -15,14 +15,18 @@
 vk_mesh::vk_mesh(const mesh_data& meshData)
 	: _transform{}
 	, _mesh{meshData}
+	, _indexBufferOffset{0}
 	, _vkDevice{VK_NULL_HANDLE}
-	, _vkCommandBuffer{VK_NULL_HANDLE}
 {
 }
 
 vk_mesh::~vk_mesh()
 {
 	destroy();
+
+	// temp solution
+	delete _mesh._material._texData;
+	_mesh._material._texData = nullptr;
 }
 
 void vk_mesh::create()
@@ -32,27 +36,21 @@ void vk_mesh::create()
 	const vk_device* vkDevice{&renderer->getDevice()};
 	const vk_queue_family* vkQueueFamily{&renderer->getQueueFamily()};
 	const vk_physical_device* vkPhysicalDevice{&renderer->getPhysicalDevice()};
-	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
 
 	_vkDevice = vkDevice->get();
-	_vkCommandBuffer = renderer->createSecondaryCommandBuffer();
 
-	createVertexBuffer(vkQueueFamily, vkPhysicalDevice);
-	createIndexBuffer(vkQueueFamily, vkPhysicalDevice);
+	createVIBuffer(vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
 
-	_textureImage.create(_mesh._material._textureUri);
+	_textureImage.create(*_mesh._material._texData);
 
 	createDescriptorSet();
 	_graphicsPipeline.create(_descriptorSet);
-
-	writeCommandBuffer(vkRenderPass);
 }
 
 void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
 {
 	_graphicsPipeline.recreatePipeline();
-	writeCommandBuffer(vkRenderPass);
 }
 
 void vk_mesh::destroy()
@@ -62,22 +60,21 @@ void vk_mesh::destroy()
 		_descriptorSet.destroy();
 		_graphicsPipeline.destroy();
 
-		_vertexBuffer.destroy();
-		_indexBuffer.destroy();
+		_viBuffer.destroy();
 		_uniformBuffer.destroy();
 
 		_vkDevice = VK_NULL_HANDLE;
 	}
 }
 
-void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const uint32_t imageIndex)
+void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
 {
 	vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.get());
 
-	std::array<VkBuffer, 1> buffers{_vertexBuffer.get()};
+	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
 	std::array<VkDeviceSize, 1> offsets{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
-	vkCmdBindIndexBuffer(vkCommandBuffer, _indexBuffer.get(), 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(vkCommandBuffer, _viBuffer.get(), _indexBufferOffset, VK_INDEX_TYPE_UINT32);
 
 	const VkDescriptorSet vkDescriptorSet{_descriptorSet.get()};
 	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.getLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
@@ -135,58 +132,40 @@ void vk_mesh::createDescriptorSet()
 	_descriptorSet.update(writeDescriptorSets);
 }
 
-void vk_mesh::createGraphicsPipeline()
+void vk_mesh::createVIBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
-}
+	const size_t vertBufferSize = sizeof(_mesh._vertexes[0]) * _mesh._vertexes.size();
+	const size_t indxBufferSize = sizeof(_mesh._indexes[0]) * _mesh._indexes.size();
+	_indexBufferOffset = vertBufferSize;
 
-void vk_mesh::createVertexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
-{
 	vk_buffer_create_info buffer_create_info{};
-	buffer_create_info.usage = vk_buffer_usage::VERTEX;
-	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
-	buffer_create_info.size = sizeof(_mesh._vertexes[0]) * _mesh._vertexes.size();
+	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
+	buffer_create_info.size = vertBufferSize + indxBufferSize;
 
-	_vertexBuffer.create(buffer_create_info);
-	_vertexBuffer.getDeviceMemory().map(_mesh._vertexes.data(), buffer_create_info.size);
-}
+	vk_buffer temp_buffer;
+	temp_buffer.create(buffer_create_info);
+	temp_buffer.getDeviceMemory().map(_mesh._vertexes.data(), vertBufferSize, 0);
+	temp_buffer.getDeviceMemory().map(_mesh._indexes.data(), indxBufferSize, _indexBufferOffset);
+	
+	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE_ONLY;
 
-void vk_mesh::createIndexBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
-{
-	vk_buffer_create_info buffer_create_info{};
-	buffer_create_info.usage = vk_buffer_usage::INDEX;
-	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
-	buffer_create_info.size = sizeof(_mesh._indexes[0]) * _mesh._indexes.size();
+	_viBuffer.create(buffer_create_info);
 
-	_indexBuffer.create(buffer_create_info);
-	_indexBuffer.getDeviceMemory().map(_mesh._indexes.data(), buffer_create_info.size);
+	VkBufferCopy copyRegion;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = buffer_create_info.size;
+	vk_buffer::copyBuffer(temp_buffer.get(), _viBuffer.get(), {copyRegion});
 }
 
 void vk_mesh::createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice)
 {
 	vk_buffer_create_info buffer_create_info{};
-	buffer_create_info.usage = vk_buffer_usage::UNIFORM;
-	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE;
+	buffer_create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
 	buffer_create_info.size = sizeof(uniforms);
 
 	_uniformBuffer.create(buffer_create_info);
-}
-
-void vk_mesh::writeCommandBuffer(const VkRenderPass vkRenderPass)
-{
-	VkCommandBufferInheritanceInfo inheritanceInfo{};
-	inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-	inheritanceInfo.pNext = nullptr;
-	inheritanceInfo.renderPass = vkRenderPass;
-	inheritanceInfo.framebuffer = VK_NULL_HANDLE;
-	inheritanceInfo.subpass = 0;
-	inheritanceInfo.pipelineStatistics = 0;
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	beginInfo.pInheritanceInfo = &inheritanceInfo;
-
-	VK_CHECK(vkBeginCommandBuffer(_vkCommandBuffer, &beginInfo));
-	bindToCmdBuffer(_vkCommandBuffer, 0);
-	VK_CHECK(vkEndCommandBuffer(_vkCommandBuffer));
 }

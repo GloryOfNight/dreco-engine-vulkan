@@ -6,6 +6,7 @@
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
 #include "vk_device.hxx"
+#include "vk_msaa_image.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
@@ -38,8 +39,6 @@ public:
 
 	vk_mesh* createMesh(const mesh_data& meshData);
 
-	VkCommandBuffer createSecondaryCommandBuffer();
-
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
 	uint32_t getImageCount() const;
@@ -60,10 +59,6 @@ public:
 
 	vk_queue_family& getQueueFamily();
 
-	VkCommandBuffer beginSingleTimeGraphicsCommands();
-
-	void endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandBuffer);
-
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
 	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);
@@ -83,7 +78,7 @@ protected:
 
 	void createFramebuffers();
 
-	void createCommandPool();
+	void createCommandPools();
 
 	void createPrimaryCommandBuffers();
 
@@ -95,7 +90,7 @@ protected:
 
 	void recreateSwapchain();
 
-	void prepareCommandBuffer(uint32_t imageIndex);
+	VkCommandBuffer prepareCommandBuffer(uint32_t imageIndex);
 
 private:
 	uint32_t _apiVersion;
@@ -112,7 +107,9 @@ private:
 
 	vk_device _device;
 
-	vk_depth_image _depth_image;
+	vk_msaa_image _msaaImage;
+
+	vk_depth_image _depthImage;
 
 	VkInstance _vkInstance;
 
@@ -123,12 +120,11 @@ private:
 	std::vector<VkFramebuffer> _vkFramebuffers;
 
 	VkRenderPass _vkRenderPass;
+	
+	std::vector<VkCommandPool> _vkGraphicsCommandPools;
+	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
 
-	VkCommandPool _vkGraphicsCommandPool;
 	VkCommandPool _vkTransferCommandPool;
-
-	std::vector<VkCommandBuffer> _vkGraphicsPrimaryCommandBuffers;
-	std::vector<VkCommandBuffer> _vkGraphicsSecondaryCommandBuffers;
 
 	std::vector<VkFence> _vkSubmitQueueFences;
 

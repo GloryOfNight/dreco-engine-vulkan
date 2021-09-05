@@ -24,6 +24,7 @@
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
 	, _meshes{}
+	, _window{nullptr}
 	, _surface()
 	, _physicalDevice()
 	, _queueFamily()
@@ -33,10 +34,8 @@ vk_renderer::vk_renderer()
 	, _vkSwapchainImageViews{VK_NULL_HANDLE}
 	, _vkFramebuffers{}
 	, _vkRenderPass{VK_NULL_HANDLE}
-	, _vkGraphicsCommandPool{VK_NULL_HANDLE}
+	, _vkGraphicsCommandPools{}
 	, _vkTransferCommandPool{VK_NULL_HANDLE}
-	, _vkGraphicsPrimaryCommandBuffers{}
-	, _vkGraphicsSecondaryCommandBuffers{}
 	, _vkSubmitQueueFences{}
 	, _vkSepaphoreImageAvaible{}
 	, _vkSepaphoreRenderFinished{}
@@ -62,10 +61,15 @@ vk_renderer::~vk_renderer()
 
 	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
 	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
-	vkDestroyCommandPool(_device.get(), _vkGraphicsCommandPool, vkGetAllocator());
+
+	for (auto pool : _vkGraphicsCommandPools)
+	{
+		vkDestroyCommandPool(_device.get(), pool, vkGetAllocator());
+	}
 	vkDestroyCommandPool(_device.get(), _vkTransferCommandPool, vkGetAllocator());
 
-	_depth_image.destroy();
+	_depthImage.destroy();
+	_msaaImage.destroy();
 	_device.destroy();
 	_surface.destroy(_vkInstance);
 
@@ -102,9 +106,11 @@ void vk_renderer::init()
 	createSwapchain();
 	createImageViews();
 
-	createCommandPool();
+	createCommandPools();
 	createPrimaryCommandBuffers();
-	_depth_image.create();
+
+	_depthImage.create();
+	_msaaImage.create();
 
 	createRenderPass();
 
@@ -116,27 +122,6 @@ void vk_renderer::init()
 
 void vk_renderer::tick(double deltaTime)
 {
-	for (auto& mesh : _meshes)
-	{
-		static double rotSpeed = 0.5757575757F;
-		transform mesh_transform(mesh->_transform);
-		vec3 rotation(mesh_transform._rotation);
-		//rotation._x += rotSpeed * deltaTime;
-		rotation._y += rotSpeed * deltaTime;
-		//rotation._z += rotSpeed * deltaTime;
-		if (rotation._y >= 1.F)
-		{
-			rotSpeed = -rotSpeed;
-		}
-		else if (rotation._y <= -0.3F)
-		{
-			rotSpeed = -rotSpeed;
-		}
-		//mesh_transform._rotation = rotation;
-
-		mesh->_transform = mesh_transform;
-		mesh->beforeSubmitUpdate();
-	}
 	drawFrame();
 }
 
@@ -204,43 +189,6 @@ vk_physical_device& vk_renderer::getPhysicalDevice()
 vk_queue_family& vk_renderer::getQueueFamily()
 {
 	return _queueFamily;
-}
-
-VkCommandBuffer vk_renderer::beginSingleTimeGraphicsCommands()
-{
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.pNext = nullptr;
-	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = 1;
-	commandBufferAllocateInfo.commandPool = _vkGraphicsCommandPool;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo commandBufferBeginInfo{};
-	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandBufferBeginInfo.pNext = nullptr;
-	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	commandBufferBeginInfo.pInheritanceInfo = nullptr;
-
-	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-
-	return commandBuffer;
-}
-
-void vk_renderer::endSingleTimeGraphicsCommands(const VkCommandBuffer vkCommandBuffer)
-{
-	vkEndCommandBuffer(vkCommandBuffer);
-
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &vkCommandBuffer;
-
-	VK_CHECK(vkQueueSubmit(_device.getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE));
-	VK_CHECK(vkQueueWaitIdle(_device.getGraphicsQueue()));
-	vkFreeCommandBuffers(_device.get(), _vkGraphicsCommandPool, 1, &vkCommandBuffer);
 }
 
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
@@ -352,8 +300,7 @@ void vk_renderer::createSwapchain()
 {
 	const VkSharingMode sharingMode{_queueFamily.getSharingMode()};
 
-	const std::vector<uint32_t> queueFamilyIndexes =
-		VK_SHARING_MODE_CONCURRENT == sharingMode ? _queueFamily.getUniqueQueueIndexes() : _queueFamily.getQueueIndexes();
+	const std::vector<uint32_t> queueFamilyIndexes = _queueFamily.getUniqueQueueIndexes();
 
 	const VkSurfaceFormatKHR& surfaceFormat{_surface.getFormat()};
 	const VkSurfaceCapabilitiesKHR& surfaceCapabilities{_surface.getCapabilities()};
@@ -363,15 +310,23 @@ void vk_renderer::createSwapchain()
 	swapchainCreateInfo.pNext = nullptr;
 	swapchainCreateInfo.flags = 0;
 	swapchainCreateInfo.surface = _surface.get();
-	swapchainCreateInfo.minImageCount = surfaceCapabilities.minImageCount;
+	swapchainCreateInfo.minImageCount = surfaceCapabilities.maxImageCount >= 3 ? 3 : surfaceCapabilities.minImageCount;
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.imageExtent = surfaceCapabilities.currentExtent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	swapchainCreateInfo.imageSharingMode = sharingMode;
-	swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
-	swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
+	if (VK_SHARING_MODE_CONCURRENT == sharingMode)
+	{
+		swapchainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndexes.size());
+		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndexes.data();
+	}
+	else
+	{
+		swapchainCreateInfo.queueFamilyIndexCount = 1;
+		swapchainCreateInfo.pQueueFamilyIndices = &queueFamilyIndexes[0];
+	}
 	swapchainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
 	swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapchainCreateInfo.presentMode = _surface.getPresentMode();
@@ -420,27 +375,39 @@ void vk_renderer::createImageViews()
 
 void vk_renderer::createRenderPass()
 {
-	std::array<VkAttachmentDescription, 2> attachmentsDescriptions{};
+	std::array<VkAttachmentDescription, 3> attachmentsDescriptions{};
+
+	const VkSampleCountFlagBits samples = _physicalDevice.getMaxSupportedSampleCount();
 
 	VkAttachmentDescription& colorAttachment = attachmentsDescriptions[0];
 	colorAttachment.format = _surface.getFormat().format;
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.samples = samples;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentDescription& depthAttachment = attachmentsDescriptions[1];
-	depthAttachment.format = _depth_image.getFormat();
-	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.format = _depthImage.getFormat();
+	depthAttachment.samples = samples;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentDescription& colorAttachmentResolve = attachmentsDescriptions[2];
+	colorAttachmentResolve.format = colorAttachment.format;
+	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;
@@ -450,11 +417,16 @@ void vk_renderer::createRenderPass()
 	depthAttachmentRef.attachment = 1;
 	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+	VkAttachmentReference colorAttachmentResolveRef{};
+	colorAttachmentResolveRef.attachment = 2;
+	colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription subpassDescription{};
 	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpassDescription.colorAttachmentCount = 1;
 	subpassDescription.pColorAttachments = &colorAttachmentRef;
 	subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
+	subpassDescription.pResolveAttachments = &colorAttachmentResolveRef;
 
 	VkSubpassDependency subpassDependecy{};
 	subpassDependecy.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -484,7 +456,7 @@ void vk_renderer::createFramebuffers()
 
 	for (size_t i = 0; i < _vkSwapchainImageViews.size(); ++i)
 	{
-		const std::array<VkImageView, 2> attachments{_vkSwapchainImageViews[i], _depth_image.getImageView()};
+		const std::array<VkImageView, 3> attachments{_msaaImage.getImageView(), _depthImage.getImageView(), _vkSwapchainImageViews[i]};
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -499,48 +471,38 @@ void vk_renderer::createFramebuffers()
 	}
 }
 
-void vk_renderer::createCommandPool()
+void vk_renderer::createCommandPools()
 {
 	VkCommandPoolCreateInfo commandPoolCreateInfo{};
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getGraphicsIndex();
-	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &_vkGraphicsCommandPool));
-
-	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getTransferIndex();
 	commandPoolCreateInfo.flags = 0;
 
+	_vkGraphicsCommandPools.resize(_vkSwapchainImageViews.size());
+	for (auto& pool : _vkGraphicsCommandPools)
+	{
+		VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &pool));
+	}
+
+	commandPoolCreateInfo.queueFamilyIndex = _queueFamily.getTransferIndex();
 	VK_CHECK(vkCreateCommandPool(_device.get(), &commandPoolCreateInfo, vkGetAllocator(), &_vkTransferCommandPool));
 }
 
 void vk_renderer::createPrimaryCommandBuffers()
 {
-	_vkGraphicsPrimaryCommandBuffers.resize(_vkSwapchainImageViews.size());
+	const size_t size = _vkGraphicsCommandPools.size();
+	_vkGraphicsCommandBuffers.resize(size);
+	for (size_t i = 0; i < size; ++i)
+	{
+		VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferAllocateInfo.pNext = nullptr;
+		commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferAllocateInfo.commandBufferCount = 1;
+		commandBufferAllocateInfo.commandPool = _vkGraphicsCommandPools[i];
 
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = _vkGraphicsCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(_vkGraphicsPrimaryCommandBuffers.size());
-
-	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, _vkGraphicsPrimaryCommandBuffers.data()));
-}
-
-VkCommandBuffer vk_renderer::createSecondaryCommandBuffer()
-{
-	_vkGraphicsSecondaryCommandBuffers.push_back(VK_NULL_HANDLE);
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = _vkGraphicsCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-	allocInfo.commandBufferCount = 1;
-
-	VK_CHECK(vkAllocateCommandBuffers(_device.get(), &allocInfo, &_vkGraphicsSecondaryCommandBuffers.back()));
-
-	return _vkGraphicsSecondaryCommandBuffers.back();
+		vkAllocateCommandBuffers(_device.get(), &commandBufferAllocateInfo, &_vkGraphicsCommandBuffers[i]);
+	}
 }
 
 inline void vk_renderer::createFences()
@@ -586,13 +548,14 @@ void vk_renderer::drawFrame()
 	VK_CHECK(result);
 
 	vkResetFences(_device.get(), 1, &_vkSubmitQueueFences[imageIndex]);
+	vkResetCommandPool(_device.get(), _vkGraphicsCommandPools[imageIndex], 0);
 
-	prepareCommandBuffer(imageIndex);
+	VkCommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
 
 	std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	std::array<VkSemaphore, 1> waitSemaphores = {_vkSepaphoreImageAvaible};
 	std::array<VkSemaphore, 1> signalSemaphores = {_vkSepaphoreRenderFinished};
-	std::array<VkCommandBuffer, 1> commandBuffers = {_vkGraphicsPrimaryCommandBuffers[imageIndex]};
+	std::array<VkCommandBuffer, 1> commandBuffers = {commandBuffer};
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -660,7 +623,9 @@ void vk_renderer::recreateSwapchain()
 
 	createRenderPass();
 
-	_depth_image.recreate();
+	_depthImage.recreate();
+	_msaaImage.recreate();
+
 	createFramebuffers();
 
 	for (vk_mesh* mesh : _meshes)
@@ -669,16 +634,17 @@ void vk_renderer::recreateSwapchain()
 	}
 }
 
-void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
+VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 {
-	VkCommandBuffer& commandBuffer = _vkGraphicsPrimaryCommandBuffers[imageIndex];
+	VkCommandBuffer commandBuffer = _vkGraphicsCommandBuffers[imageIndex];
 
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	beginInfo.pInheritanceInfo = nullptr;
+	VkCommandBufferBeginInfo commandBufferBeginInfo{};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	commandBufferBeginInfo.pNext = nullptr;
+	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	commandBufferBeginInfo.pInheritanceInfo = nullptr;
 
-	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+	VK_CHECK(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
 	std::array<VkClearValue, 2> clearValues;
 	clearValues[0].color = {{0.0F, 0.0F, 0.0F, 1.0F}};
@@ -693,13 +659,15 @@ void vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-	const uint32_t graphicsCommandBuffersSize{static_cast<uint32_t>(_vkGraphicsSecondaryCommandBuffers.size())};
-	if (graphicsCommandBuffersSize > 0)
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	for (auto& mesh : _meshes)
 	{
-		vkCmdExecuteCommands(commandBuffer, _vkGraphicsSecondaryCommandBuffers.size(), _vkGraphicsSecondaryCommandBuffers.data());
+		mesh->beforeSubmitUpdate();
+		mesh->bindToCmdBuffer(commandBuffer);
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
 	VK_CHECK(vkEndCommandBuffer(commandBuffer));
+
+	return commandBuffer;
 }
