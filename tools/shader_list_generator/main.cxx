@@ -1,3 +1,7 @@
+// program that help gather all shader files
+// create list of .spv files and shader source code files that need to be recompiled
+// output file that can be used as include() in CMakeLists.txt
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -36,7 +40,7 @@ int main(int argc, char* argv[])
 	}
 
 	std::vector<std::string> totalShaderFiles;
-	std::vector<std::string> needToCompileShaderFiles;
+	std::vector<fs::path> needToCompileShaderFiles;
 
 	for (auto& p : fs::recursive_directory_iterator(shaderDirPath))
 	{
@@ -54,14 +58,14 @@ int main(int argc, char* argv[])
 
 			if (fs::exists(binPath) && fs::is_regular_file(binPath))
 			{
-				auto lastBinWriteTime = fs::last_write_time(binPath);
-				auto lastCodeWriteTime = fs::last_write_time(p);
-				if (lastCodeWriteTime > lastBinWriteTime)
+				const auto lastBinWriteTime = fs::last_write_time(binPath);
+				const auto lastCodeWriteTime = fs::last_write_time(p);
+				if (lastCodeWriteTime < lastBinWriteTime)
 				{
 					continue;
 				}
 			}
-			needToCompileShaderFiles.push_back(p.path().string());
+			needToCompileShaderFiles.push_back(p.path());
 		}
 	}
 
@@ -75,9 +79,10 @@ int main(int argc, char* argv[])
     }
     cmakeFile << ")\n\n";
 
-	for (auto& str : needToCompileShaderFiles)
+	for (auto& path : needToCompileShaderFiles)
 	{
-		cmakeFile << "list(APPEND SHADER_COMPILE_LIST " << '"' << str << '"' << ")\n";
+		cmakeFile << "list(APPEND SHADER_COMPILE_PATH_LIST " << path.parent_path() << ")\n";
+		cmakeFile << "list(APPEND SHADER_COMPILE_NAMES_LIST " << path.filename() << ")\n";
 	}
     cmakeFile.close();
 

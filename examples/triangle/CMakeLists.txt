@@ -9,16 +9,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES ENABLE_EXPORTS TRUE)
 
 target_link_libraries(${PROJECT_NAME} dreco)
 
-set(BINARY_SHADER_LIST 
-"${CMAKE_SOURCE_DIR}/shaders/basic.frag.spv"
-"${CMAKE_SOURCE_DIR}/shaders/basic.vert.spv")
-
-set(CONTENT_DIR
-"${CMAKE_SOURCE_DIR}/content")
-
-install(FILES ${BINARY_SHADER_LIST} DESTINATION ${CMAKE_INSTALL_RPATH}/shaders)
-install(DIRECTORY ${CONTENT_DIR} DESTINATION ${CMAKE_INSTALL_RPATH})
-
 if (MSVC)
 ## Copy binary files into executable folder
 get_target_property(DRECO_BINARY_DIR dreco BINARY_DIR)

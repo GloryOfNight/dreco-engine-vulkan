@@ -97,6 +97,15 @@ endif()
 
 add_subdirectory(examples/triangle)
 
+include(tools/tools.cmake)
+
+set(CONTENT_DIR
+"${CMAKE_SOURCE_DIR}/content")
+
+install(FILES ${SHADER_BINARY_FILES} DESTINATION ${CMAKE_INSTALL_RPATH}/shaders)
+install(DIRECTORY ${CONTENT_DIR} DESTINATION ${CMAKE_INSTALL_RPATH})
+
+
 install(TARGETS dreco triangle
         RUNTIME DESTINATION ${CMAKE_INSTALL_RPATH}
         LIBRARY DESTINATION ${CMAKE_INSTALL_RPATH})

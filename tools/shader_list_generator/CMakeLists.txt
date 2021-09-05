@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.19.0)
 project(shader_list_generator)
 
 add_executable(${PROJECT_NAME} main.cxx)
