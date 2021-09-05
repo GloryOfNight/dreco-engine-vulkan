@@ -2,9 +2,9 @@ name: Windows Build
 
 on:
   push:
-    branches: [ master, development, windows-ci-build ]
-  pull_request:
-    branches: [ master ]
+    branches: [ windows-ci-build ]
+#  pull_request:
+#    branches: [ master ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -28,5 +28,5 @@ jobs:
       run: vcpkg/vcpkg  install sdl2:x64-windows
       
     - name: vcpkg install vulkan
-      run: vcpkg/vcpkg  install vulkan:x64-windows
+      run: wget https://sdk.lunarg.com/sdk/download/latest/windows/vulkan-sdk.exe && vulkan-sdk.exe
       
