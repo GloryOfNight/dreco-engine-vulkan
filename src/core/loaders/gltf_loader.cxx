@@ -109,7 +109,7 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 
 	for (size_t i = 0; i < totalImages; ++i)
 	{
-		newScene._images[i]._uri = model.images[i].uri;
+		newScene._images[i]._uri = std::filesystem::path(sceneFile).parent_path().generic_string() + "/" + model.images[i].uri;
 	}
 
 	for (size_t i = 0; i < totalMaterials; ++i)
