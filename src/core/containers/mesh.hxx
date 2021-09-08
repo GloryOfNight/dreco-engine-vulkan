@@ -21,7 +21,7 @@ struct mesh
 		std::vector<vertex> _vertexes;
 		std::vector<uint32_t> _indexes;
 
-		material* _material{nullptr};
+		uint32_t _material{UINT32_MAX};
 	};
 	std::vector<primitive> _primitives;
 };

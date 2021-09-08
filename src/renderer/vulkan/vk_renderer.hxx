@@ -1,16 +1,18 @@
 #pragma once
-#include "math/vec3.hxx"
 #include "core/containers/scene.hxx"
+#include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
 #include "vk_device.hxx"
+#include "vk_graphics_pipeline.hxx"
 #include "vk_msaa_image.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
+#include "vk_texture_image.hxx"
 
 #include <SDL.h>
 #include <vector>
@@ -98,6 +100,10 @@ private:
 
 	std::vector<vk_mesh*> _meshes;
 
+	std::vector<vk_graphics_pipeline*> _pipelines;
+
+	std::vector<vk_texture_image*> _textureImages;
+
 	SDL_Window* _window;
 
 	vk_surface _surface;
@@ -121,7 +127,7 @@ private:
 	std::vector<VkFramebuffer> _vkFramebuffers;
 
 	VkRenderPass _vkRenderPass;
-	
+
 	std::vector<VkCommandPool> _vkGraphicsCommandPools;
 	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
 

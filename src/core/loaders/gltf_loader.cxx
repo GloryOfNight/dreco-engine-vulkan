@@ -50,7 +50,7 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 			auto& sceneMeshPrimitive = newScene._meshes[i]._primitives[k];
 			const auto& primitive = model.meshes[i].primitives[k];
 
-			sceneMeshPrimitive._material = &newScene._materials[static_cast<size_t>(primitive.material)];
+			sceneMeshPrimitive._material = primitive.material;
 
 			uint32_t vertPosAccessor{UINT32_MAX};
 			uint32_t texCoordAccessor{UINT32_MAX};
@@ -114,7 +114,15 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 	{
 		newScene._materials[i]._doubleSided = model.materials[i].doubleSided;
 		auto index = model.materials[i].pbrMetallicRoughness.baseColorTexture.index;
-		newScene._materials[i]._baseColorTexture = index >= 0 ? &newScene._images[index] : nullptr;
+		if (index >= 0) 
+		{
+			newScene._materials[i]._baseColorTexture = index;
+		}
+		else 
+		{
+			// should not do this, but not yet supported untextured stuff
+			newScene._materials[i]._baseColorTexture = 0;
+		}
 	}
 
 	return newScene;

@@ -23,6 +23,13 @@ void vk_texture_image::create()
 	delete texture;
 }
 
+void vk_texture_image::create(const image& img)
+{
+	auto* texture = texture_data::createNew(img._uri);
+	create(*texture);
+	delete texture;
+}
+
 void vk_texture_image::create(const texture_data& textureData)
 {
 	int texWidth, texHeight, texChannels;

@@ -23,7 +23,7 @@ vk_mesh::~vk_mesh()
 	destroy();
 }
 
-void vk_mesh::create(const mesh& m)
+void vk_mesh::create(const mesh& m, vk_graphics_pipeline** pipelines, vk_texture_image** textureImages)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
@@ -36,22 +36,14 @@ void vk_mesh::create(const mesh& m)
 	createVIBuffer(m, vkQueueFamily, vkPhysicalDevice);
 	createUniformBuffers(vkQueueFamily, vkPhysicalDevice);
 
-	_textureImage.create();
-
-	_graphicsPipeline.create();
-
 	const size_t primitivesNum = m._primitives.size();
-	_descriptorSet.create(primitivesNum, _graphicsPipeline.getDescriptorSetLayouts());
+	_descriptorSet.create(primitivesNum, pipelines[0]->getDescriptorSetLayouts());
 
 	for (size_t i = 0; i < primitivesNum; ++i)
 	{
-		writeDescriptorSet(i);
+		const material& mat = pipelines[m._primitives[i]._material]->getMaterial();
+		writeDescriptorSet(i, *textureImages[mat._baseColorTexture]);
 	}
-}
-
-void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
-{
-	_graphicsPipeline.recreatePipeline();
 }
 
 void vk_mesh::destroy()
@@ -59,7 +51,6 @@ void vk_mesh::destroy()
 	if (VK_NULL_HANDLE != _vkDevice)
 	{
 		_descriptorSet.destroy();
-		_graphicsPipeline.destroy();
 
 		_viBuffer.destroy();
 		_uniformBuffer.destroy();
@@ -68,13 +59,12 @@ void vk_mesh::destroy()
 	}
 }
 
-void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
+void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const VkPipelineLayout pipelineLayout)
 {
-	const std::vector<VkDescriptorSet> descirptorSets{_descriptorSet.get()};
+	const std::vector<VkDescriptorSet>& descirptorSets{_descriptorSet.get()};
 	for (auto descSet : descirptorSets)
 	{
-		vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.get());
-		vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.getLayout(), 0, 1, &descSet, 0, nullptr);
+		vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descSet, 0, nullptr);
 	}
 
 	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
@@ -96,7 +86,7 @@ void vk_mesh::beforeSubmitUpdate()
 	_uniformBuffer.getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }
 
-void vk_mesh::writeDescriptorSet(const size_t index)
+void vk_mesh::writeDescriptorSet(const size_t index, const vk_texture_image& textureImage)
 {
 	const auto& descirptorSets = _descriptorSet.get();
 	VkDescriptorBufferInfo bufferInfo{};
@@ -120,8 +110,8 @@ void vk_mesh::writeDescriptorSet(const size_t index)
 
 	VkDescriptorImageInfo imageInfo{};
 	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = _textureImage.getImageView();
-	imageInfo.sampler = _textureImage.getSampler();
+	imageInfo.imageView = textureImage.getImageView();
+	imageInfo.sampler = textureImage.getSampler();
 
 	writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSets[1].dstSet = descirptorSets[index];

@@ -24,28 +24,26 @@ vk_graphics_pipeline::~vk_graphics_pipeline()
 	destroy();
 }
 
-void vk_graphics_pipeline::create()
+void vk_graphics_pipeline::create(const material& mat)
 {
+	_mat = mat;
+
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice = renderer->getDevice().get();
-	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
-	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
 	createDescriptorLayouts(vkDevice);
 	createPipelineLayout(vkDevice);
-	createPipeline(vkDevice, vkRenderPass, vkExtent);
+	createPipeline(vkDevice);
 }
 
 void vk_graphics_pipeline::recreatePipeline()
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice = renderer->getDevice().get();
-	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
-	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
 	vkDestroyPipeline(vkDevice, _vkPipeline, vkGetAllocator());
 
-	createPipeline(vkDevice, vkRenderPass, vkExtent);
+	createPipeline(vkDevice);
 }
 
 void vk_graphics_pipeline::destroy()
@@ -63,6 +61,16 @@ void vk_graphics_pipeline::destroy()
 		_vkPipelineLayout = VK_NULL_HANDLE;
 		_vkPipeline = VK_NULL_HANDLE;
 	}
+}
+
+void vk_graphics_pipeline::bindToCmdBuffer(const VkCommandBuffer commandBuffer)
+{
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,_vkPipeline);
+}
+
+const material& vk_graphics_pipeline::getMaterial() const
+{
+	return _mat;
 }
 
 const std::vector<VkDescriptorSetLayout>& vk_graphics_pipeline::getDescriptorSetLayouts() const
@@ -120,9 +128,12 @@ void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice)
 	VK_CHECK(vkCreatePipelineLayout(vkDevice, &pipelineLayoutInfo, VK_NULL_HANDLE, &_vkPipelineLayout));
 }
 
-void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
+void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 {
-	const VkSampleCountFlagBits samples = vk_renderer::get()->getPhysicalDevice().getMaxSupportedSampleCount();
+	vk_renderer* renderer{vk_renderer::get()};
+	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
+	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
+	const VkSampleCountFlagBits samples = renderer->getPhysicalDevice().getMaxSupportedSampleCount();
 
 	const std::string vertShaderCode = file_utils::read_file("shaders/basic.vert.spv");
 	const std::string fragShaderCode = file_utils::read_file("shaders/basic.frag.spv");
@@ -189,7 +200,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizationState.lineWidth = 1.0F;
-	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizationState.cullMode = _mat._doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
 	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationState.depthBiasEnable = VK_FALSE;
 	rasterizationState.depthBiasConstantFactor = 0.0F;

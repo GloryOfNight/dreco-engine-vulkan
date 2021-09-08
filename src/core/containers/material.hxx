@@ -7,5 +7,5 @@ struct material
 {
     bool _doubleSided;
 
-    image* _baseColorTexture{nullptr};
+    uint32_t _baseColorTexture{UINT32_MAX};
 };

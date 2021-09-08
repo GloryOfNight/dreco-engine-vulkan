@@ -1,4 +1,5 @@
 #pragma once
+#include "core/containers/material.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -13,11 +14,15 @@ public:
 	vk_graphics_pipeline(vk_graphics_pipeline&&) = delete;
 	~vk_graphics_pipeline();
 
-	void create();
+	void create(const material& mat);
 
 	void recreatePipeline();
 
 	void destroy();
+
+	void bindToCmdBuffer(const VkCommandBuffer commandBuffer);
+
+	const material& getMaterial() const;
 
 	const std::vector<VkDescriptorSetLayout>& getDescriptorSetLayouts() const;
 
@@ -30,9 +35,11 @@ protected:
 
 	void createPipelineLayout(const VkDevice vkDevice);
 
-	void createPipeline(const VkDevice vkDevice, const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
+	void createPipeline(const VkDevice vkDevice);
 
 private:
+	material _mat;
+
 	std::vector<VkDescriptorSetLayout> _vkDescriptorSetLayouts;
 
 	VkPipelineLayout _vkPipelineLayout;

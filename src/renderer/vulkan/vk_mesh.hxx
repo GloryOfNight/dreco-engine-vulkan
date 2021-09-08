@@ -28,20 +28,18 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const mesh& m);
-
-	void recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
+	void create(const mesh& m, vk_graphics_pipeline** pipelines, vk_texture_image** textureImages);
 
 	void destroy();
 
-	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer);
+	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const VkPipelineLayout pipelineLayout);
 
 	void beforeSubmitUpdate();
 
 	transform _transform;
 
 protected:
-	void writeDescriptorSet(const size_t index);
+	void writeDescriptorSet(const size_t index, const vk_texture_image& textureImage);
 
 	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
@@ -57,10 +55,6 @@ private:
 	vk_buffer _viBuffer;
 
 	vk_buffer _uniformBuffer;
-
-	vk_texture_image _textureImage;
-
-	vk_graphics_pipeline _graphicsPipeline;
 
 	vk_descriptor_set _descriptorSet;
 

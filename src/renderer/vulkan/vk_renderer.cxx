@@ -42,6 +42,16 @@ vk_renderer::vk_renderer()
 {
 }
 
+template<typename T>
+inline void clearVectorOfPtr(std::vector<T>& vector)
+{
+	for (auto* item : vector)
+	{
+		delete item;
+	}
+	vector.clear();
+}
+
 vk_renderer::~vk_renderer()
 {
 	_device.waitIdle();
@@ -53,11 +63,9 @@ vk_renderer::~vk_renderer()
 
 	cleanupSwapchain(_vkSwapchain);
 
-	for (vk_mesh* mesh : _meshes)
-	{
-		delete mesh;
-	}
-	_meshes.clear();
+	clearVectorOfPtr(_textureImages);
+	clearVectorOfPtr(_pipelines);
+	clearVectorOfPtr(_meshes);
 
 	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
 	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
@@ -127,11 +135,27 @@ void vk_renderer::tick(double deltaTime)
 
 void vk_renderer::loadScene(const scene& newScene)
 {
+	_textureImages.reserve(_textureImages.size() + newScene._images.size());
+	for (const auto& img : newScene._images)
+	{
+		_textureImages.emplace_back(new vk_texture_image());
+		_textureImages.back()->create(img);
+	}
+
+	_pipelines.reserve(_pipelines.size() + newScene._materials.size());
+	for (const auto& mat : newScene._materials)
+	{
+		_pipelines.emplace_back(new vk_graphics_pipeline());
+		_pipelines.back()->create(mat);
+	}
+
+	_meshes.reserve(_meshes.size() + newScene._meshes.size());
 	for (auto& mesh : newScene._meshes)
 	{
-		vk_mesh* newMesh = new vk_mesh();
-		newMesh->create(mesh);
-		_meshes.push_back(newMesh);
+		vk_graphics_pipeline** pipelines = &_pipelines.back() - (newScene._materials.size() - 1);
+		vk_texture_image** textureImages = &_textureImages.back() - (newScene._images.size() - 1);
+		_meshes.emplace_back(new vk_mesh());
+		_meshes.back()->create(mesh, pipelines, textureImages);
 	}
 }
 
@@ -628,9 +652,9 @@ void vk_renderer::recreateSwapchain()
 
 	createFramebuffers();
 
-	for (vk_mesh* mesh : _meshes)
+	for (auto* pipeline : _pipelines)
 	{
-		mesh->recreatePipeline(_vkRenderPass, currentExtent);
+		pipeline->recreatePipeline();
 	}
 }
 
@@ -660,10 +684,14 @@ VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	for (auto* pipeline : _pipelines)
+	{
+		pipeline->bindToCmdBuffer(commandBuffer);
+	}
 	for (auto& mesh : _meshes)
 	{
 		mesh->beforeSubmitUpdate();
-		mesh->bindToCmdBuffer(commandBuffer);
+		mesh->bindToCmdBuffer(commandBuffer, _pipelines[0]->getLayout());
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
