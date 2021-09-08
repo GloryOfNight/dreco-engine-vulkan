@@ -10,27 +10,21 @@ public:
 	vk_descriptor_set(vk_descriptor_set&&) = delete;
 	~vk_descriptor_set();
 
-	void create();
+	void create(const size_t descriptorSetsNum, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 
 	void update(const std::vector<VkWriteDescriptorSet>& writeInfo);
 
 	void destroy();
 
-	VkDescriptorSet get() const;
-
-	const std::vector<VkDescriptorSetLayout>& getLayouts() const;
+	const std::vector<VkDescriptorSet>& get() const;
 
 protected:
-	void createDescriptorPool(VkDevice vkDevice);
+	void createDescriptorPool(const VkDevice vkDevice, const size_t count);
 
-	void createDescriptorSetLayout(VkDevice vkDevice);
-
-	void createDescriptorSet(VkDevice vkDevice);
+	VkDescriptorSet createDescriptorSet(const VkDevice vkDevice, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 
 private:
 	VkDescriptorPool _vkDescriptorPool;
 
-	std::vector<VkDescriptorSetLayout> _vkDescriptorSetLayouts;
-
-	VkDescriptorSet _vkDescriptorSet;
+	std::vector<VkDescriptorSet> _vkDescriptorSets;
 };

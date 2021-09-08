@@ -31,9 +31,6 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 		std::cout << __FUNCTION__ << ": " << "Warn: " << warn << std::endl;
 	}
 
-	std::string coreFolder = std::string(sceneFile);
-	coreFolder = coreFolder.substr(0, coreFolder.find_last_of("/") + 1);
-
 	const size_t totalMeshes = model.meshes.size();
 	const size_t totalImages = model.images.size();
 	const size_t totalMaterials = model.materials.size();
@@ -107,15 +104,17 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 		}
 	}
 
+	const std::string parentPath = std::filesystem::path(sceneFile).parent_path().generic_string();
 	for (size_t i = 0; i < totalImages; ++i)
 	{
-		newScene._images[i]._uri = std::filesystem::path(sceneFile).parent_path().generic_string() + "/" + model.images[i].uri;
+		newScene._images[i]._uri = parentPath + "/" + model.images[i].uri;
 	}
 
 	for (size_t i = 0; i < totalMaterials; ++i)
 	{
 		newScene._materials[i]._doubleSided = model.materials[i].doubleSided;
-		newScene._materials[i]._baseColorTexture = &newScene._images[model.materials[i].pbrMetallicRoughness.baseColorTexture.index];
+		auto index = model.materials[i].pbrMetallicRoughness.baseColorTexture.index;
+		newScene._materials[i]._baseColorTexture = index >= 0 ? &newScene._images[index] : nullptr;
 	}
 
 	return newScene;

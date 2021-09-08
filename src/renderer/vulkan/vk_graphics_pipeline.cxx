@@ -24,14 +24,15 @@ vk_graphics_pipeline::~vk_graphics_pipeline()
 	destroy();
 }
 
-void vk_graphics_pipeline::create(const vk_descriptor_set& vkDescriptorSet)
+void vk_graphics_pipeline::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice = renderer->getDevice().get();
 	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
-	createPipelineLayout(vkDevice, vkDescriptorSet);
+	createDescriptorLayouts(vkDevice);
+	createPipelineLayout(vkDevice);
 	createPipeline(vkDevice, vkRenderPass, vkExtent);
 }
 
@@ -52,12 +53,21 @@ void vk_graphics_pipeline::destroy()
 	const VkDevice vkDevice = vk_renderer::get()->getDevice().get();
 	if (VK_NULL_HANDLE != _vkPipelineLayout)
 	{
+		for (auto descriptorLayout : _vkDescriptorSetLayouts)
+		{
+			vkDestroyDescriptorSetLayout(vkDevice, descriptorLayout, vkGetAllocator());
+		}
 		vkDestroyPipelineLayout(vkDevice, _vkPipelineLayout, vkGetAllocator());
 		vkDestroyPipeline(vkDevice, _vkPipeline, vkGetAllocator());
 
 		_vkPipelineLayout = VK_NULL_HANDLE;
 		_vkPipeline = VK_NULL_HANDLE;
 	}
+}
+
+const std::vector<VkDescriptorSetLayout>& vk_graphics_pipeline::getDescriptorSetLayouts() const
+{
+	return _vkDescriptorSetLayouts;
 }
 
 VkPipelineLayout vk_graphics_pipeline::getLayout() const
@@ -70,14 +80,41 @@ VkPipeline vk_graphics_pipeline::get() const
 	return _vkPipeline;
 }
 
-void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice, const vk_descriptor_set& vkDescriptorSet)
-{
-	const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts{vkDescriptorSet.getLayouts()};
+void vk_graphics_pipeline::createDescriptorLayouts(const VkDevice vkDevice)
+{ 
+	VkDescriptorSetLayoutBinding uniformBinding{};
+	uniformBinding.binding = 0;
+	uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformBinding.descriptorCount = 1;
+	uniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uniformBinding.pImmutableSamplers = VK_NULL_HANDLE;
 
+	VkDescriptorSetLayoutBinding sampledImageBinding{};
+	sampledImageBinding.binding = 1;
+	sampledImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampledImageBinding.descriptorCount = 1;
+	sampledImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	sampledImageBinding.pImmutableSamplers = VK_NULL_HANDLE;
+
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{uniformBinding, sampledImageBinding};
+
+	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.pNext = nullptr;
+	layoutCreateInfo.flags = 0;
+	layoutCreateInfo.bindingCount = layoutBindings.size();
+	layoutCreateInfo.pBindings = layoutBindings.data();
+
+	_vkDescriptorSetLayouts.resize(1);
+	VK_CHECK(vkCreateDescriptorSetLayout(vkDevice, &layoutCreateInfo, VK_NULL_HANDLE, _vkDescriptorSetLayouts.data()));
+}
+
+void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice)
+{
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = vkDescriptorSetLayouts.size();
-	pipelineLayoutInfo.pSetLayouts = vkDescriptorSetLayouts.data();
+	pipelineLayoutInfo.setLayoutCount = _vkDescriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 	VK_CHECK(vkCreatePipelineLayout(vkDevice, &pipelineLayoutInfo, VK_NULL_HANDLE, &_vkPipelineLayout));

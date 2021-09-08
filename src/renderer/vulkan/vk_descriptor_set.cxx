@@ -6,8 +6,6 @@
 
 vk_descriptor_set::vk_descriptor_set()
 	: _vkDescriptorPool{VK_NULL_HANDLE}
-	, _vkDescriptorSetLayouts{VK_NULL_HANDLE}
-	, _vkDescriptorSet{VK_NULL_HANDLE}
 {
 }
 
@@ -15,12 +13,16 @@ vk_descriptor_set::~vk_descriptor_set()
 {
 }
 
-void vk_descriptor_set::create()
+void vk_descriptor_set::create(const size_t descriptorSetsNum, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
 {
 	VkDevice vkDevice = vk_renderer::get()->getDevice().get();
-	createDescriptorPool(vkDevice);
-	createDescriptorSetLayout(vkDevice);
-	createDescriptorSet(vkDevice);
+	createDescriptorPool(vkDevice, descriptorSetsNum);
+
+	_vkDescriptorSets.resize(descriptorSetsNum);
+	for (size_t i = 0; i < descriptorSetsNum; ++i)
+	{
+		_vkDescriptorSets[i] = createDescriptorSet(vkDevice, descriptorSetLayouts);
+	}
 }
 
 void vk_descriptor_set::update(const std::vector<VkWriteDescriptorSet>& writeInfo)
@@ -34,36 +36,25 @@ void vk_descriptor_set::destroy()
 	if (VK_NULL_HANDLE != _vkDescriptorPool)
 	{
 		VkDevice vkDevice = vk_renderer::get()->getDevice().get();
-		for (VkDescriptorSetLayout& layout : _vkDescriptorSetLayouts)
-		{
-			vkDestroyDescriptorSetLayout(vkDevice, layout, vkGetAllocator());
-		}
-		_vkDescriptorSetLayouts.clear();
-
 		vkDestroyDescriptorPool(vkDevice, _vkDescriptorPool, vkGetAllocator());
 		_vkDescriptorPool = VK_NULL_HANDLE;
 	}
 }
 
-VkDescriptorSet vk_descriptor_set::get() const
+const std::vector<VkDescriptorSet>& vk_descriptor_set::get() const
 {
-	return _vkDescriptorSet;
+	return _vkDescriptorSets;
 }
 
-const std::vector<VkDescriptorSetLayout>& vk_descriptor_set::getLayouts() const
-{
-	return _vkDescriptorSetLayouts;
-}
-
-void vk_descriptor_set::createDescriptorPool(VkDevice vkDevice)
+void vk_descriptor_set::createDescriptorPool(const VkDevice vkDevice, const size_t count)
 {
 	VkDescriptorPoolSize uniformSize{};
 	uniformSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uniformSize.descriptorCount = 1;
+	uniformSize.descriptorCount = count;
 
 	VkDescriptorPoolSize sampledImageSize{};
 	sampledImageSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sampledImageSize.descriptorCount = 1;
+	sampledImageSize.descriptorCount = count;
 
 	std::vector<VkDescriptorPoolSize> poolSizes{uniformSize, sampledImageSize};
 
@@ -73,48 +64,21 @@ void vk_descriptor_set::createDescriptorPool(VkDevice vkDevice)
 	poolCreateInfo.flags = 0;
 	poolCreateInfo.poolSizeCount = poolSizes.size();
 	poolCreateInfo.pPoolSizes = poolSizes.data();
-	poolCreateInfo.maxSets = 1;
+	poolCreateInfo.maxSets = count;
 
 	VK_CHECK(vkCreateDescriptorPool(vkDevice, &poolCreateInfo, VK_NULL_HANDLE, &_vkDescriptorPool));
 }
 
-void vk_descriptor_set::createDescriptorSetLayout(VkDevice vkDevice)
-{
-	VkDescriptorSetLayoutBinding uniformBinding{};
-	uniformBinding.binding = 0;
-	uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uniformBinding.descriptorCount = 1;
-	uniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uniformBinding.pImmutableSamplers = VK_NULL_HANDLE;
-
-	VkDescriptorSetLayoutBinding sampledImageBinding{};
-	sampledImageBinding.binding = 1;
-	sampledImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sampledImageBinding.descriptorCount = 1;
-	sampledImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	sampledImageBinding.pImmutableSamplers = VK_NULL_HANDLE;
-
-	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{uniformBinding, sampledImageBinding};
-
-	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
-	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.pNext = nullptr;
-	layoutCreateInfo.flags = 0;
-	layoutCreateInfo.bindingCount = layoutBindings.size();
-	layoutCreateInfo.pBindings = layoutBindings.data();
-
-	_vkDescriptorSetLayouts.resize(1);
-	VK_CHECK(vkCreateDescriptorSetLayout(vkDevice, &layoutCreateInfo, VK_NULL_HANDLE, _vkDescriptorSetLayouts.data()));
-}
-
-void vk_descriptor_set::createDescriptorSet(VkDevice vkDevice)
+VkDescriptorSet vk_descriptor_set::createDescriptorSet(const VkDevice vkDevice, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
 {
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.pNext = nullptr;
 	allocInfo.descriptorPool = _vkDescriptorPool;
-	allocInfo.descriptorSetCount = _vkDescriptorSetLayouts.size();
-	allocInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
+	allocInfo.descriptorSetCount = descriptorSetLayouts.size();
+	allocInfo.pSetLayouts = descriptorSetLayouts.data();
 
-	VK_CHECK(vkAllocateDescriptorSets(vkDevice, &allocInfo, &_vkDescriptorSet));
+	VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
+	VK_CHECK(vkAllocateDescriptorSets(vkDevice, &allocInfo, &descriptorSet));
+	return descriptorSet;
 }

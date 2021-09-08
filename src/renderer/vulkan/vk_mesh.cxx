@@ -20,7 +20,7 @@ vk_mesh::vk_mesh()
 
 vk_mesh::~vk_mesh()
 {
-	destroy();	
+	destroy();
 }
 
 void vk_mesh::create(const mesh& m)
@@ -38,8 +38,15 @@ void vk_mesh::create(const mesh& m)
 
 	_textureImage.create();
 
-	createDescriptorSet();
-	_graphicsPipeline.create(_descriptorSet);
+	_graphicsPipeline.create();
+
+	const size_t primitivesNum = m._primitives.size();
+	_descriptorSet.create(primitivesNum, _graphicsPipeline.getDescriptorSetLayouts());
+
+	for (size_t i = 0; i < primitivesNum; ++i)
+	{
+		writeDescriptorSet(i);
+	}
 }
 
 void vk_mesh::recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
@@ -63,15 +70,17 @@ void vk_mesh::destroy()
 
 void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
 {
-	vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.get());
+	const std::vector<VkDescriptorSet> descirptorSets{_descriptorSet.get()};
+	for (auto descSet : descirptorSets)
+	{
+		vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.get());
+		vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.getLayout(), 0, 1, &descSet, 0, nullptr);
+	}
 
 	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
 	std::array<VkDeviceSize, 1> offsets{0};
 	vkCmdBindVertexBuffers(vkCommandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
 	vkCmdBindIndexBuffer(vkCommandBuffer, _viBuffer.get(), _vertsBufferSize, VK_INDEX_TYPE_UINT32);
-
-	const VkDescriptorSet vkDescriptorSet{_descriptorSet.get()};
-	vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline.getLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
 
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
 }
@@ -87,10 +96,9 @@ void vk_mesh::beforeSubmitUpdate()
 	_uniformBuffer.getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }
 
-void vk_mesh::createDescriptorSet()
+void vk_mesh::writeDescriptorSet(const size_t index)
 {
-	_descriptorSet.create();
-
+	const auto& descirptorSets = _descriptorSet.get();
 	VkDescriptorBufferInfo bufferInfo{};
 	bufferInfo.buffer = _uniformBuffer.get();
 	bufferInfo.offset = 0;
@@ -101,7 +109,7 @@ void vk_mesh::createDescriptorSet()
 
 	writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSets[0].pNext = nullptr;
-	writeDescriptorSets[0].dstSet = _descriptorSet.get();
+	writeDescriptorSets[0].dstSet = descirptorSets[index];
 	writeDescriptorSets[0].dstBinding = 0;
 	writeDescriptorSets[0].dstArrayElement = 0;
 	writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -116,7 +124,7 @@ void vk_mesh::createDescriptorSet()
 	imageInfo.sampler = _textureImage.getSampler();
 
 	writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	writeDescriptorSets[1].dstSet = _descriptorSet.get();
+	writeDescriptorSets[1].dstSet = descirptorSets[index];
 	writeDescriptorSets[1].dstBinding = 1;
 	writeDescriptorSets[1].dstArrayElement = 0;
 	writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -155,7 +163,7 @@ void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, 
 
 	temp_buffer.getDeviceMemory().map(vertsRegions);
 	temp_buffer.getDeviceMemory().map(indxsRegions, _vertsBufferSize);
-	
+
 	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE_ONLY;
 

@@ -41,7 +41,7 @@ public:
 	transform _transform;
 
 protected:
-	void createDescriptorSet();
+	void writeDescriptorSet(const size_t index);
 
 	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
 
@@ -50,6 +50,7 @@ protected:
 private:
 	VkDeviceSize _vertsBufferSize{0};
 	VkDeviceSize _indxsBufferSize{0};
+	std::vector<uint32_t> _primitiveIndexCounts;
 
 	uniforms _ubo;
 
