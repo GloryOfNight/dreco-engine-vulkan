@@ -79,8 +79,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
-    ENABLE_EXPORTS TRUE
-    EXPORT_COMPILE_COMMANDS TRUE
 )
 
 include_directories("thirdparty")

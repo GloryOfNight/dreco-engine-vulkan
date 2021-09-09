@@ -5,10 +5,6 @@ set(SOURCES_LIST main.cxx)
 
 add_executable(${PROJECT_NAME} ${SOURCES_LIST})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    EXPORT_COMPILE_COMMANDS TRUE
-    ENABLE_EXPORTS FALSE)
-
 target_link_libraries(${PROJECT_NAME} dreco)
 
 if (MSVC)
