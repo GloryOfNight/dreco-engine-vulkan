@@ -158,6 +158,9 @@ void engine::preMainLoop()
 	}
 
 	_thread_pool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+
+	_camera.setPosition(vec3(0, 10, 50));
+	_camera.setRotation(rotator(0, 180, 0));
 }
 
 void engine::startMainLoop()
