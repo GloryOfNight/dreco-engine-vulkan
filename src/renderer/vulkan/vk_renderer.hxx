@@ -62,6 +62,8 @@ public:
 
 	vk_queue_family& getQueueFamily();
 
+	vk_texture_image* getTextureImage(const uint32_t index);
+
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
 	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);

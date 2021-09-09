@@ -13,16 +13,28 @@ vk_descriptor_set::~vk_descriptor_set()
 {
 }
 
-void vk_descriptor_set::create(const size_t descriptorSetsNum, const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts)
+void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelines)
 {
+	_pipelines = pipelines;
+	const size_t descriptorSetsNum = _pipelines.size();
 	VkDevice vkDevice = vk_renderer::get()->getDevice().get();
+
 	createDescriptorPool(vkDevice, descriptorSetsNum);
+	createUniformBuffer();
+
+	std::vector<VkDescriptorBufferInfo> writeBufferInfos(descriptorSetsNum, VkDescriptorBufferInfo{});
+	std::vector<VkDescriptorImageInfo> writeImageInfos(descriptorSetsNum, VkDescriptorImageInfo{});
+	std::vector<VkWriteDescriptorSet> writeDescriptorSetInfo;
+	writeDescriptorSetInfo.reserve(descriptorSetsNum * 2);
 
 	_vkDescriptorSets.resize(descriptorSetsNum);
+
 	for (size_t i = 0; i < descriptorSetsNum; ++i)
 	{
-		_vkDescriptorSets[i] = createDescriptorSet(vkDevice, descriptorSetLayouts);
+		_vkDescriptorSets[i] = createDescriptorSet(vkDevice, _pipelines[i]->getDescriptorSetLayouts());
+		createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i]);
 	}
+	update(writeDescriptorSetInfo);
 }
 
 void vk_descriptor_set::update(const std::vector<VkWriteDescriptorSet>& writeInfo)
@@ -38,12 +50,18 @@ void vk_descriptor_set::destroy()
 		VkDevice vkDevice = vk_renderer::get()->getDevice().get();
 		vkDestroyDescriptorPool(vkDevice, _vkDescriptorPool, vkGetAllocator());
 		_vkDescriptorPool = VK_NULL_HANDLE;
+		_uniformBuffer.destroy();
 	}
 }
 
 const std::vector<VkDescriptorSet>& vk_descriptor_set::get() const
 {
 	return _vkDescriptorSets;
+}
+
+vk_buffer& vk_descriptor_set::getUniformBuffer()
+{
+	return _uniformBuffer;
 }
 
 void vk_descriptor_set::createDescriptorPool(const VkDevice vkDevice, const size_t count)
@@ -81,4 +99,52 @@ VkDescriptorSet vk_descriptor_set::createDescriptorSet(const VkDevice vkDevice, 
 	VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
 	VK_CHECK(vkAllocateDescriptorSets(vkDevice, &allocInfo, &descriptorSet));
 	return descriptorSet;
+}
+
+void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<VkWriteDescriptorSet>& outWrite,
+	VkDescriptorBufferInfo& exBufferInfo, VkDescriptorImageInfo& exImageInfo)
+{
+	exBufferInfo.buffer = _uniformBuffer.get();
+	exBufferInfo.offset = 0;
+	exBufferInfo.range = sizeof(uniforms);
+
+	size_t lastWriteElem = outWrite.size();
+	outWrite.resize(lastWriteElem + 2);
+
+	outWrite[lastWriteElem].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	outWrite[lastWriteElem].pNext = nullptr;
+	outWrite[lastWriteElem].dstSet = _vkDescriptorSets[index];
+	outWrite[lastWriteElem].dstBinding = 0;
+	outWrite[lastWriteElem].dstArrayElement = 0;
+	outWrite[lastWriteElem].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	outWrite[lastWriteElem].descriptorCount = 1;
+	outWrite[lastWriteElem].pBufferInfo = &exBufferInfo;
+	outWrite[lastWriteElem].pImageInfo = nullptr;
+	outWrite[lastWriteElem].pTexelBufferView = nullptr;
+
+	const uint32_t texImageIndex = _pipelines[index]->getMaterial()._baseColorTexture;
+	vk_texture_image* texImage = vk_renderer::get()->getTextureImage(texImageIndex);
+
+	exImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	exImageInfo.imageView = texImage->getImageView();
+	exImageInfo.sampler = texImage->getSampler();
+
+	++lastWriteElem;
+	outWrite[lastWriteElem].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	outWrite[lastWriteElem].dstSet = _vkDescriptorSets[index];
+	outWrite[lastWriteElem].dstBinding = 1;
+	outWrite[lastWriteElem].dstArrayElement = 0;
+	outWrite[lastWriteElem].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	outWrite[lastWriteElem].descriptorCount = 1;
+	outWrite[lastWriteElem].pImageInfo = &exImageInfo;
+}
+
+void vk_descriptor_set::createUniformBuffer()
+{
+	vk_buffer_create_info buffer_create_info{};
+	buffer_create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
+	buffer_create_info.size = sizeof(uniforms);
+
+	_uniformBuffer.create(buffer_create_info);
 }

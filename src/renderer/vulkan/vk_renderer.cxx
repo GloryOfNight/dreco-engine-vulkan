@@ -214,6 +214,10 @@ vk_queue_family& vk_renderer::getQueueFamily()
 {
 	return _queueFamily;
 }
+vk_texture_image* vk_renderer::getTextureImage(const uint32_t index)
+{
+	return _textureImages[index];
+}
 
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 {

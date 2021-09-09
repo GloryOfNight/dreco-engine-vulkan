@@ -32,7 +32,7 @@ public:
 
 	void map(const void* data, const VkDeviceSize size, const VkDeviceSize offset = 0);
 
-	void map(std::vector<map_memory_region>& regions, const VkDeviceSize offset = 0);
+	void map(const std::vector<map_memory_region>& regions, const VkDeviceSize offset = 0);
 
 	VkDeviceMemory get() const;
 

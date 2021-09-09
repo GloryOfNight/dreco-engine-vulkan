@@ -1,6 +1,6 @@
 #pragma once
-#include "math/transform.hxx"
 #include "core/containers/mesh.hxx"
+#include "math/transform.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
@@ -19,6 +19,8 @@ class vk_physical_device;
 
 class vk_mesh final
 {
+	typedef std::vector<vk_device_memory::map_memory_region> _memory_regions;
+
 public:
 	vk_mesh();
 	vk_mesh(const vk_mesh&) = delete;
@@ -39,11 +41,7 @@ public:
 	transform _transform;
 
 protected:
-	void writeDescriptorSet(const size_t index, const vk_texture_image& textureImage);
-
-	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
-
-	void createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
 
 private:
 	VkDeviceSize _vertsBufferSize{0};
@@ -53,8 +51,6 @@ private:
 	uniforms _ubo;
 
 	vk_buffer _viBuffer;
-
-	vk_buffer _uniformBuffer;
 
 	vk_descriptor_set _descriptorSet;
 
