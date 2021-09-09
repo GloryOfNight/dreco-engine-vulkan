@@ -26,6 +26,8 @@ public:
 
 	const camera* getCamera() const;
 
+	thread_pool* getThreadPool() const;
+
 	void run();
 
 	void stop();

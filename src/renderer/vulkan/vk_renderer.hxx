@@ -64,6 +64,10 @@ public:
 
 	vk_texture_image* getTextureImage(const uint32_t index);
 
+	const vk_texture_image& getTextureImagePlaceholder() const;
+
+	std::vector<vk_mesh*> getMeshes();
+
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
 	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);
@@ -99,6 +103,8 @@ protected:
 
 private:
 	uint32_t _apiVersion;
+
+	vk_texture_image _placeholderTextureImage;
 
 	std::vector<vk_mesh*> _meshes;
 

@@ -100,6 +100,11 @@ void vk_mesh::beforeSubmitUpdate()
 	_descriptorSet.getUniformBuffer().getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }
 
+vk_descriptor_set& vk_mesh::getDescriptorSet()
+{
+	return _descriptorSet;
+}
+
 void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice,
 	const _memory_regions& vertRegions, const _memory_regions& indxRegions)
 {

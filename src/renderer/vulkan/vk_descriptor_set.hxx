@@ -16,6 +16,8 @@ public:
 
 	void create(const std::vector<vk_graphics_pipeline*>& pipelines);
 
+	void rewriteAll();
+
 	void update(const std::vector<VkWriteDescriptorSet>& writeInfo);
 
 	void destroy();

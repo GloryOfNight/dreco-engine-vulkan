@@ -71,6 +71,11 @@ const camera* engine::getCamera() const
 	return &_camera;
 }
 
+thread_pool* engine::getThreadPool() const 
+{
+	return _thread_pool;
+}
+
 void engine::run()
 {
 	if (_isRunning)

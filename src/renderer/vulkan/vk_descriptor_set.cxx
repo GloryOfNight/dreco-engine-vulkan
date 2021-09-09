@@ -37,6 +37,21 @@ void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelin
 	update(writeDescriptorSetInfo);
 }
 
+void vk_descriptor_set::rewriteAll()
+{
+	const size_t num = _pipelines.size();
+	std::vector<VkDescriptorBufferInfo> writeBufferInfos(num, VkDescriptorBufferInfo{});
+	std::vector<VkDescriptorImageInfo> writeImageInfos(num, VkDescriptorImageInfo{});
+	std::vector<VkWriteDescriptorSet> writeDescriptorSetInfo;
+	writeDescriptorSetInfo.reserve(num * 2);
+
+	for (size_t i = 0; i < num; ++i)
+	{	
+		createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i]);
+	}
+	update(writeDescriptorSetInfo);
+}
+
 void vk_descriptor_set::update(const std::vector<VkWriteDescriptorSet>& writeInfo)
 {
 	VkDevice vkDevice = vk_renderer::get()->getDevice().get();
@@ -123,7 +138,11 @@ void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<
 	outWrite[lastWriteElem].pTexelBufferView = nullptr;
 
 	const uint32_t texImageIndex = _pipelines[index]->getMaterial()._baseColorTexture;
-	vk_texture_image* texImage = vk_renderer::get()->getTextureImage(texImageIndex);
+	const vk_texture_image* texImage = vk_renderer::get()->getTextureImage(texImageIndex);
+	if (!texImage->isValid())
+	{
+		texImage = &vk_renderer::get()->getTextureImagePlaceholder();
+	}
 
 	exImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	exImageInfo.imageView = texImage->getImageView();

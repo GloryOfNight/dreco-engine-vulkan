@@ -1,6 +1,7 @@
 #include "vk_renderer.hxx"
 
 #include "core/platform.h"
+#include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
 #include "engine/engine.hxx"
 
@@ -42,7 +43,7 @@ vk_renderer::vk_renderer()
 {
 }
 
-template<typename T>
+template <typename T>
 inline void clearVectorOfPtr(std::vector<T>& vector)
 {
 	for (auto* item : vector)
@@ -66,6 +67,7 @@ vk_renderer::~vk_renderer()
 	clearVectorOfPtr(_textureImages);
 	clearVectorOfPtr(_pipelines);
 	clearVectorOfPtr(_meshes);
+	_placeholderTextureImage.destroy();
 
 	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
 	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
@@ -126,6 +128,8 @@ void vk_renderer::init()
 
 	createFences();
 	createSemaphores();
+
+	_placeholderTextureImage.create();
 }
 
 void vk_renderer::tick(double deltaTime)
@@ -133,13 +137,51 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
+struct async_load_texture_task : public thread_task
+{
+	async_load_texture_task(const std::string_view& texUri, vk_texture_image* texImage)
+		: _texUri{texUri}
+		, _texImage{texImage}
+		, _texData{nullptr}
+	{
+	}
+
+	virtual void init() override{};
+
+	virtual void doJob() override
+	{
+		_texData = texture_data::createNew(_texUri);
+	};
+
+	virtual void compeleted() override
+	{
+		new (_texImage) vk_texture_image();
+		_texImage->create(*_texData);
+		delete _texData;
+
+		// TODO: do not want rewrite all meshes, but only the affected ones
+		const auto& meshes = vk_renderer::get()->getMeshes();
+		for(auto& mesh : meshes)
+		{
+			mesh->getDescriptorSet().rewriteAll();
+		}
+	};
+
+private:
+	std::string _texUri;
+
+	vk_texture_image* _texImage;
+
+	texture_data* _texData;
+};
+
 void vk_renderer::loadScene(const scene& newScene)
 {
 	_textureImages.reserve(_textureImages.size() + newScene._images.size());
 	for (const auto& img : newScene._images)
 	{
 		_textureImages.emplace_back(new vk_texture_image());
-		_textureImages.back()->create(img);
+		engine::get()->getThreadPool()->queueTask(new async_load_texture_task(img._uri, _textureImages.back()));
 	}
 
 	_pipelines.reserve(_pipelines.size() + newScene._materials.size());
@@ -217,6 +259,16 @@ vk_queue_family& vk_renderer::getQueueFamily()
 vk_texture_image* vk_renderer::getTextureImage(const uint32_t index)
 {
 	return _textureImages[index];
+}
+
+const vk_texture_image& vk_renderer::getTextureImagePlaceholder() const
+{
+	return _placeholderTextureImage;
+}
+
+std::vector<vk_mesh*> vk_renderer::getMeshes()
+{
+	return _meshes;
 }
 
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()

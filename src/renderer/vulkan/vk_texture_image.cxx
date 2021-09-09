@@ -95,6 +95,11 @@ VkSampler vk_texture_image::getSampler() const
 	return _vkSampler;
 }
 
+bool vk_texture_image::isValid() const
+{
+	return getImage() && getImageView() && getSampler();
+}
+
 VkImageAspectFlags vk_texture_image::getImageAspectFlags() const
 {
 	return VK_IMAGE_ASPECT_COLOR_BIT;

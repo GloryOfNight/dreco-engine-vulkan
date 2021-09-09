@@ -38,6 +38,8 @@ public:
 
 	void beforeSubmitUpdate();
 
+	vk_descriptor_set& getDescriptorSet();
+
 	transform _transform;
 
 protected:

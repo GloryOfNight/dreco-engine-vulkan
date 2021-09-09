@@ -32,9 +32,9 @@ protected:
 
 	void createImageView(const VkDevice vkDevice, const VkFormat vkFormat);
 
-    VkImage _vkImage;
+    VkImage _vkImage{VK_NULL_HANDLE};
 
-    VkImageView _vkImageView;
+    VkImageView _vkImageView{VK_NULL_HANDLE};
 
     vk_device_memory _deviceMemory;
 };
