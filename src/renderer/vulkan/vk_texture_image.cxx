@@ -19,6 +19,14 @@ vk_texture_image::~vk_texture_image()
 void vk_texture_image::create()
 {
 	auto* texture = texture_data::createNew(VK_TEXTURE_PLACEHOLDER_URI);
+	unsigned char* pixels{nullptr};
+	texture->getData(&pixels, nullptr, nullptr, nullptr);
+	if (nullptr == pixels)
+	{
+		std::cerr << "vk_texture_image: Failed to load placeholder texture! Make sure working directory correct." << std::endl;
+		std::abort();
+		return;
+	}
 	create(*texture);
 	delete texture;
 }

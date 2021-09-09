@@ -16,8 +16,11 @@ std::mutex completedTasksMutex;
 
 static bool thread_pop_task(thread_task** task)
 {
-	*task = std::move(waitingTasks.front());
-	waitingTasks.pop();
+	if (!waitingTasks.empty())
+	{
+		*task = std::move(waitingTasks.front());
+		waitingTasks.pop();
+	}
 
 	threadTaskAwaible = !waitingTasks.empty();
 
