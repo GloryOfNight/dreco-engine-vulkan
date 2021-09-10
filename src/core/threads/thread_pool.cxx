@@ -1,56 +1,56 @@
 #include "thread_pool.hxx"
 
-#include <atomic>
 #include <chrono>
 #include <iostream>
-#include <mutex>
 
-std::atomic<bool> threadLoopCondition{true};
-std::atomic<bool> threadTaskAwaible{false};
-
-std::queue<thread_task*> waitingTasks;
-std::mutex waitingTasksMutex;
-
-std::queue<thread_task*> completedTasks;
-std::mutex completedTasksMutex;
-
-static bool thread_pop_task(thread_task** task)
+class thread_pool_accessor
 {
-	if (!waitingTasks.empty())
+public:
+	static thread_task* tryPopTask(thread_pool& pool)
 	{
-		*task = std::move(waitingTasks.front());
-		waitingTasks.pop();
+		std::scoped_lock<std::mutex> lock(pool._waitingTasksMutex);
+		if (!pool._waitingTasks.empty())
+		{
+			thread_task* task = std::move(pool._waitingTasks.front());
+			pool._waitingTasks.pop();
+			pool._threadsTaskAwaible = !pool._waitingTasks.empty();
+			return task;
+		}
+		return nullptr;
 	}
 
-	threadTaskAwaible = !waitingTasks.empty();
-
-	return *task != nullptr;
-}
-
-static void thread_complete_task(thread_task* const task)
-{
-	std::lock_guard<std::mutex> guard(completedTasksMutex);
-	completedTasks.push(task);
-}
-
-static void thread_loop()
-{
-	while (threadLoopCondition)
+	static void addCompletedTask(thread_pool& pool, thread_task*& task)
 	{
-		if (threadTaskAwaible && waitingTasksMutex.try_lock())
-		{
-			thread_task* task{nullptr};
-			const bool result = thread_pop_task(&task);
-			waitingTasksMutex.unlock();
+		std::scoped_lock<std::mutex> lock(pool._completedTasksMutex);
+		pool._completedTasks.push(task);
+	}
+};
 
-			if (result)
+static void thread_loop_func(void* data)
+{
+	thread_pool& pool = *reinterpret_cast<thread_pool*>(data);
+	while (pool.getThreadLoopCondition())
+	{
+		if (pool.getThreadTaskAvaible())
+		{
+			thread_task* task = thread_pool_accessor::tryPopTask(pool);
+			if (task)
 			{
 				task->doJob();
-				thread_complete_task(task);
-				continue;
+				if (task->useCompleted())
+				{
+					thread_pool_accessor::addCompletedTask(pool, task);
+				}
+				else 
+				{
+					delete task;
+				}
 			}
 		}
-		std::this_thread::yield();
+		else 
+		{
+			std::this_thread::yield();
+		}
 	}
 }
 
@@ -62,44 +62,42 @@ thread_pool::thread_pool()
 	_threads.resize(num);
 	for (auto i = 0U; i < num; ++i)
 	{
-		_threads[i] = std::thread(thread_loop);
+		_threads[i] = std::thread(thread_loop_func, this);
 	}
 }
 
 thread_pool::~thread_pool()
 {
-	threadLoopCondition = false;
+	_threadsLoopCondition = false;
 	for (auto& thread : _threads)
 	{
 		thread.join();
 	}
 }
 
-void thread_pool::tick(const double& deltaTime)
+void thread_pool::tick()
 {
-    processCompletedTasks();
+	processCompletedTasks();
 }
 
 void thread_pool::queueTask(thread_task* task)
 {
-	task->id = ++_totalTaskCount;
+	task->_id = ++_totalTaskCount;
 
-	std::lock_guard<std::mutex> guard(waitingTasksMutex);
-	waitingTasks.push(task);
-
+	std::scoped_lock<std::mutex> guard(_waitingTasksMutex);
+	_waitingTasks.push(task);
 	task->init();
 
-	threadTaskAwaible = true;
+	_threadsTaskAwaible = true;
 }
 
 void thread_pool::processCompletedTasks()
 {
-	while (!completedTasks.empty())
+	while (!_completedTasks.empty())
 	{
-		std::lock_guard<std::mutex> guard(completedTasksMutex);
-
-		thread_task* task = std::move(completedTasks.front());
-		completedTasks.pop();
+		std::scoped_lock<std::mutex> lock(_completedTasksMutex);
+		thread_task* task = std::move(_completedTasks.front());
+		_completedTasks.pop();
 
 		task->compeleted();
 

@@ -175,7 +175,7 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
-		_thread_pool->tick(deltaTime);
+		_thread_pool->tick();
 
 		_renderer->tick(deltaTime);
 
