@@ -1,3 +1,5 @@
+set(CMAKE_EXPORT_COMPILE_COMMANDS True)
+
 cmake_minimum_required(VERSION 3.19.0)
 project(dreco)
 
