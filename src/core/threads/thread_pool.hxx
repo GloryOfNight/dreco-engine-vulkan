@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <mutex>
 #include <queue>
@@ -17,7 +18,7 @@ struct thread_task
 
 	// in-sync with main
 	virtual void init() = 0;
-	
+
 	// async
 	virtual void doJob() = 0;
 
@@ -28,11 +29,22 @@ struct thread_task
 
 	bool useCompleted() const { return _useCompleted; }
 
+	double getTaskCompletionTime() const
+	{
+		return std::chrono::duration_cast<std::chrono::milliseconds>(_end - _begin).count() / 1000.0;
+	};
+
 protected:
 	bool _useCompleted{true};
 
 private:
+	void markStart() { _begin = std::chrono::steady_clock::now(); };
+	void markEnd() { _end = std::chrono::steady_clock::now(); };
+
 	uint64_t _id{UINT64_MAX};
+
+	std::chrono::steady_clock::time_point _begin;
+	std::chrono::steady_clock::time_point _end;
 };
 
 // empty thread task for testing

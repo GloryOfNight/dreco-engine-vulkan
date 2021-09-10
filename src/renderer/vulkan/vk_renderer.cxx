@@ -294,18 +294,19 @@ VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 	return commandBuffer;
 }
 
-void vk_renderer::endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer)
+void vk_renderer::submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer)
 {
-	vkEndCommandBuffer(vkCommandBuffer);
-
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &vkCommandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer;
+	submitSingleTimeTransferCommands({submitInfo});
+}
 
-	vkQueueSubmit(_device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+void vk_renderer::submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits)
+{
+	vkQueueSubmit(_device.getTransferQueue(), submits.size(), submits.data(), VK_NULL_HANDLE);
 	vkQueueWaitIdle(_device.getTransferQueue());
-	vkFreeCommandBuffers(_device.get(), _vkTransferCommandPool, 1, &vkCommandBuffer);
 }
 
 void vk_renderer::createWindow()

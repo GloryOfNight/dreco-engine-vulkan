@@ -95,6 +95,7 @@ void thread_pool::queueTask(thread_task* task)
 	std::scoped_lock<std::mutex> guard(_waitingTasksMutex);
 	_waitingTasks.push(task);
 	task->init();
+	task->markStart();
 
 	_threadsTaskAwaible = true;
 }
@@ -108,8 +109,9 @@ void thread_pool::processCompletedTasks()
 		_completedTasks.pop();
 
 		task->compeleted();
+		task->markEnd();
 
-		std::cout << "thread_pool: completed task with id: " << task->getId() << std::endl;
+		std::cout << "thread_pool: completed task with id: " << task->getId() << "; took : " << task->getTaskCompletionTime() << "s" << std::endl;
 
 		delete task;
 	}

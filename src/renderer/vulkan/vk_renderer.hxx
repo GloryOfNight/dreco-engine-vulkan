@@ -70,7 +70,9 @@ public:
 
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
-	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);
+	void submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
+
+	void submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits);
 
 protected:
 	void drawFrame();

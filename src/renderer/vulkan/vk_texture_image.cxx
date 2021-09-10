@@ -61,30 +61,71 @@ void vk_texture_image::create(const texture_data& textureData)
 	VkMemoryRequirements memoryRequirements{};
 	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
 
-	vk_buffer_create_info info;
-	info.memory_properties_flags = vk_device_memory_properties::HOST;
-	info.size = memoryRequirements.size;
-	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	vk_buffer stagingBuffer;
-	stagingBuffer.create(info);
-
-	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);
-
 	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
 
 	bindToMemory(vkDevice, _deviceMemory.get(), 0);
 
-	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, getImageAspectFlags());
-
-	vk_buffer::copyBufferToImage(stagingBuffer.get(), _vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-
-	transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, getImageAspectFlags());
-
 	createImageView(vkDevice, vkFormat);
 	createSampler(vkDevice);
+
+	vk_buffer_create_info info;
+	info.memory_properties_flags = vk_device_memory_properties::HOST;
+	info.size = memoryRequirements.size;
+	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	
+	vk_buffer stagingBuffer;
+	stagingBuffer.create(info);
+	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);
+
+	std::array<VkSemaphore, 2> semaphores;
+	VkSemaphoreCreateInfo semaphoreCreareInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
+	vkCreateSemaphore(vkDevice, &semaphoreCreareInfo, vkGetAllocator(), &semaphores[0]);
+	vkCreateSemaphore(vkDevice, &semaphoreCreareInfo, vkGetAllocator(), &semaphores[1]);
+
+	std::array<VkCommandBuffer, 3> commandBuffers;
+
+	commandBuffers[0] = transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, getImageAspectFlags());
+
+	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+	commandBuffers[2] = transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, getImageAspectFlags());
+
+	std::array<VkPipelineStageFlags, 2> stageFlags{
+		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+	std::vector<VkSubmitInfo> submitInfos(3, VkSubmitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO});
+	submitInfos[0].commandBufferCount = 1;
+	submitInfos[0].pCommandBuffers = &commandBuffers[0];
+	submitInfos[0].waitSemaphoreCount = 0;
+	submitInfos[0].pWaitSemaphores = VK_NULL_HANDLE;
+	submitInfos[0].signalSemaphoreCount = 1;
+	submitInfos[0].pSignalSemaphores = &semaphores[0];
+	submitInfos[0].pWaitDstStageMask = &stageFlags[0];
+
+	submitInfos[1].commandBufferCount = 1;
+	submitInfos[1].pCommandBuffers = &commandBuffers[1];
+	submitInfos[1].waitSemaphoreCount = 1;
+	submitInfos[1].pWaitSemaphores = semaphores.data();
+	submitInfos[1].signalSemaphoreCount = 1;
+	submitInfos[1].pSignalSemaphores = &semaphores[1];
+	submitInfos[1].pWaitDstStageMask = &stageFlags[1];
+
+	submitInfos[2].commandBufferCount = 1;
+	submitInfos[2].pCommandBuffers = &commandBuffers[2];
+	submitInfos[2].waitSemaphoreCount = 1;
+	submitInfos[2].pWaitSemaphores = &semaphores[1];
+	submitInfos[2].signalSemaphoreCount = 0;
+	submitInfos[2].pSignalSemaphores = VK_NULL_HANDLE;
+	submitInfos[2].pWaitDstStageMask = &stageFlags[1];
+
+	renderer->submitSingleTimeTransferCommands(submitInfos);
+
+	vkDestroySemaphore(vkDevice, semaphores[0], vkGetAllocator());
+	vkDestroySemaphore(vkDevice, semaphores[1], vkGetAllocator());
+
+	vkFreeCommandBuffers(vkDevice, renderer->getTransferCommandPool(), commandBuffers.size(), commandBuffers.data());
 }
 
 void vk_texture_image::destroy()
