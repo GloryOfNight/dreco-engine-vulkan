@@ -73,6 +73,14 @@ thread_pool::~thread_pool()
 	{
 		thread.join();
 	}
+
+	while(!_waitingTasks.empty())
+	{
+		thread_task* task = std::move(_waitingTasks.front());
+		delete task;
+		_waitingTasks.pop();
+	}
+	processCompletedTasks();
 }
 
 void thread_pool::tick()
