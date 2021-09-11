@@ -1,5 +1,7 @@
 #include "thread_pool.hxx"
 
+#include "SDL_thread.h"
+
 #include <chrono>
 #include <iostream>
 
@@ -26,7 +28,7 @@ public:
 	}
 };
 
-static void thread_loop_func(void* data)
+static int thread_loop_func(void* data)
 {
 	thread_pool& pool = *reinterpret_cast<thread_pool*>(data);
 	while (pool.getThreadLoopCondition())
@@ -41,40 +43,44 @@ static void thread_loop_func(void* data)
 				{
 					thread_pool_accessor::addCompletedTask(pool, task);
 				}
-				else 
+				else
 				{
 					delete task;
 				}
 			}
 		}
-		else 
+		else
 		{
 			std::this_thread::yield();
 		}
 	}
+	return 0;
 }
 
-thread_pool::thread_pool()
+thread_pool::thread_pool(const char* name, const uint32_t threadCount, const thread_priority priority)
 	: _totalTaskCount{0}
 {
-	const auto num = std::thread::hardware_concurrency() / 2;
+	const uint32_t num = threadCount > 0 ? threadCount : 1;
 
 	_threads.resize(num);
-	for (auto i = 0U; i < num; ++i)
+	for (uint32_t i = 0U; i < num; ++i)
 	{
-		_threads[i] = std::thread(thread_loop_func, this);
+		SDL_CreateThread(thread_loop_func, name, this);
+
+		const SDL_ThreadPriority sdlPriority = static_cast<SDL_ThreadPriority>(priority);
+		SDL_SetThreadPriority(sdlPriority);
 	}
 }
 
 thread_pool::~thread_pool()
 {
 	_threadsLoopCondition = false;
-	for (auto& thread : _threads)
+	for (auto* thread : _threads)
 	{
-		thread.join();
+		SDL_WaitThread(thread, nullptr);
 	}
 
-	while(!_waitingTasks.empty())
+	while (!_waitingTasks.empty())
 	{
 		thread_task* task = std::move(_waitingTasks.front());
 		delete task;
@@ -98,6 +104,11 @@ void thread_pool::queueTask(thread_task* task)
 	task->markStart();
 
 	_threadsTaskAwaible = true;
+}
+
+uint32_t thread_pool::hardwareConcurrency()
+{
+	return static_cast<uint32_t>(std::thread::hardware_concurrency());
 }
 
 void thread_pool::processCompletedTasks()

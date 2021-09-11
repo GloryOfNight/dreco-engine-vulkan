@@ -42,7 +42,7 @@ private:
 };
 
 engine::engine()
-	: _thread_pool{nullptr}
+	: _threadPool{nullptr}
 	, _renderer{nullptr}
 	, _isRunning{false}
 {
@@ -73,7 +73,7 @@ const camera* engine::getCamera() const
 
 thread_pool* engine::getThreadPool() const 
 {
-	return _thread_pool;
+	return _threadPool;
 }
 
 void engine::run()
@@ -152,12 +152,12 @@ void engine::stopRenderer()
 
 void engine::preMainLoop()
 {
-	if (_thread_pool == nullptr)
+	if (_threadPool == nullptr)
 	{
-		_thread_pool = new thread_pool();
+		_threadPool = new thread_pool("dreco-worker", thread_pool::hardwareConcurrency() / 2);
 	}
 
-	_thread_pool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+	_threadPool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
 
 	_camera.setPosition(vec3(0, 10, 50));
 	_camera.setRotation(rotator(0, 180, 0));
@@ -175,7 +175,7 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
-		_thread_pool->tick();
+		_threadPool->tick();
 
 		_renderer->tick(deltaTime);
 
@@ -280,8 +280,8 @@ void engine::startMainLoop()
 
 void engine::postMainLoop()
 {
-	delete _thread_pool;
-	_thread_pool = nullptr;
+	delete _threadPool;
+	_threadPool = nullptr;
 }
 
 void engine::stopMainLoop()

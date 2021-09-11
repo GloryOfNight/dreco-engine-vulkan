@@ -47,7 +47,7 @@ private:
 
 	double calculateNewDeltaTime();
 
-	thread_pool* _thread_pool;
+	thread_pool* _threadPool;
 
 	vk_renderer* _renderer;
 

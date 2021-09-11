@@ -8,7 +8,16 @@
 #include <thread>
 #include <vector>
 
+class SDL_Thread;
 class thread_pool;
+
+enum class thread_priority : uint8_t
+{
+	low,
+	normal,
+	high,
+	timeCritical
+};
 
 struct thread_task
 {
@@ -60,7 +69,7 @@ class thread_pool
 	friend class thread_pool_accessor;
 
 public:
-	thread_pool();
+	thread_pool(const char* name, const uint32_t threadCount = 0, const thread_priority priority = thread_priority::normal);
 	~thread_pool();
 
 	void tick();
@@ -70,6 +79,8 @@ public:
 	const std::atomic<bool>& getThreadLoopCondition() const { return _threadsLoopCondition; };
 
 	const std::atomic<bool>& getThreadTaskAvaible() const { return _threadsTaskAwaible; };
+
+	static uint32_t hardwareConcurrency();
 
 private:
 	void processCompletedTasks();
@@ -83,7 +94,7 @@ private:
 	std::mutex _completedTasksMutex;
 	std::queue<thread_task*> _completedTasks;
 
-	std::vector<std::thread> _threads;
+	std::vector<SDL_Thread*> _threads;
 
 	uint64_t _totalTaskCount;
 };

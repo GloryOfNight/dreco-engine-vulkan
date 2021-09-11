@@ -19,6 +19,8 @@ public:
 	};
 
 	vk_device_memory();
+	vk_device_memory(const vk_device_memory&) = delete;
+	vk_device_memory(vk_device_memory&&) = delete;
 	~vk_device_memory();
 
 	void allocate(const VkMemoryRequirements& vkMemoryRequirements, const VkMemoryPropertyFlags vkMemoryPropertyFlags);
