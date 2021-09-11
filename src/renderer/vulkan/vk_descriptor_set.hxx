@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 
 class vk_graphics_pipeline;
+class vk_texture_image;
 
 class vk_descriptor_set final
 {
@@ -14,11 +15,13 @@ public:
 	vk_descriptor_set(vk_descriptor_set&&) = delete;
 	~vk_descriptor_set();
 
-	void create(const std::vector<vk_graphics_pipeline*>& pipelines);
+	void create(const std::vector<vk_graphics_pipeline*>& pipelines, const std::vector<vk_texture_image*>& textureImages);
 
-	void rewriteAll();
+	void rewrite(const std::pair<uint32_t, vk_texture_image*>& _textureImage);
 
 	void update(const std::vector<VkWriteDescriptorSet>& writeInfo);
+
+	void bindToCmdBuffer(VkCommandBuffer commandBuffer);
 
 	void destroy();
 
@@ -33,7 +36,10 @@ protected:
 
 	// ex's required because we cannot allocate them on stask inside this function
 	void createWriteForDescriptorSet(uint32_t index, std::vector<VkWriteDescriptorSet>& outWrite,
-		VkDescriptorBufferInfo& exBufferInfo, VkDescriptorImageInfo& exImageInfo);
+		VkDescriptorBufferInfo& exBufferInfo, VkDescriptorImageInfo& exImageInfo, const std::vector<vk_texture_image*>& textureImages);
+
+	void createWriteForDescriptorSet(uint32_t index, std::vector<VkWriteDescriptorSet>& outWrite,
+		VkDescriptorBufferInfo& exBufferInfo, VkDescriptorImageInfo& exImageInfo, const vk_texture_image* texImage);
 
 	void createUniformBuffer();
 

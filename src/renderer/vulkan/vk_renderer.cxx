@@ -1,8 +1,10 @@
 #include "vk_renderer.hxx"
 
+#include "async_tasks/async_load_texture_task.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
+#include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
 
 #include "vk_allocator.hxx"
@@ -24,7 +26,6 @@
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
-	, _meshes{}
 	, _window{nullptr}
 	, _surface()
 	, _physicalDevice()
@@ -43,16 +44,6 @@ vk_renderer::vk_renderer()
 {
 }
 
-template <typename T>
-inline void clearVectorOfPtr(std::vector<T>& vector)
-{
-	for (auto* item : vector)
-	{
-		delete item;
-	}
-	vector.clear();
-}
-
 vk_renderer::~vk_renderer()
 {
 	_device.waitIdle();
@@ -64,9 +55,7 @@ vk_renderer::~vk_renderer()
 
 	cleanupSwapchain(_vkSwapchain);
 
-	clearVectorOfPtr(_textureImages);
-	clearVectorOfPtr(_pipelines);
-	clearVectorOfPtr(_meshes);
+	clearVectorOfPtr(_scenes);
 	_placeholderTextureImage.destroy();
 
 	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
@@ -137,68 +126,10 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-struct async_load_texture_task : public thread_task
+void vk_renderer::loadScene(const scene& scn)
 {
-	async_load_texture_task(const std::string_view& texUri, vk_texture_image* texImage)
-		: _texUri{texUri}
-		, _texImage{texImage}
-		, _texData{nullptr}
-	{
-	}
-
-	virtual void init() override{};
-
-	virtual void doJob() override
-	{
-		_texData = texture_data::createNew(_texUri);
-	};
-
-	virtual void compeleted() override
-	{
-		new (_texImage) vk_texture_image();
-		_texImage->create(*_texData);
-		delete _texData;
-
-		// TODO: do not want rewrite all meshes, but only the affected ones
-		const auto& meshes = vk_renderer::get()->getMeshes();
-		for(auto& mesh : meshes)
-		{
-			mesh->getDescriptorSet().rewriteAll();
-		}
-	};
-
-private:
-	std::string _texUri;
-
-	vk_texture_image* _texImage;
-
-	texture_data* _texData;
-};
-
-void vk_renderer::loadScene(const scene& newScene)
-{
-	_textureImages.reserve(_textureImages.size() + newScene._images.size());
-	for (const auto& img : newScene._images)
-	{
-		_textureImages.emplace_back(new vk_texture_image());
-		engine::get()->getThreadPool()->queueTask(new async_load_texture_task(img._uri, _textureImages.back()));
-	}
-
-	_pipelines.reserve(_pipelines.size() + newScene._materials.size());
-	for (const auto& mat : newScene._materials)
-	{
-		_pipelines.emplace_back(new vk_graphics_pipeline());
-		_pipelines.back()->create(mat);
-	}
-
-	_meshes.reserve(_meshes.size() + newScene._meshes.size());
-	for (auto& mesh : newScene._meshes)
-	{
-		vk_graphics_pipeline** pipelines = &_pipelines.back() - (newScene._materials.size() - 1);
-		vk_texture_image** textureImages = &_textureImages.back() - (newScene._images.size() - 1);
-		_meshes.emplace_back(new vk_mesh());
-		_meshes.back()->create(mesh, pipelines, textureImages);
-	}
+	vk_scene* newScene = _scenes.emplace_back(new vk_scene());
+	newScene->create(scn);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -256,19 +187,10 @@ vk_queue_family& vk_renderer::getQueueFamily()
 {
 	return _queueFamily;
 }
-vk_texture_image* vk_renderer::getTextureImage(const uint32_t index)
-{
-	return _textureImages[index];
-}
 
 const vk_texture_image& vk_renderer::getTextureImagePlaceholder() const
 {
 	return _placeholderTextureImage;
-}
-
-std::vector<vk_mesh*> vk_renderer::getMeshes()
-{
-	return _meshes;
 }
 
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
@@ -709,9 +631,9 @@ void vk_renderer::recreateSwapchain()
 
 	createFramebuffers();
 
-	for (auto* pipeline : _pipelines)
+	for (auto* scene : _scenes)
 	{
-		pipeline->recreatePipeline();
+		scene->recreatePipelines();
 	}
 }
 
@@ -741,14 +663,10 @@ VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	for (auto* pipeline : _pipelines)
+	for (auto* scene : _scenes)
 	{
-		pipeline->bindToCmdBuffer(commandBuffer);
-	}
-	for (auto& mesh : _meshes)
-	{
-		mesh->beforeSubmitUpdate();
-		mesh->bindToCmdBuffer(commandBuffer, _pipelines[0]->getLayout());
+		scene->update();
+		scene->bindToCmdBuffer(commandBuffer);
 	}
 	vkCmdEndRenderPass(commandBuffer);
 

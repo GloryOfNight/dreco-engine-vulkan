@@ -14,6 +14,7 @@ set(DRECO_HEADER_LIST
 "src/math/rotator.hxx"
 "src/math/mat4.hxx"
 "src/math/transform.hxx"
+"src/renderer/vulkan/async_tasks/async_load_texture_task.hxx"
 "src/renderer/containers/vertex.hxx"
 "src/renderer/containers/texture_data.hxx"
 "src/renderer/vulkan/vk_surface.hxx"
@@ -31,7 +32,8 @@ set(DRECO_HEADER_LIST
 "src/renderer/vulkan/vk_image.hxx"
 "src/renderer/vulkan/vk_texture_image.hxx"
 "src/renderer/vulkan/vk_msaa_image.hxx"
-"src/renderer/vulkan/vk_depth_image.hxx")
+"src/renderer/vulkan/vk_depth_image.hxx"
+"src/renderer/vulkan/vk_scene.hxx")
 
 set(DRECO_SOURCE_LIST 
 "src/engine/engine.cxx"
@@ -62,7 +64,8 @@ set(DRECO_SOURCE_LIST
 "src/renderer/vulkan/vk_image.cxx"
 "src/renderer/vulkan/vk_texture_image.cxx"
 "src/renderer/vulkan/vk_msaa_image.cxx"
-"src/renderer/vulkan/vk_depth_image.cxx")
+"src/renderer/vulkan/vk_depth_image.cxx"
+"src/renderer/vulkan/vk_scene.cxx")
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST} ${DRECO_HEADER_LIST})
 

@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-class SDL_Thread;
+struct SDL_Thread;
 class thread_pool;
 
 enum class thread_priority : uint8_t

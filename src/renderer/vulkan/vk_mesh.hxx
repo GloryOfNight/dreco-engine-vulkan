@@ -13,6 +13,7 @@
 #include <vulkan/vulkan.h>
 
 class vk_device;
+class vk_scene;
 class vk_queue_family;
 class vk_graphics_pipeline;
 class vk_physical_device;
@@ -30,13 +31,13 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const mesh& m, vk_graphics_pipeline** pipelines, vk_texture_image** textureImages);
+	void create(const mesh& m, const vk_scene* scene);
 
 	void destroy();
 
-	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const VkPipelineLayout pipelineLayout);
+	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer);
 
-	void beforeSubmitUpdate();
+	void update();
 
 	vk_descriptor_set& getDescriptorSet();
 

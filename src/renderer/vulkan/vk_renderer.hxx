@@ -13,6 +13,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
 #include "vk_texture_image.hxx"
+#include "vk_scene.hxx"
 
 #include <SDL.h>
 #include <vector>
@@ -40,7 +41,7 @@ public:
 
 	void tick(double deltaTime);
 
-	void loadScene(const scene& newScene);
+	void loadScene(const scene& scn);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -62,11 +63,7 @@ public:
 
 	vk_queue_family& getQueueFamily();
 
-	vk_texture_image* getTextureImage(const uint32_t index);
-
 	const vk_texture_image& getTextureImagePlaceholder() const;
-
-	std::vector<vk_mesh*> getMeshes();
 
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
@@ -108,11 +105,7 @@ private:
 
 	vk_texture_image _placeholderTextureImage;
 
-	std::vector<vk_mesh*> _meshes;
-
-	std::vector<vk_graphics_pipeline*> _pipelines;
-
-	std::vector<vk_texture_image*> _textureImages;
+	std::vector<vk_scene*> _scenes;
 
 	SDL_Window* _window;
 

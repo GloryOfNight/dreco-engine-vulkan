@@ -7,6 +7,7 @@
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
+#include "vk_scene.hxx"
 #include "vk_shader_module.hxx"
 #include "vk_utils.hxx"
 
@@ -23,10 +24,11 @@ vk_mesh::~vk_mesh()
 	destroy();
 }
 
-void vk_mesh::create(const mesh& m, vk_graphics_pipeline** pipelines, vk_texture_image** textureImages)
+void vk_mesh::create(const mesh& m, const vk_scene* scene)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
+	const auto& pipelines = scene->getGraphicPipelines();
 	const vk_device* vkDevice{&renderer->getDevice()};
 	const vk_queue_family* vkQueueFamily{&renderer->getQueueFamily()};
 	const vk_physical_device* vkPhysicalDevice{&renderer->getPhysicalDevice()};
@@ -58,7 +60,7 @@ void vk_mesh::create(const mesh& m, vk_graphics_pipeline** pipelines, vk_texture
 
 	createVIBuffer(m, vkQueueFamily, vkPhysicalDevice, vertRegions, indxRegions);
 
-	_descriptorSet.create(usedPipelines);
+	_descriptorSet.create(usedPipelines, scene->getTextureImages());
 }
 
 void vk_mesh::destroy()
@@ -73,13 +75,9 @@ void vk_mesh::destroy()
 	}
 }
 
-void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const VkPipelineLayout pipelineLayout)
+void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
 {
-	const std::vector<VkDescriptorSet>& descirptorSets{_descriptorSet.get()};
-	for (auto descSet : descirptorSets)
-	{
-		vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descSet, 0, nullptr);
-	}
+	_descriptorSet.bindToCmdBuffer(vkCommandBuffer);
 
 	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
 	std::array<VkDeviceSize, 1> offsets{0};
@@ -89,7 +87,7 @@ void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer, const VkPip
 	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
 }
 
-void vk_mesh::beforeSubmitUpdate()
+void vk_mesh::update()
 {
 	const camera* camera{engine::get()->getCamera()};
 
