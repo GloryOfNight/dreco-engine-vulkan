@@ -1,83 +1,17 @@
 cmake_minimum_required(VERSION 3.19.0)
 project(dreco)
 
-set(DRECO_HEADER_LIST 
-"src/engine/engine.hxx"
-"src/core/containers/scene.hxx"
-"src/core/threads/thread_pool.hxx"
-"src/core/loaders/gltf_loader.hxx"
-"src/core/objects/camera.hxx"
-"src/core/objects/world_object.hxx"
-"src/core/managers/resource_manager.hxx"
-"src/math/vec2.hxx"
-"src/math/vec3.hxx"
-"src/math/rotator.hxx"
-"src/math/mat4.hxx"
-"src/math/transform.hxx"
-"src/renderer/vulkan/async_tasks/async_load_texture_task.hxx"
-"src/renderer/containers/vertex.hxx"
-"src/renderer/containers/texture_data.hxx"
-"src/renderer/vulkan/vk_surface.hxx"
-"src/renderer/vulkan/vk_physical_device.hxx"
-"src/renderer/vulkan/vk_renderer.hxx"
-"src/renderer/vulkan/vk_mesh.hxx"
-"src/renderer/vulkan/vk_device.hxx"
-"src/renderer/vulkan/vk_queue_family.hxx"
-"src/renderer/vulkan/vk_device_memory.hxx"
-"src/renderer/vulkan/vk_buffer.hxx"
-"src/renderer/vulkan/vk_shader_module.hxx"
-"src/renderer/vulkan/vk_swapchain.hxx"
-"src/renderer/vulkan/vk_descriptor_set.hxx"
-"src/renderer/vulkan/vk_graphics_pipeline.hxx"
-"src/renderer/vulkan/vk_image.hxx"
-"src/renderer/vulkan/vk_texture_image.hxx"
-"src/renderer/vulkan/vk_msaa_image.hxx"
-"src/renderer/vulkan/vk_depth_image.hxx"
-"src/renderer/vulkan/vk_scene.hxx")
-
-set(DRECO_SOURCE_LIST 
-"src/engine/engine.cxx"
-"src/core/threads/thread_pool.cxx"
-"src/core/loaders/gltf_loader.cxx"
-"src/core/objects/camera.cxx"
-"src/core/objects/world_object.cxx"
-"src/core/managers/resource_manager.cxx"
-"src/math/vec2.cxx"
-"src/math/vec3.cxx"
-"src/math/rotator.cxx"
-"src/math/mat4.cxx"
-"src/math/transform.cxx"
-"src/renderer/containers/vertex.cxx"
-"src/renderer/containers/texture_data.cxx"
-"src/renderer/vulkan/vk_surface.cxx"
-"src/renderer/vulkan/vk_physical_device.cxx"
-"src/renderer/vulkan/vk_renderer.cxx"
-"src/renderer/vulkan/vk_mesh.cxx"
-"src/renderer/vulkan/vk_device.cxx"
-"src/renderer/vulkan/vk_queue_family.cxx"
-"src/renderer/vulkan/vk_device_memory.cxx"
-"src/renderer/vulkan/vk_buffer.cxx"
-"src/renderer/vulkan/vk_shader_module.cxx"
-"src/renderer/vulkan/vk_swapchain.cxx"
-"src/renderer/vulkan/vk_descriptor_set.cxx"
-"src/renderer/vulkan/vk_graphics_pipeline.cxx"
-"src/renderer/vulkan/vk_image.cxx"
-"src/renderer/vulkan/vk_texture_image.cxx"
-"src/renderer/vulkan/vk_msaa_image.cxx"
-"src/renderer/vulkan/vk_depth_image.cxx"
-"src/renderer/vulkan/vk_scene.cxx")
-
-add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_LIST} ${DRECO_HEADER_LIST})
-
 find_package(Vulkan REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY})
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR})
-
 find_package(SDL2 REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
 
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+file(GLOB_RECURSE DRECO_SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/*.cxx)
+file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_SOURCE_DIR}/src/*.hxx)
+
+add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY} ${SDL2_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
+
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
@@ -104,8 +38,7 @@ add_subdirectory(examples/triangle)
 
 include(tools/tools.cmake)
 
-set(CONTENT_DIR
-"${CMAKE_SOURCE_DIR}/content")
+set(CONTENT_DIR "${CMAKE_SOURCE_DIR}/content")
 
 install(FILES ${SHADER_BINARY_FILES} DESTINATION ${CMAKE_INSTALL_RPATH}/shaders)
 install(DIRECTORY ${CONTENT_DIR} DESTINATION ${CMAKE_INSTALL_RPATH})
