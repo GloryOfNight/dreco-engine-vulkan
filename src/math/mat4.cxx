@@ -119,8 +119,8 @@ mat4 mat4::makeProjection(const float near, const float far, const float aspect,
 	float tanHalfFov = std::tan(fov / 2.F);
 
 	mat4d mat{};
-	mat[0][0] = 1 / (aspect * tanHalfFov);
-	mat[1][1] = (1 / (aspect * tanHalfFov)) * -aspect;
+	mat[0][0] = 1.F / (aspect * tanHalfFov);
+	mat[1][1] = mat[0][0] * -aspect;
 	mat[2][2] = (far + near) / (far - near);
 	mat[2][3] = 1;
 	mat[3][2] = -(far * near) / (far - near);

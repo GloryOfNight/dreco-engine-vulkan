@@ -24,7 +24,7 @@ struct async_load_texture_task : public thread_task
 		_texData = texture_data::createNew(_texUri);
 	};
 
-	virtual void compeleted() override
+	virtual void completed() override
 	{
 		vk_texture_image* texImage = _scene->getTextureImages()[_texIndex];
 		new (texImage) vk_texture_image();

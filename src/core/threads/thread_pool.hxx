@@ -32,7 +32,7 @@ struct thread_task
 	virtual void doJob() = 0;
 
 	// in-sync with main
-	virtual void compeleted() = 0;
+	virtual void completed() = 0;
 
 	uint64_t getId() const { return _id; }
 
@@ -61,7 +61,7 @@ struct empty_thread_task : public thread_task
 {
 	void init() override{};
 	void doJob() override{};
-	void compeleted() override{};
+	void completed() override{};
 };
 
 class thread_pool

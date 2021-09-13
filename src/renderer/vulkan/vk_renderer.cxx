@@ -39,8 +39,8 @@ vk_renderer::vk_renderer()
 	, _vkGraphicsCommandPools{}
 	, _vkTransferCommandPool{VK_NULL_HANDLE}
 	, _vkSubmitQueueFences{}
-	, _vkSepaphoreImageAvaible{}
-	, _vkSepaphoreRenderFinished{}
+	, _vkSemaphoreImageAvaible{}
+	, _vkSemaphoreRenderFinished{}
 {
 }
 
@@ -58,8 +58,8 @@ vk_renderer::~vk_renderer()
 	clearVectorOfPtr(_scenes);
 	_placeholderTextureImage.destroy();
 
-	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
-	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
+	vkDestroySemaphore(_device.get(), _vkSemaphoreImageAvaible, vkGetAllocator());
+	vkDestroySemaphore(_device.get(), _vkSemaphoreRenderFinished, vkGetAllocator());
 
 	for (auto pool : _vkGraphicsCommandPools)
 	{
@@ -524,14 +524,14 @@ void vk_renderer::createSemaphores()
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSepaphoreImageAvaible));
-	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSepaphoreRenderFinished));
+	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSemaphoreImageAvaible));
+	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSemaphoreRenderFinished));
 }
 
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	const VkResult acquireNextImageResult = vkAcquireNextImageKHR(_device.get(), _vkSwapchain, UINT32_MAX, _vkSepaphoreImageAvaible, VK_NULL_HANDLE, &imageIndex);
+	const VkResult acquireNextImageResult = vkAcquireNextImageKHR(_device.get(), _vkSwapchain, UINT32_MAX, _vkSemaphoreImageAvaible, VK_NULL_HANDLE, &imageIndex);
 
 	if (VK_SUCCESS != acquireNextImageResult && VK_SUBOPTIMAL_KHR != acquireNextImageResult)
 	{
@@ -556,8 +556,8 @@ void vk_renderer::drawFrame()
 	VkCommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
 
 	std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	std::array<VkSemaphore, 1> waitSemaphores = {_vkSepaphoreImageAvaible};
-	std::array<VkSemaphore, 1> signalSemaphores = {_vkSepaphoreRenderFinished};
+	std::array<VkSemaphore, 1> waitSemaphores = {_vkSemaphoreImageAvaible};
+	std::array<VkSemaphore, 1> signalSemaphores = {_vkSemaphoreRenderFinished};
 	std::array<VkCommandBuffer, 1> commandBuffers = {commandBuffer};
 
 	VkSubmitInfo submitInfo{};

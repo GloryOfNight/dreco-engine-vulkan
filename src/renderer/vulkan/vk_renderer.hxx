@@ -138,7 +138,7 @@ private:
 
 	std::vector<VkFence> _vkSubmitQueueFences;
 
-	VkSemaphore _vkSepaphoreImageAvaible;
+	VkSemaphore _vkSemaphoreImageAvaible;
 
-	VkSemaphore _vkSepaphoreRenderFinished;
+	VkSemaphore _vkSemaphoreRenderFinished;
 };

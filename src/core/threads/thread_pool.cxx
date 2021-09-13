@@ -119,7 +119,7 @@ void thread_pool::processCompletedTasks()
 		thread_task* task = std::move(_completedTasks.front());
 		_completedTasks.pop_front();
 
-		task->compeleted();
+		task->completed();
 		task->markEnd();
 
 		std::cout << "thread_pool: completed task with id: " << task->getId() << "; took : " << task->getTaskCompletionTime() << "s" << std::endl;

@@ -24,7 +24,7 @@ struct async_task_load_scene : public thread_task
 		_scene = gltf_loader::loadScene(_file);
 	};
 
-	virtual void compeleted() override
+	virtual void completed() override
 	{
 		if (auto* eng = engine::get())
 		{
