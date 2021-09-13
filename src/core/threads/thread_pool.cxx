@@ -14,7 +14,7 @@ public:
 		if (!pool._waitingTasks.empty())
 		{
 			thread_task* task = std::move(pool._waitingTasks.front());
-			pool._waitingTasks.pop();
+			pool._waitingTasks.pop_front();
 			pool._threadsTaskAwaible = !pool._waitingTasks.empty();
 			return task;
 		}
@@ -24,7 +24,7 @@ public:
 	static void addCompletedTask(thread_pool& pool, thread_task*& task)
 	{
 		std::scoped_lock<std::mutex> lock(pool._completedTasksMutex);
-		pool._completedTasks.push(task);
+		pool._completedTasks.push_back(task);
 	}
 };
 
@@ -84,7 +84,7 @@ thread_pool::~thread_pool()
 	{
 		thread_task* task = std::move(_waitingTasks.front());
 		delete task;
-		_waitingTasks.pop();
+		_waitingTasks.pop_front();
 	}
 	processCompletedTasks();
 }
@@ -99,7 +99,7 @@ void thread_pool::queueTask(thread_task* task)
 	task->_id = ++_totalTaskCount;
 
 	std::scoped_lock<std::mutex> guard(_waitingTasksMutex);
-	_waitingTasks.push(task);
+	_waitingTasks.push_back(task);
 	task->init();
 	task->markStart();
 
@@ -117,7 +117,7 @@ void thread_pool::processCompletedTasks()
 	{
 		std::scoped_lock<std::mutex> lock(_completedTasksMutex);
 		thread_task* task = std::move(_completedTasks.front());
-		_completedTasks.pop();
+		_completedTasks.pop_front();
 
 		task->compeleted();
 		task->markEnd();

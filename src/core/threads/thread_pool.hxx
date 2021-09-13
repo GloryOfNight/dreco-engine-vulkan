@@ -4,7 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <mutex>
-#include <queue>
+#include <deque>
 #include <thread>
 #include <vector>
 
@@ -89,10 +89,10 @@ private:
 	std::atomic<bool> _threadsTaskAwaible{false};
 
 	std::mutex _waitingTasksMutex;
-	std::queue<thread_task*> _waitingTasks;
+	std::deque<thread_task*> _waitingTasks;
 
 	std::mutex _completedTasksMutex;
-	std::queue<thread_task*> _completedTasks;
+	std::deque<thread_task*> _completedTasks;
 
 	std::vector<SDL_Thread*> _threads;
 
