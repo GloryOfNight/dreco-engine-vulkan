@@ -213,7 +213,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	multisampleState.rasterizationSamples = samples;
 	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
-	multisampleState.alphaToCoverageEnable = VK_FALSE;
+	multisampleState.alphaToCoverageEnable = VK_TRUE;
 	multisampleState.alphaToOneEnable = VK_FALSE;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
