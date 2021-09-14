@@ -17,4 +17,4 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install SDL2
-      run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build && cmake --build SDL/build --install SDL/install
+      run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build -DCMAKE_INSTALL_PREFIX=SDL/install && cmake --build SDL/build --config Release --target INSTALL
