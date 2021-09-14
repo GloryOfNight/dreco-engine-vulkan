@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.19.0)
 project(dreco)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
 
@@ -9,8 +11,8 @@ file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_SOURCE_DIR}/src/*.hxx)
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY} ${SDL2_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY} ${SDL2_LIBRARY})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIR})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
@@ -48,9 +50,9 @@ install(TARGETS dreco triangle
         LIBRARY DESTINATION ${CMAKE_INSTALL_RPATH})
 
 if (MSVC)
-## Find SDL2 dll file (required by executable)
-string(FIND "${SDL2_LIBRARIES}" "SDL2.lib" SDL2_LIBRARIES_PATH_INDEX)
-string(SUBSTRING "${SDL2_LIBRARIES}" "0" "${SDL2_LIBRARIES_PATH_INDEX}" SDL2_LIBRARIES_PATH)
+## Set SDL2_DLL by replacing SDL2.lib with SDL2.dll
+string(FIND "${SDL2_LIBRARY}" "/SDL2.lib" SDL2_LIBRARIES_PATH_INDEX)
+string(SUBSTRING "${SDL2_LIBRARY}" "0" "${SDL2_LIBRARIES_PATH_INDEX}" SDL2_LIBRARIES_PATH)
 set(SDL2_DLL "${SDL2_LIBRARIES_PATH}/SDL2.dll")
 
 # Copy SDL2.dll to binary directory 
