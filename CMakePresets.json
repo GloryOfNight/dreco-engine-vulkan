@@ -28,10 +28,6 @@
   ],
   "buildPresets": [
     {
-      "name": "default",
-      "configurePreset": "default-x64"
-    },
-    {
       "name": "Debug VS2019",
       "configuration": "Debug",
       "configurePreset": "Visual Studio 2019"
