@@ -50,10 +50,18 @@ install(TARGETS dreco triangle
         LIBRARY DESTINATION ${CMAKE_INSTALL_RPATH})
 
 if (MSVC)
-## Set SDL2_DLL by replacing SDL2.lib with SDL2.dll
-string(FIND "${SDL2_LIBRARY}" "/SDL2.lib" SDL2_LIBRARIES_PATH_INDEX)
-string(SUBSTRING "${SDL2_LIBRARY}" "0" "${SDL2_LIBRARIES_PATH_INDEX}" SDL2_LIBRARIES_PATH)
-set(SDL2_DLL "${SDL2_LIBRARIES_PATH}/SDL2.dll")
+
+# Locate SDL2.dll
+if(CMAKE_SIZEOF_VOID_P EQUAL 8) 
+	set(PATH_SUFFIXES lib64 lib/x64 lib)
+else() 
+	set(PATH_SUFFIXES lib/x86 lib)
+endif()
+find_path(SDL2_DLL_PATH SDL2.dll
+HINTS $ENV{SDL2DIR}
+PATH_SUFFIXES ${PATH_SUFFIXES})
+
+set(SDL2_DLL "${SDL2_DLL_PATH}/SDL2.dll")
 
 # Copy SDL2.dll to binary directory 
 get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
