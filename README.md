@@ -1,5 +1,5 @@
 # Dreco Engine - Vulkan
-Project for personal fun of writing vulkan renderer and an game egnine (probably).
+Project for personal fun of writing vulkan renderer and an game engine (probably).
 
 Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) with some core changes:
 - Full support for 3rd space, new matrixes
@@ -11,5 +11,5 @@ Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) wi
  ## Required Dependencies
 - CMake at least 3.19.0 ([link](https://cmake.org/))
 - Vulkan SDK ([link](https://vulkan.lunarg.com/))
-- SDL2 at least 2.0.16 ([link](https://github.com/libsdl-org/SDL)
-- GLM at least 0.9.8 ([link](https://github.com/g-truc/glm)
+- SDL2 at least 2.0.16 ([link](https://github.com/libsdl-org/SDL))
+- GLM at least 0.9.8 ([link](https://github.com/g-truc/glm))
