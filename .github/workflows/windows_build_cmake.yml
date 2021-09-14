@@ -24,3 +24,9 @@ jobs:
       
     - name: Install Vulkan SDK
       uses: humbletim/setup-vulkan-sdk@v1.0.3
+      
+    - name: CMake Configure
+      run: cmake -S . -B build -DSDL2_DIR=SDL/install -DGLM_DIR=glm/install
+
+    - name: CMake Build
+      run: cmake --build build --config Release
