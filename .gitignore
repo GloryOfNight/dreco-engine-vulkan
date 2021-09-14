@@ -36,6 +36,7 @@
 
 # Folders
 .vs/*
+.vscode/*
 build/*
 tools/build*
 bin/*

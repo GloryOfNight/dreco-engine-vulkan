@@ -1,10 +1,10 @@
 #pragma once
-#include "renderer/containers/mesh_data.hxx"
+#include "core/containers/scene.hxx"
 
 #include <string_view>
 
 class gltf_loader
 {
 public:
-	static std::vector<mesh_data> loadScene(const std::string_view& sceneFile);
+	static scene loadScene(const std::string_view& sceneFile);
 };

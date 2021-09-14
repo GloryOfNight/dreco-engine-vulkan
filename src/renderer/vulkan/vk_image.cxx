@@ -82,7 +82,7 @@ void vk_image::createImageView(const VkDevice vkDevice, const VkFormat vkFormat)
 	VK_CHECK(vkCreateImageView(vkDevice, &createInfo, vkGetAllocator(), &_vkImageView));
 }
 
-void vk_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
+VkCommandBuffer vk_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
 	const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
 	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags)
 {
@@ -106,6 +106,7 @@ void vk_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFor
 	barrier.dstAccessMask = vkAccessFlagsDst;
 
 	vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineStageFlagsSrc, vkPipelineStageFlagsDst, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	vkEndCommandBuffer(vkCommandBuffer);
 
-	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
+	return vkCommandBuffer;
 }

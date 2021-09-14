@@ -24,27 +24,26 @@ vk_graphics_pipeline::~vk_graphics_pipeline()
 	destroy();
 }
 
-void vk_graphics_pipeline::create(const vk_descriptor_set& vkDescriptorSet)
+void vk_graphics_pipeline::create(const material& mat)
 {
+	_mat = mat;
+
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice = renderer->getDevice().get();
-	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
-	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
-	createPipelineLayout(vkDevice, vkDescriptorSet);
-	createPipeline(vkDevice, vkRenderPass, vkExtent);
+	createDescriptorLayouts(vkDevice);
+	createPipelineLayout(vkDevice);
+	createPipeline(vkDevice);
 }
 
 void vk_graphics_pipeline::recreatePipeline()
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice = renderer->getDevice().get();
-	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
-	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
 	vkDestroyPipeline(vkDevice, _vkPipeline, vkGetAllocator());
 
-	createPipeline(vkDevice, vkRenderPass, vkExtent);
+	createPipeline(vkDevice);
 }
 
 void vk_graphics_pipeline::destroy()
@@ -52,12 +51,31 @@ void vk_graphics_pipeline::destroy()
 	const VkDevice vkDevice = vk_renderer::get()->getDevice().get();
 	if (VK_NULL_HANDLE != _vkPipelineLayout)
 	{
+		for (auto descriptorLayout : _vkDescriptorSetLayouts)
+		{
+			vkDestroyDescriptorSetLayout(vkDevice, descriptorLayout, vkGetAllocator());
+		}
 		vkDestroyPipelineLayout(vkDevice, _vkPipelineLayout, vkGetAllocator());
 		vkDestroyPipeline(vkDevice, _vkPipeline, vkGetAllocator());
 
 		_vkPipelineLayout = VK_NULL_HANDLE;
 		_vkPipeline = VK_NULL_HANDLE;
 	}
+}
+
+void vk_graphics_pipeline::bindToCmdBuffer(const VkCommandBuffer commandBuffer)
+{
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,_vkPipeline);
+}
+
+const material& vk_graphics_pipeline::getMaterial() const
+{
+	return _mat;
+}
+
+const std::vector<VkDescriptorSetLayout>& vk_graphics_pipeline::getDescriptorSetLayouts() const
+{
+	return _vkDescriptorSetLayouts;
 }
 
 VkPipelineLayout vk_graphics_pipeline::getLayout() const
@@ -70,22 +88,52 @@ VkPipeline vk_graphics_pipeline::get() const
 	return _vkPipeline;
 }
 
-void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice, const vk_descriptor_set& vkDescriptorSet)
-{
-	const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts{vkDescriptorSet.getLayouts()};
+void vk_graphics_pipeline::createDescriptorLayouts(const VkDevice vkDevice)
+{ 
+	VkDescriptorSetLayoutBinding uniformBinding{};
+	uniformBinding.binding = 0;
+	uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uniformBinding.descriptorCount = 1;
+	uniformBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uniformBinding.pImmutableSamplers = VK_NULL_HANDLE;
 
+	VkDescriptorSetLayoutBinding sampledImageBinding{};
+	sampledImageBinding.binding = 1;
+	sampledImageBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampledImageBinding.descriptorCount = 1;
+	sampledImageBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	sampledImageBinding.pImmutableSamplers = VK_NULL_HANDLE;
+
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings{uniformBinding, sampledImageBinding};
+
+	VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.pNext = nullptr;
+	layoutCreateInfo.flags = 0;
+	layoutCreateInfo.bindingCount = layoutBindings.size();
+	layoutCreateInfo.pBindings = layoutBindings.data();
+
+	_vkDescriptorSetLayouts.resize(1);
+	VK_CHECK(vkCreateDescriptorSetLayout(vkDevice, &layoutCreateInfo, VK_NULL_HANDLE, _vkDescriptorSetLayouts.data()));
+}
+
+void vk_graphics_pipeline::createPipelineLayout(const VkDevice vkDevice)
+{
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = vkDescriptorSetLayouts.size();
-	pipelineLayoutInfo.pSetLayouts = vkDescriptorSetLayouts.data();
+	pipelineLayoutInfo.setLayoutCount = _vkDescriptorSetLayouts.size();
+	pipelineLayoutInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 	VK_CHECK(vkCreatePipelineLayout(vkDevice, &pipelineLayoutInfo, VK_NULL_HANDLE, &_vkPipelineLayout));
 }
 
-void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent)
+void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 {
-	const VkSampleCountFlagBits samples = vk_renderer::get()->getPhysicalDevice().getMaxSupportedSampleCount();
+	vk_renderer* renderer{vk_renderer::get()};
+	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
+	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
+	const VkSampleCountFlagBits samples = renderer->getPhysicalDevice().getMaxSupportedSampleCount();
 
 	const std::string vertShaderCode = file_utils::read_file("shaders/basic.vert.spv");
 	const std::string fragShaderCode = file_utils::read_file("shaders/basic.frag.spv");
@@ -152,7 +200,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizationState.lineWidth = 1.0F;
-	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizationState.cullMode = _mat._doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
 	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationState.depthBiasEnable = VK_FALSE;
 	rasterizationState.depthBiasConstantFactor = 0.0F;
@@ -165,7 +213,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice, const VkRende
 	multisampleState.rasterizationSamples = samples;
 	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
-	multisampleState.alphaToCoverageEnable = VK_FALSE;
+	multisampleState.alphaToCoverageEnable = VK_TRUE;
 	multisampleState.alphaToOneEnable = VK_FALSE;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};

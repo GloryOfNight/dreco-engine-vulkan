@@ -1,4 +1,5 @@
 #pragma once
+#include "core/containers/mesh.hxx"
 #include "math/transform.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
@@ -12,14 +13,17 @@
 #include <vulkan/vulkan.h>
 
 class vk_device;
+class vk_scene;
 class vk_queue_family;
 class vk_graphics_pipeline;
 class vk_physical_device;
 
 class vk_mesh final
 {
+	typedef std::vector<vk_device_memory::map_memory_region> _memory_regions;
+
 public:
-	vk_mesh(const mesh_data& meshData);
+	vk_mesh();
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
 	~vk_mesh();
@@ -27,38 +31,29 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create();
-
-	void recreatePipeline(const VkRenderPass vkRenderPass, const VkExtent2D& vkExtent);
+	void create(const mesh& m, const vk_scene* scene);
 
 	void destroy();
 
 	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer);
 
-	void beforeSubmitUpdate();
+	void update();
+
+	vk_descriptor_set& getDescriptorSet();
 
 	transform _transform;
 
 protected:
-	void createDescriptorSet();
-
-	void createVIBuffer(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
-
-	void createUniformBuffers(const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice);
+	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
 
 private:
-	mesh_data _mesh;
+	VkDeviceSize _vertsBufferSize{0};
+	VkDeviceSize _indxsBufferSize{0};
+	std::vector<uint32_t> _primitiveIndexCounts;
 
 	uniforms _ubo;
 
 	vk_buffer _viBuffer;
-	VkDeviceSize _indexBufferOffset;
-
-	vk_buffer _uniformBuffer;
-
-	vk_texture_image _textureImage;
-
-	vk_graphics_pipeline _graphicsPipeline;
 
 	vk_descriptor_set _descriptorSet;
 

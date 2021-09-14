@@ -1,4 +1,5 @@
 #pragma once
+#include "core/containers/scene.hxx"
 #include "math/vec3.hxx"
 #include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
@@ -6,10 +7,13 @@
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
 #include "vk_device.hxx"
+#include "vk_graphics_pipeline.hxx"
 #include "vk_msaa_image.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_surface.hxx"
+#include "vk_texture_image.hxx"
+#include "vk_scene.hxx"
 
 #include <SDL.h>
 #include <vector>
@@ -37,7 +41,7 @@ public:
 
 	void tick(double deltaTime);
 
-	vk_mesh* createMesh(const mesh_data& meshData);
+	void loadScene(const scene& scn);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -59,9 +63,13 @@ public:
 
 	vk_queue_family& getQueueFamily();
 
+	const vk_texture_image& getTextureImagePlaceholder() const;
+
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
-	void endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer);
+	void submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
+
+	void submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits);
 
 protected:
 	void drawFrame();
@@ -95,7 +103,9 @@ protected:
 private:
 	uint32_t _apiVersion;
 
-	std::vector<vk_mesh*> _meshes;
+	vk_texture_image _placeholderTextureImage;
+
+	std::vector<vk_scene*> _scenes;
 
 	SDL_Window* _window;
 
@@ -120,7 +130,7 @@ private:
 	std::vector<VkFramebuffer> _vkFramebuffers;
 
 	VkRenderPass _vkRenderPass;
-	
+
 	std::vector<VkCommandPool> _vkGraphicsCommandPools;
 	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
 
@@ -128,7 +138,7 @@ private:
 
 	std::vector<VkFence> _vkSubmitQueueFences;
 
-	VkSemaphore _vkSepaphoreImageAvaible;
+	VkSemaphore _vkSemaphoreImageAvaible;
 
-	VkSemaphore _vkSepaphoreRenderFinished;
+	VkSemaphore _vkSemaphoreRenderFinished;
 };
