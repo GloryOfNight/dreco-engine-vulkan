@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.19.0)
 project(dreco)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
 
@@ -11,8 +9,8 @@ file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_SOURCE_DIR}/src/*.hxx)
 
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY} ${SDL2_LIBRARY})
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY} ${SDL2_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
@@ -53,12 +51,12 @@ if (MSVC)
 
 # Locate SDL2.dll
 if(CMAKE_SIZEOF_VOID_P EQUAL 8) 
-	set(PATH_SUFFIXES lib64 lib/x64 lib)
+	set(PATH_SUFFIXES lib64 lib/x64 lib bin)
 else() 
-	set(PATH_SUFFIXES lib/x86 lib)
+	set(PATH_SUFFIXES lib/x86 lib bin)
 endif()
 find_path(SDL2_DLL_PATH SDL2.dll
-HINTS $ENV{SDL2DIR}
+HINTS $ENV{SDL2_DIR}
 PATH_SUFFIXES ${PATH_SUFFIXES})
 
 set(SDL2_DLL "${SDL2_DLL_PATH}/SDL2.dll")

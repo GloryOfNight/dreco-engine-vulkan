@@ -10,7 +10,13 @@
       "architecture": {
         "value": "x64",
         "strategy": "external"
-      }
+      },
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "default-x64-release",
+      "inherits": "default-x64",
+      "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
     },
     {
       "name": "Visual Studio 2019",
@@ -22,24 +28,18 @@
   ],
   "buildPresets": [
     {
-      "name": "Debug",
-      "configurePreset": "default-x64",
-      "configuration": "Debug"
-    },
-    {
-      "name": "Release",
-      "configurePreset": "default-x64",
-      "configuration": "Release"
+      "name": "default",
+      "configurePreset": "default-x64"
     },
     {
       "name": "Debug VS2019",
-      "inherits": "Debug",
+      "configuration": "Debug",
       "configurePreset": "Visual Studio 2019"
     },
     {
       "name": "Release VS2019",
-      "inherits": "Debug",
-      "configurePreset": "Visual Studio 2019"
+      "inherits": "Debug VS2019",
+      "configuration": "Release"
     }
   ]
 }
