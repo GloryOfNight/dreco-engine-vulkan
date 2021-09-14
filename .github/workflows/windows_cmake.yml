@@ -2,7 +2,7 @@ name: Windows
 
 on:
   push:
-    branches: [ master, windows-ci ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
