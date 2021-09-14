@@ -8,25 +8,27 @@ on:
 
 env:
   BUILD_TYPE: Release
+  SDL2_DIR: C:/Program Files (x86)/SDL2
+  GLM_DIR: C:/Program Files (x86)/glm
 
 jobs:
-  build:
+  Build:
     runs-on: windows-latest
     
     steps:
     - uses: actions/checkout@v2
 
     - name: Install SDL2
-      run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build -DCMAKE_INSTALL_PREFIX=SDL/install && cmake --build SDL/build --config Release --target INSTALL
+      run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build && cmake --build SDL/build --config Release --target INSTALL
       
     - name: Install GLM
-      run: git clone https://github.com/g-truc/glm.git -b 0.9.8 && cmake -S glm -B glm/build -DCMAKE_INSTALL_PREFIX=glm/install && cmake --build glm/build --config Release --target INSTALL
+      run: git clone https://github.com/g-truc/glm.git -b 0.9.8 && cmake -S glm -B glm/build && cmake --build glm/build --config Release --target INSTALL
       
     - name: Install Vulkan SDK
       uses: humbletim/setup-vulkan-sdk@v1.0.3
       
     - name: CMake Configure
-      run: cmake -S . -B build -DSDL2_DIR=SDL/install -DGLM_DIR=glm/install
+      run: cmake -S . -B build
 
     - name: CMake Build
       run: cmake --build build --config Release
