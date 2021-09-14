@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install SDL2
-      run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build && cmake --build SDL/build --config Release --target INSTALL
+      run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build -DSDL_STATIC=FALSE && cmake --build SDL/build --config Release --target INSTALL
       
     - name: Install GLM
       run: git clone https://github.com/g-truc/glm.git -b 0.9.8 && cmake -S glm -B glm/build && cmake --build glm/build --config Release --target INSTALL
