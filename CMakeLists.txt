@@ -3,6 +3,7 @@ project(dreco)
 
 find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package(glm REQUIRED)
 
 file(GLOB_RECURSE DRECO_SOURCE_FILES ${CMAKE_SOURCE_DIR}/src/*.cxx)
 file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_SOURCE_DIR}/src/*.hxx)
@@ -10,7 +11,7 @@ file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_SOURCE_DIR}/src/*.hxx)
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARY} ${SDL2_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
