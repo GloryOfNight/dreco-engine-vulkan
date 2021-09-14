@@ -37,7 +37,8 @@ public:
 
 	static void copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDst, const std::vector<VkBufferCopy>& vkBufferCopyRegions);
 
-	static void copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height);
+	[[nodiscard]]
+	static VkCommandBuffer copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height);
 
 protected:
 	void createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info);

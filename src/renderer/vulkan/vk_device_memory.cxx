@@ -56,6 +56,18 @@ void vk_device_memory::map(const void* data, const VkDeviceSize size, const VkDe
 	vkUnmapMemory(vkDevice, _vkDeviceMemory);
 }
 
+void vk_device_memory::map(const std::vector<map_memory_region>& regions, const VkDeviceSize offset)
+{
+	const VkDevice vkDevice = vk_renderer::get()->getDevice().get();
+	void* region;
+	VK_CHECK(vkMapMemory(vkDevice, _vkDeviceMemory, offset, VK_WHOLE_SIZE, 0, &region));
+	for (const auto& reg : regions) 
+	{
+		memcpy(reinterpret_cast<uint8_t*>(region) + reg.offset, reg.data, reg.size);
+	}
+	vkUnmapMemory(vkDevice, _vkDeviceMemory);
+}
+
 VkDeviceMemory vk_device_memory::get() const
 {
 	return _vkDeviceMemory;

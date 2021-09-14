@@ -17,7 +17,8 @@ public:
 
     const vk_device_memory& getDeviceMemory() const {return _deviceMemory;};
 
-    static void transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
+    [[nodiscard]]
+    static VkCommandBuffer transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
 		const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
 		const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags);
 
@@ -32,9 +33,9 @@ protected:
 
 	void createImageView(const VkDevice vkDevice, const VkFormat vkFormat);
 
-    VkImage _vkImage;
+    VkImage _vkImage{VK_NULL_HANDLE};
 
-    VkImageView _vkImageView;
+    VkImageView _vkImageView{VK_NULL_HANDLE};
 
     vk_device_memory _deviceMemory;
 };

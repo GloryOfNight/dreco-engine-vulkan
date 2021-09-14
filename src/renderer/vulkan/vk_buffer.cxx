@@ -60,10 +60,12 @@ void vk_buffer::copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDs
 
 	vkCmdCopyBuffer(vkCommandBuffer, vkBufferSrc, VkBufferDst, vkBufferCopyRegions.size(), vkBufferCopyRegions.data());
 
-	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
+	vkEndCommandBuffer(vkCommandBuffer);
+
+	renderer->submitSingleTimeTransferCommands(vkCommandBuffer);
 }
 
-void vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height)
+VkCommandBuffer vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
@@ -81,8 +83,9 @@ void vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage
 	copyRegion.imageExtent = {width, height, 1};
 
 	vkCmdCopyBufferToImage(vkCommandBuffer, vkBuffer, vkImage, vkImageLayout, 1, &copyRegion);
+	vkEndCommandBuffer(vkCommandBuffer);
 
-	renderer->endSingleTimeTransferCommands(vkCommandBuffer);
+	return vkCommandBuffer;
 }
 
 void vk_buffer::createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info)

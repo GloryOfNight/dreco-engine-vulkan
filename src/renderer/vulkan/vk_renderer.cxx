@@ -1,7 +1,10 @@
 #include "vk_renderer.hxx"
 
+#include "async_tasks/async_load_texture_task.hxx"
 #include "core/platform.h"
+#include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
+#include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
 
 #include "vk_allocator.hxx"
@@ -23,7 +26,6 @@
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
-	, _meshes{}
 	, _window{nullptr}
 	, _surface()
 	, _physicalDevice()
@@ -37,8 +39,8 @@ vk_renderer::vk_renderer()
 	, _vkGraphicsCommandPools{}
 	, _vkTransferCommandPool{VK_NULL_HANDLE}
 	, _vkSubmitQueueFences{}
-	, _vkSepaphoreImageAvaible{}
-	, _vkSepaphoreRenderFinished{}
+	, _vkSemaphoreImageAvaible{}
+	, _vkSemaphoreRenderFinished{}
 {
 }
 
@@ -53,14 +55,11 @@ vk_renderer::~vk_renderer()
 
 	cleanupSwapchain(_vkSwapchain);
 
-	for (vk_mesh* mesh : _meshes)
-	{
-		delete mesh;
-	}
-	_meshes.clear();
+	clearVectorOfPtr(_scenes);
+	_placeholderTextureImage.destroy();
 
-	vkDestroySemaphore(_device.get(), _vkSepaphoreImageAvaible, vkGetAllocator());
-	vkDestroySemaphore(_device.get(), _vkSepaphoreRenderFinished, vkGetAllocator());
+	vkDestroySemaphore(_device.get(), _vkSemaphoreImageAvaible, vkGetAllocator());
+	vkDestroySemaphore(_device.get(), _vkSemaphoreRenderFinished, vkGetAllocator());
 
 	for (auto pool : _vkGraphicsCommandPools)
 	{
@@ -118,6 +117,8 @@ void vk_renderer::init()
 
 	createFences();
 	createSemaphores();
+
+	_placeholderTextureImage.create();
 }
 
 void vk_renderer::tick(double deltaTime)
@@ -125,14 +126,10 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-vk_mesh* vk_renderer::createMesh(const mesh_data& meshData)
+void vk_renderer::loadScene(const scene& scn)
 {
-	_meshes.push_back(new vk_mesh(meshData));
-
-	vk_mesh* newMesh = _meshes.back();
-	newMesh->create();
-
-	return newMesh;
+	vk_scene* newScene = _scenes.emplace_back(new vk_scene());
+	newScene->create(scn);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -191,6 +188,11 @@ vk_queue_family& vk_renderer::getQueueFamily()
 	return _queueFamily;
 }
 
+const vk_texture_image& vk_renderer::getTextureImagePlaceholder() const
+{
+	return _placeholderTextureImage;
+}
+
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 {
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
@@ -214,18 +216,19 @@ VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 	return commandBuffer;
 }
 
-void vk_renderer::endSingleTimeTransferCommands(const VkCommandBuffer vkCommandBuffer)
+void vk_renderer::submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer)
 {
-	vkEndCommandBuffer(vkCommandBuffer);
-
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &vkCommandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer;
+	submitSingleTimeTransferCommands({submitInfo});
+}
 
-	vkQueueSubmit(_device.getTransferQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+void vk_renderer::submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits)
+{
+	vkQueueSubmit(_device.getTransferQueue(), submits.size(), submits.data(), VK_NULL_HANDLE);
 	vkQueueWaitIdle(_device.getTransferQueue());
-	vkFreeCommandBuffers(_device.get(), _vkTransferCommandPool, 1, &vkCommandBuffer);
 }
 
 void vk_renderer::createWindow()
@@ -521,14 +524,14 @@ void vk_renderer::createSemaphores()
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSepaphoreImageAvaible));
-	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSepaphoreRenderFinished));
+	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSemaphoreImageAvaible));
+	VK_CHECK(vkCreateSemaphore(_device.get(), &semaphoreInfo, vkGetAllocator(), &_vkSemaphoreRenderFinished));
 }
 
 void vk_renderer::drawFrame()
 {
 	uint32_t imageIndex;
-	const VkResult acquireNextImageResult = vkAcquireNextImageKHR(_device.get(), _vkSwapchain, UINT32_MAX, _vkSepaphoreImageAvaible, VK_NULL_HANDLE, &imageIndex);
+	const VkResult acquireNextImageResult = vkAcquireNextImageKHR(_device.get(), _vkSwapchain, UINT32_MAX, _vkSemaphoreImageAvaible, VK_NULL_HANDLE, &imageIndex);
 
 	if (VK_SUCCESS != acquireNextImageResult && VK_SUBOPTIMAL_KHR != acquireNextImageResult)
 	{
@@ -553,8 +556,8 @@ void vk_renderer::drawFrame()
 	VkCommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
 
 	std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	std::array<VkSemaphore, 1> waitSemaphores = {_vkSepaphoreImageAvaible};
-	std::array<VkSemaphore, 1> signalSemaphores = {_vkSepaphoreRenderFinished};
+	std::array<VkSemaphore, 1> waitSemaphores = {_vkSemaphoreImageAvaible};
+	std::array<VkSemaphore, 1> signalSemaphores = {_vkSemaphoreRenderFinished};
 	std::array<VkCommandBuffer, 1> commandBuffers = {commandBuffer};
 
 	VkSubmitInfo submitInfo{};
@@ -628,9 +631,9 @@ void vk_renderer::recreateSwapchain()
 
 	createFramebuffers();
 
-	for (vk_mesh* mesh : _meshes)
+	for (auto* scene : _scenes)
 	{
-		mesh->recreatePipeline(_vkRenderPass, currentExtent);
+		scene->recreatePipelines();
 	}
 }
 
@@ -660,10 +663,10 @@ VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	for (auto& mesh : _meshes)
+	for (auto* scene : _scenes)
 	{
-		mesh->beforeSubmitUpdate();
-		mesh->bindToCmdBuffer(commandBuffer);
+		scene->update();
+		scene->bindToCmdBuffer(commandBuffer);
 	}
 	vkCmdEndRenderPass(commandBuffer);
 

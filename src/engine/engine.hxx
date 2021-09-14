@@ -26,6 +26,8 @@ public:
 
 	const camera* getCamera() const;
 
+	thread_pool* getThreadPool() const;
+
 	void run();
 
 	void stop();
@@ -45,7 +47,7 @@ private:
 
 	double calculateNewDeltaTime();
 
-	thread_pool* _thread_pool;
+	thread_pool* _threadPool;
 
 	vk_renderer* _renderer;
 

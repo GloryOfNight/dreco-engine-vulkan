@@ -6,9 +6,11 @@ Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) wi
 - Vulkan as primary rendering API (really fun thing to try)
 
 ## Build
-![Linux Ubuntu](https://github.com/GloryOfNight/dreco-engine-vulkan/workflows/Ubuntu%20Build/badge.svg?branch=master)
+[![Ubuntu](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml)
+[![Windows](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/windows_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/windows_cmake.yml)
 
  ## Required Dependencies
 - CMake at least 3.19.0 ([link](https://cmake.org/))
 - Vulkan SDK ([link](https://vulkan.lunarg.com/))
-- SDL2 ([link](https://www.libsdl.org/))
+- SDL2 at least 2.0.16 ([link](https://github.com/libsdl-org/SDL))
+- GLM at least 0.9.8 ([link](https://github.com/g-truc/glm))

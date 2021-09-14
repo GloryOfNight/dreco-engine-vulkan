@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/containers/image.hxx"
 #include "renderer/containers/material.hxx"
 #include "renderer/containers/texture_data.hxx"
 
@@ -17,11 +18,15 @@ public:
 
 	void create() override;
 
+	void create(const image& img);
+
 	void create(const texture_data& textureData);
 
 	void destroy() override;
 
 	VkSampler getSampler() const;
+
+	bool isValid() const;
 
 protected:
 	virtual VkImageAspectFlags getImageAspectFlags() const override;

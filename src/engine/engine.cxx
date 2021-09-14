@@ -13,7 +13,7 @@ static inline engine* gEngine{nullptr};
 struct async_task_load_scene : public thread_task
 {
 	async_task_load_scene(const std::string_view& sceneFile)
-		: file(sceneFile)
+		: _file(sceneFile)
 	{
 	}
 
@@ -21,32 +21,28 @@ struct async_task_load_scene : public thread_task
 
 	virtual void doJob() override
 	{
-		scene = gltf_loader::loadScene(file);
+		_scene = gltf_loader::loadScene(_file);
 	};
 
-	virtual void compeleted() override
+	virtual void completed() override
 	{
 		if (auto* eng = engine::get())
 		{
 			if (auto* renderer = eng->getRenderer())
 			{
-				for (auto& mesh : scene)
-				{
-					auto newMesh = renderer->createMesh(mesh);
-					newMesh->_transform._rotation = rotator(0, 0, 0);
-				}
+				renderer->loadScene(_scene);
 			}
 		}
 	};
 
 private:
-	std::string file;
+	std::string _file;
 
-	std::vector<mesh_data> scene;
+	scene _scene;
 };
 
 engine::engine()
-	: _thread_pool{nullptr}
+	: _threadPool{nullptr}
 	, _renderer{nullptr}
 	, _isRunning{false}
 {
@@ -73,6 +69,11 @@ vk_renderer* engine::getRenderer() const
 const camera* engine::getCamera() const
 {
 	return &_camera;
+}
+
+thread_pool* engine::getThreadPool() const 
+{
+	return _threadPool;
 }
 
 void engine::run()
@@ -151,12 +152,15 @@ void engine::stopRenderer()
 
 void engine::preMainLoop()
 {
-	if (_thread_pool == nullptr)
+	if (_threadPool == nullptr)
 	{
-		_thread_pool = new thread_pool();
+		_threadPool = new thread_pool("dreco-worker", thread_pool::hardwareConcurrency() / 2);
 	}
 
-	_thread_pool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+	_threadPool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+
+	_camera.setPosition(vec3(0, 10, 50));
+	_camera.setRotation(rotator(0, 180, 0));
 }
 
 void engine::startMainLoop()
@@ -171,7 +175,7 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
-		_thread_pool->tick(deltaTime);
+		_threadPool->tick();
 
 		_renderer->tick(deltaTime);
 
@@ -276,8 +280,8 @@ void engine::startMainLoop()
 
 void engine::postMainLoop()
 {
-	delete _thread_pool;
-	_thread_pool = nullptr;
+	delete _threadPool;
+	_threadPool = nullptr;
 }
 
 void engine::stopMainLoop()
