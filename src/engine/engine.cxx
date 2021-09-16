@@ -109,7 +109,7 @@ bool engine::init()
 
 	if (!file_utils::isFileExists(TEXTURE_PLACEHOLDER_URI))
 	{
-		DR_LOGF(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI);
+		DR_LOGF(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI.c_str());
 		DR_LOGF(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
 		return false;
 	}

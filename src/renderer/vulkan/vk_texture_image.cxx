@@ -46,7 +46,7 @@ void vk_texture_image::create(const texture_data& textureData)
 
 	if (!pixels)
 	{
-		DR_LOGF(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI);
+		DR_LOGF(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI.c_str());
 		create();
 		return;
 	}

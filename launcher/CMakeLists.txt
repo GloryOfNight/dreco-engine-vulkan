@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.2)
-project(launcher)
+project(dreco-launcher)
 
 set(SOURCES_LIST main.cxx)
 
@@ -14,5 +14,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
     EXPORT_COMPILE_COMMANDS TRUE
-    RUNTIME_OUTPUT_DIRECTORY ${DRECO_BINARY_DIR}
-)
+    RUNTIME_OUTPUT_DIRECTORY ${DRECO_BINARY_DIR})

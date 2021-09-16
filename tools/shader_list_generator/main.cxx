@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 
 	const fs::path& shaderSrcDirPath = std::string_view(argv[1]);
 	const std::string& shaderBinDirPath = argv[2];
-	const std::string_view& outputCmakePath = argv[3];
+	const std::string& outputCmakePath = argv[3];
 
 	if (!fs::exists(shaderSrcDirPath) || !fs::is_directory(shaderSrcDirPath))
 	{
