@@ -1,10 +1,10 @@
 #include "vk_texture_image.hxx"
 
+#include "core/utils/log.hxx"
+
 #include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
-
-#define VK_TEXTURE_PLACEHOLDER_URI "content/doge.jpg"
 
 vk_texture_image::vk_texture_image()
 	: _vkSampler{VK_NULL_HANDLE}
@@ -18,12 +18,12 @@ vk_texture_image::~vk_texture_image()
 
 void vk_texture_image::create()
 {
-	auto* texture = texture_data::createNew(VK_TEXTURE_PLACEHOLDER_URI);
+	auto* texture = texture_data::createNew(TEXTURE_PLACEHOLDER_URI);
 	unsigned char* pixels{nullptr};
 	texture->getData(&pixels, nullptr, nullptr, nullptr);
 	if (nullptr == pixels)
 	{
-		std::cerr << "vk_texture_image: Failed to load placeholder texture! Make sure working directory correct." << std::endl;
+		DR_LOGF(Critical, "Failed to load placeholder texture! Cannot proceed. . .");
 		std::abort();
 		return;
 	}
@@ -46,7 +46,7 @@ void vk_texture_image::create(const texture_data& textureData)
 
 	if (!pixels)
 	{
-		std::cerr << "vk_texture_image: Failed to load texture data, using placeholder texture: " << VK_TEXTURE_PLACEHOLDER_URI << ";\n";
+		DR_LOGF(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI);
 		create();
 		return;
 	}
@@ -72,7 +72,7 @@ void vk_texture_image::create(const texture_data& textureData)
 	info.memory_properties_flags = vk_device_memory_properties::HOST;
 	info.size = memoryRequirements.size;
 	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	
+
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
 	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);

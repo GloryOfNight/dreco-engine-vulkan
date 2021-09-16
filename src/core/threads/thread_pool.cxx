@@ -1,5 +1,7 @@
 #include "thread_pool.hxx"
 
+#include "core/utils/log.hxx"
+
 #include "SDL_thread.h"
 
 #include <chrono>
@@ -122,8 +124,7 @@ void thread_pool::processCompletedTasks()
 		task->completed();
 		task->markEnd();
 
-		std::cout << "thread_pool: completed task with id: " << task->getId() << "; took : " << task->getTaskCompletionTime() << "s" << std::endl;
-
+		DR_LOG(Info, "Completed async task with id: %u, took: %fs", task->getId(), task->getTaskCompletionTime());
 		delete task;
 	}
 }

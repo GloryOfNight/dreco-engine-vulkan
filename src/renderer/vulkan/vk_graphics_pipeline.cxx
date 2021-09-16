@@ -135,8 +135,10 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 	const VkSampleCountFlagBits samples = renderer->getPhysicalDevice().getMaxSupportedSampleCount();
 
-	const std::string vertShaderCode = file_utils::read_file("shaders/basic.vert.spv");
-	const std::string fragShaderCode = file_utils::read_file("shaders/basic.frag.spv");
+	std::string vertShaderCode;
+	file_utils::readFile(SHADER_BASIC_VERTEX_BIN_URI, vertShaderCode);
+	std::string fragShaderCode;
+	file_utils::readFile(SHADER_BASIC_FRAGMENT_BIN_URI, fragShaderCode);
 
 	vk_shader_module vertShaderStage;
 	vertShaderStage.create(vkDevice, vertShaderCode.data(), vertShaderCode.size());

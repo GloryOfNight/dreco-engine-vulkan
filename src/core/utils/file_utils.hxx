@@ -1,32 +1,43 @@
 #pragma once
-#include <cstdint>
+#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <string>
+
+#include "log.hxx"
 
 class file_utils
 {
 public:
-	static std::string read_file(const char* path)
+	static bool isFileExists(const std::string_view& path)
 	{
-		std::string buff;
-		std::ifstream file{path, std::ifstream::binary | std::ifstream::ate};
+		return std::filesystem::exists(path);
+	};
 
-		if (file.is_open())
+	static std::string currentWorkingDir() 
+	{
+		return std::filesystem::current_path().string();
+	}
+
+	static bool readFile(const std::string_view& path, std::string& data)
+	{
+		data.clear();
+		std::ifstream file{path.data(), std::ifstream::binary | std::ifstream::ate};
+
+		const bool isFileRead = file.is_open();
+		if (isFileRead)
 		{
 			const size_t len{static_cast<size_t>(file.tellg())};
 			file.seekg(0, file.beg);
-			buff.reserve(len);
-
-			buff.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+			data.reserve(len);
+			data.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 		}
 		else
 		{
-			std::cerr << "File not found: " << path << "\n";
+			DR_LOGF(Error, "Failed to load file: %s", path.data());
 		}
 
 		file.close();
 
-		return buff;
+		return isFileRead;
 	}
 };

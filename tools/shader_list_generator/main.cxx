@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-static bool findIsSourceShader(const std::string_view& stem)
+static bool isStemShaderSource(const std::string_view& stem)
 {
 	if (".vert" == stem)
 		return true;
@@ -49,13 +49,13 @@ int main(int argc, char* argv[])
 			continue;
 		}
 
-		const bool isSourceShaderFile = findIsSourceShader(p.path().extension().string());
+		const bool isSourceShaderFile = isStemShaderSource(p.path().extension().string());
 		if (isSourceShaderFile)
 		{
 			const std::string binPathStr = p.path().generic_string() + ".spv";
-			fs::path binPath = binPathStr;
 			totalShaderFiles.push_back(binPathStr);
 
+			const fs::path binPath = binPathStr;
 			if (fs::exists(binPath) && fs::is_regular_file(binPath))
 			{
 				const auto lastBinWriteTime = fs::last_write_time(binPath);

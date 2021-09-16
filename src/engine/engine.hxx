@@ -28,6 +28,9 @@ public:
 
 	thread_pool* getThreadPool() const;
 
+	[[nodiscard]]
+	bool init();
+
 	void run();
 
 	void stop();

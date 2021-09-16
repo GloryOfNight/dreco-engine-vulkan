@@ -1,5 +1,7 @@
 #include "texture_data.hxx"
 
+#include "core/utils/log.hxx"
+
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -7,7 +9,7 @@
 
 texture_data* texture_data::createNew(const std::string_view& texUri)
 {
-    return new texture_data(texUri);
+	return new texture_data(texUri);
 }
 
 texture_data::texture_data(const std::string_view& texUri)
@@ -19,7 +21,7 @@ texture_data::texture_data(const std::string_view& texUri)
 	_pixels = stbi_load(texUri.data(), &_texWidth, &_texHeight, &_texChannels, STBI_rgb_alpha);
 	if (!_pixels)
 	{
-		std::cout << "texture_data: Failed to load texture from uri: " << texUri << ";" << std::endl;
+		DR_LOGF(Error, "Failed to load texture from uri: %s", texUri.data());
 	}
 }
 
