@@ -83,7 +83,7 @@ bool engine::init()
 {
 	if (_isRunning)
 	{
-		DR_LOGF(Error, "Egnine already running, cannot init.");
+		DE_LOG(Error, "Egnine already running, cannot init.");
 		return false;
 	}
 
@@ -91,11 +91,11 @@ bool engine::init()
 	{
 		if (gEngine == this)
 		{
-			DR_LOGF(Error, "This engine instance was already initialized.");
+			DE_LOG(Error, "This engine instance was already initialized.");
 		}
 		else
 		{
-			DR_LOGF(Error, "Another engine instance already initialized.");
+			DE_LOG(Error, "Another engine instance already initialized.");
 		}
 
 		return false;
@@ -103,14 +103,14 @@ bool engine::init()
 
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
-		DR_LOGF(Error, "SDL Initialization error: %s", SDL_GetError());
+		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
 		return false;
 	}
 
 	if (!file_utils::isFileExists(TEXTURE_PLACEHOLDER_URI))
 	{
-		DR_LOGF(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI.c_str());
-		DR_LOGF(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
+		DE_LOG(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI.c_str());
+		DE_LOG(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
 		return false;
 	}
 
@@ -123,7 +123,7 @@ void engine::run()
 {
 	if (nullptr == engine::get())
 	{
-		DR_LOGF(Error, "Init engine first. Cannot run.");
+		DE_LOG(Error, "Init engine first. Cannot run.");
 		return;
 	}
 
@@ -137,7 +137,7 @@ void engine::stop()
 {
 	if (false == _isRunning)
 	{
-		DR_LOGF(Error, "Run engine first. Cannot stop.");
+		DE_LOG(Error, "Run engine first. Cannot stop.");
 		return;
 	}
 
@@ -159,11 +159,11 @@ bool engine::startRenderer()
 			uint32_t minor;
 			uint32_t patch;
 			_renderer->getVersion(major, minor, &patch);
-			DR_LOG(Info, "Vulkan Instance version: %u.%u.%u", major, minor, patch);
+			DE_LOG(Info, "Vulkan Instance version: %u.%u.%u", major, minor, patch);
 		}
 		else
 		{
-			DR_LOGF(Critical, "Vulkan not supported by current driver or GPU.");
+			DE_LOG(Critical, "Vulkan not supported by current driver or GPU.");
 		}
 	}
 	return _renderer != nullptr;

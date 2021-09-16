@@ -23,7 +23,7 @@ void vk_texture_image::create()
 	texture->getData(&pixels, nullptr, nullptr, nullptr);
 	if (nullptr == pixels)
 	{
-		DR_LOGF(Critical, "Failed to load placeholder texture! Cannot proceed. . .");
+		DE_LOG(Critical, "Failed to load placeholder texture! Cannot proceed. . .");
 		std::abort();
 		return;
 	}
@@ -46,7 +46,7 @@ void vk_texture_image::create(const texture_data& textureData)
 
 	if (!pixels)
 	{
-		DR_LOGF(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI.c_str());
+		DE_LOG(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI.c_str());
 		create();
 		return;
 	}

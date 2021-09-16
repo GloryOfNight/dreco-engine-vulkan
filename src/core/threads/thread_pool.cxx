@@ -124,7 +124,7 @@ void thread_pool::processCompletedTasks()
 		task->completed();
 		task->markEnd();
 
-		DR_LOG(Info, "Completed async task with id: %u, took: %fs", task->getId(), task->getTaskCompletionTime());
+		DE_LOG(Info, "Completed async task with id: %u, took: %fs", task->getId(), task->getTaskCompletionTime());
 		delete task;
 	}
 }

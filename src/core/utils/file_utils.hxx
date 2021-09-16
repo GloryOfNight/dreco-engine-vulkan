@@ -33,7 +33,7 @@ public:
 		}
 		else
 		{
-			DR_LOGF(Error, "Failed to load file: %s", path.data());
+			DE_LOG(Error, "Failed to load file: %s", path.data());
 		}
 
 		file.close();

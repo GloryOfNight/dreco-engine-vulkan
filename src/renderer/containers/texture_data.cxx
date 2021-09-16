@@ -21,7 +21,7 @@ texture_data::texture_data(const std::string_view& texUri)
 	_pixels = stbi_load(texUri.data(), &_texWidth, &_texHeight, &_texChannels, STBI_rgb_alpha);
 	if (!_pixels)
 	{
-		DR_LOGF(Error, "Failed to load texture from uri: %s", texUri.data());
+		DE_LOG(Error, "Failed to load texture from uri: %s", texUri.data());
 	}
 }
 
