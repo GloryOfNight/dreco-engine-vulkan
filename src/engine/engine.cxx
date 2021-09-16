@@ -109,7 +109,7 @@ bool engine::init()
 
 	if (!file_utils::isFileExists(TEXTURE_PLACEHOLDER_URI))
 	{
-		DR_LOGF(Error, "Failed to find placeholder texture, make sure working directory is correct.");
+		DR_LOGF(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI);
 		DR_LOGF(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
 		return false;
 	}
@@ -185,7 +185,7 @@ void engine::preMainLoop()
 		_threadPool = new thread_pool("dreco-worker", thread_pool::hardwareConcurrency() / 2);
 	}
 
-	_threadPool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+	_threadPool->queueTask(new async_task_load_scene(DRECO_ASSET("viking_room/scene.gltf")));
 
 	_camera.setPosition(vec3(0, 10, 50));
 	_camera.setRotation(rotator(0, 180, 0));

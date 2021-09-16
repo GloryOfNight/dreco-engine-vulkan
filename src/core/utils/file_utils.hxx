@@ -10,7 +10,7 @@ class file_utils
 public:
 	static bool isFileExists(const std::string_view& path)
 	{
-		return std::filesystem::exists(path);
+		return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
 	};
 
 	static std::string currentWorkingDir() 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.2)
-project(triangle)
+project(launcher)
 
 set(SOURCES_LIST main.cxx)
 
