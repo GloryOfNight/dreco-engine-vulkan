@@ -32,9 +32,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 -DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
 -DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
 
-if (UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-elseif(MSVC)
+if(MSVC)
 target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDRECO_DECLSPEC=__declspec(dllexport)" "-D_USE_MATH_DEFINES=true")
 endif()
 

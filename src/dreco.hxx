@@ -5,8 +5,6 @@
 #define DRECO_DECLSPEC
 #endif
 
-#define STRINGFY(value) value
-
 #define DRECO_ASSET(name) (std::string(DRECO_ASSETS_DIR) + "/" + name)
 #define DRECO_SHADER(name) (std::string(DRECO_SHADERS_BINARY_DIR) + "/" + name)
 
