@@ -2,6 +2,7 @@
 
 #include "core/utils/log.hxx"
 
+#include "dreco.hxx"
 #include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"

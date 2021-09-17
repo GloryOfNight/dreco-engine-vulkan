@@ -4,6 +4,7 @@
 #include "math/vec3.hxx"
 #include "renderer/containers/vertex.hxx"
 
+#include "dreco.hxx"
 #include "vk_allocator.hxx"
 #include "vk_descriptor_set.hxx"
 #include "vk_renderer.hxx"
@@ -65,7 +66,7 @@ void vk_graphics_pipeline::destroy()
 
 void vk_graphics_pipeline::bindToCmdBuffer(const VkCommandBuffer commandBuffer)
 {
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,_vkPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipeline);
 }
 
 const material& vk_graphics_pipeline::getMaterial() const
@@ -89,7 +90,7 @@ VkPipeline vk_graphics_pipeline::get() const
 }
 
 void vk_graphics_pipeline::createDescriptorLayouts(const VkDevice vkDevice)
-{ 
+{
 	VkDescriptorSetLayoutBinding uniformBinding{};
 	uniformBinding.binding = 0;
 	uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

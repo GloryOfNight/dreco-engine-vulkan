@@ -33,7 +33,9 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 -DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
 
 if(MSVC)
-target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDRECO_DECLSPEC=__declspec(dllexport)" "-D_USE_MATH_DEFINES=true")
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DDRECO_DECLSPEC=__declspec(dllexport) -D_USE_MATH_DEFINES)
+else()
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DDRECO_DECLSPEC=)
 endif()
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
