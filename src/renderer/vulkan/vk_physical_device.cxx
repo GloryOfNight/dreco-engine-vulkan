@@ -40,8 +40,14 @@ void vk_physical_device::setup(const VkInstance vkInstance, VkSurfaceKHR vkSurfa
 	{
 		if (isGpuSuitSurface(gpu))
 		{
-			_vkPhysicalDevice = gpu;
 			vkGetPhysicalDeviceProperties(gpu, &_vkPhysicalDeviceProperties);
+			if (VK_PHYSICAL_DEVICE_TYPE_CPU == _vkPhysicalDeviceProperties.deviceType ||
+				VK_PHYSICAL_DEVICE_TYPE_OTHER == _vkPhysicalDeviceProperties.deviceType)
+			{
+				continue;
+			}
+
+			_vkPhysicalDevice = gpu;
 			vkGetPhysicalDeviceFeatures(gpu, &_vkPhysicalDeviceFeatures);
 			vkGetPhysicalDeviceMemoryProperties(_vkPhysicalDevice, &_vkPhysicalDeviceMemoryProperties);
 			if (VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU == _vkPhysicalDeviceProperties.deviceType)
@@ -101,11 +107,17 @@ VkSampleCountFlagBits vk_physical_device::getMaxSupportedSampleCount() const
 {
 	const auto& limits = _vkPhysicalDeviceProperties.limits;
 	const auto counts = limits.framebufferColorSampleCounts & limits.framebufferDepthSampleCounts;
-	if (counts & VK_SAMPLE_COUNT_64_BIT) return VK_SAMPLE_COUNT_64_BIT;
-	else if (counts & VK_SAMPLE_COUNT_32_BIT) return VK_SAMPLE_COUNT_32_BIT;
-	else if (counts & VK_SAMPLE_COUNT_16_BIT) return VK_SAMPLE_COUNT_16_BIT;
-	else if (counts & VK_SAMPLE_COUNT_8_BIT) return VK_SAMPLE_COUNT_8_BIT;
-	else if (counts & VK_SAMPLE_COUNT_4_BIT) return VK_SAMPLE_COUNT_4_BIT;
-	else if (counts & VK_SAMPLE_COUNT_2_BIT) return VK_SAMPLE_COUNT_2_BIT;
+	if (counts & VK_SAMPLE_COUNT_64_BIT)
+		return VK_SAMPLE_COUNT_64_BIT;
+	else if (counts & VK_SAMPLE_COUNT_32_BIT)
+		return VK_SAMPLE_COUNT_32_BIT;
+	else if (counts & VK_SAMPLE_COUNT_16_BIT)
+		return VK_SAMPLE_COUNT_16_BIT;
+	else if (counts & VK_SAMPLE_COUNT_8_BIT)
+		return VK_SAMPLE_COUNT_8_BIT;
+	else if (counts & VK_SAMPLE_COUNT_4_BIT)
+		return VK_SAMPLE_COUNT_4_BIT;
+	else if (counts & VK_SAMPLE_COUNT_2_BIT)
+		return VK_SAMPLE_COUNT_2_BIT;
 	return VK_SAMPLE_COUNT_1_BIT;
 }
