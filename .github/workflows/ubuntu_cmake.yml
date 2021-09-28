@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2  
+      
       - name: Install SDL2
         run: git clone https://github.com/libsdl-org/SDL.git -b release-2.0.16 && cmake -S SDL -B SDL/build -DSDL_STATIC=FALSE -DCMAKE_BUILD_TYPE=Release && sudo make install --directory=SDL/build
         
-      - uses: actions/checkout@v2  
       - name: Install GLM
         run: git clone https://github.com/g-truc/glm.git -b 0.9.8 && cmake -S glm -B glm/build -DCMAKE_BUILD_TYPE=Release && sudo make install --directory=glm/build
 
