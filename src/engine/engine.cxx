@@ -1,12 +1,15 @@
 #include "engine.hxx"
 
 #include "core/loaders/gltf_loader.hxx"
+#include "core/utils/file_utils.hxx"
+#include "core/utils/log.hxx"
 #include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 
+#include "engine.hxx"
+
 #include <SDL.h>
 #include <chrono>
-#include <iostream>
 
 static inline engine* gEngine{nullptr};
 
@@ -71,32 +74,58 @@ const camera* engine::getCamera() const
 	return &_camera;
 }
 
-thread_pool* engine::getThreadPool() const 
+thread_pool* engine::getThreadPool() const
 {
 	return _threadPool;
 }
 
-void engine::run()
+bool engine::init()
 {
 	if (_isRunning)
 	{
-		std::cerr << "Egnine already running, abording. \n";
-		return;
+		DE_LOG(Error, "Egnine already running, cannot init.");
+		return false;
 	}
 
-	if (gEngine != nullptr && gEngine->_isRunning)
+	if (gEngine != nullptr)
 	{
-		std::cerr << "Another engine instance already running, abording. \n";
-		return;
+		if (gEngine == this)
+		{
+			DE_LOG(Error, "This engine instance was already initialized.");
+		}
+		else
+		{
+			DE_LOG(Error, "Another engine instance already initialized.");
+		}
+
+		return false;
 	}
 
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
-		std::cerr << "SDL Initialization error: " << SDL_GetError() << "\n";
-		return;
+		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
+		return false;
+	}
+
+	if (!file_utils::isFileExists(TEXTURE_PLACEHOLDER_URI))
+	{
+		DE_LOG(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI.c_str());
+		DE_LOG(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
+		return false;
 	}
 
 	gEngine = this;
+
+	return true;
+}
+
+void engine::run()
+{
+	if (nullptr == engine::get())
+	{
+		DE_LOG(Error, "Init engine first. Cannot run.");
+		return;
+	}
 
 	if (true == startRenderer())
 	{
@@ -108,7 +137,7 @@ void engine::stop()
 {
 	if (false == _isRunning)
 	{
-		std::cerr << "Engine aren't running, abording. \n";
+		DE_LOG(Error, "Run engine first. Cannot stop.");
 		return;
 	}
 
@@ -130,12 +159,11 @@ bool engine::startRenderer()
 			uint32_t minor;
 			uint32_t patch;
 			_renderer->getVersion(major, minor, &patch);
-
-			std::cout << "Vulkan Instance version: " << major << "." << minor << "." << patch << std::endl;
+			DE_LOG(Info, "Vulkan Instance version: %u.%u.%u", major, minor, patch);
 		}
 		else
 		{
-			std::cout << "Vulkan not supported by current driver or GPU." << std::endl;
+			DE_LOG(Critical, "Vulkan not supported by current driver or GPU.");
 		}
 	}
 	return _renderer != nullptr;
@@ -157,7 +185,7 @@ void engine::preMainLoop()
 		_threadPool = new thread_pool("dreco-worker", thread_pool::hardwareConcurrency() / 2);
 	}
 
-	_threadPool->queueTask(new async_task_load_scene("content/viking_room/scene.gltf"));
+	_threadPool->queueTask(new async_task_load_scene(DRECO_ASSET("viking_room/scene.gltf")));
 
 	_camera.setPosition(vec3(0, 10, 50));
 	_camera.setRotation(rotator(0, 180, 0));

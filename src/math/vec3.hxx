@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dreco.h"
+#include "dreco.hxx"
 
 struct DRECO_DECLSPEC vec3
 {

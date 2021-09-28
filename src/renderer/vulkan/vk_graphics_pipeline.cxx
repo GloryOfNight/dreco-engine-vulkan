@@ -4,6 +4,7 @@
 #include "math/vec3.hxx"
 #include "renderer/containers/vertex.hxx"
 
+#include "dreco.hxx"
 #include "vk_allocator.hxx"
 #include "vk_descriptor_set.hxx"
 #include "vk_renderer.hxx"
@@ -65,7 +66,7 @@ void vk_graphics_pipeline::destroy()
 
 void vk_graphics_pipeline::bindToCmdBuffer(const VkCommandBuffer commandBuffer)
 {
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,_vkPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _vkPipeline);
 }
 
 const material& vk_graphics_pipeline::getMaterial() const
@@ -89,7 +90,7 @@ VkPipeline vk_graphics_pipeline::get() const
 }
 
 void vk_graphics_pipeline::createDescriptorLayouts(const VkDevice vkDevice)
-{ 
+{
 	VkDescriptorSetLayoutBinding uniformBinding{};
 	uniformBinding.binding = 0;
 	uniformBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -135,8 +136,10 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 	const VkSampleCountFlagBits samples = renderer->getPhysicalDevice().getMaxSupportedSampleCount();
 
-	const std::string vertShaderCode = file_utils::read_file("shaders/basic.vert.spv");
-	const std::string fragShaderCode = file_utils::read_file("shaders/basic.frag.spv");
+	std::string vertShaderCode;
+	file_utils::readFile(SHADER_BASIC_VERTEX_BIN_URI, vertShaderCode);
+	std::string fragShaderCode;
+	file_utils::readFile(SHADER_BASIC_FRAGMENT_BIN_URI, fragShaderCode);
 
 	vk_shader_module vertShaderStage;
 	vertShaderStage.create(vkDevice, vertShaderCode.data(), vertShaderCode.size());

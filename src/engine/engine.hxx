@@ -1,9 +1,9 @@
 #pragma once
 #include "core/objects/camera.hxx"
-#include "math/vec3.hxx"
 #include "core/threads/thread_pool.hxx"
+#include "math/vec3.hxx"
 
-#include "dreco.h"
+#include "dreco.hxx"
 
 #include <cstdint>
 
@@ -27,6 +27,8 @@ public:
 	const camera* getCamera() const;
 
 	thread_pool* getThreadPool() const;
+
+	[[nodiscard]] bool init();
 
 	void run();
 

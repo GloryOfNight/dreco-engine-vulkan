@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-static bool findIsSourceShader(const std::string_view& stem)
+static bool isStemShaderSource(const std::string_view& stem)
 {
 	if (".vert" == stem)
 		return true;
@@ -24,46 +24,61 @@ int main(int argc, char* argv[])
 {
 	namespace fs = std::filesystem;
 
-	if (argc < 3)
+	if (argc != 4)
 	{
-		std::cerr << "expected args <shader_dir> <output_cmake_path>" << std::endl;
+		std::cerr << "expected args <shader_src_dir> <shader_bin_dir> <output_cmake_path>" << std::endl;
 		return 1;
 	}
 
-	fs::path shaderDirPath = std::string(argv[1]);
-	std::string outputCmakePath = argv[2];
+	const fs::path& shaderSrcDirPath = std::string_view(argv[1]);
+	const std::string& shaderBinDirPath = argv[2];
+	const std::string& outputCmakePath = argv[3];
 
-	if (!fs::exists(shaderDirPath) || !fs::is_directory(shaderDirPath))
+	if (!fs::exists(shaderSrcDirPath) || !fs::is_directory(shaderSrcDirPath))
 	{
-		std::cerr << "provided <shader_dir> path not exists or not valid" << std::endl;
+		std::cerr << "provided <shader_src_dir> path not exists or not valid" << std::endl;
+		return 1;
+	}
+	if (!fs::exists(shaderBinDirPath) || !fs::is_directory(shaderBinDirPath))
+	{
+		std::cerr << "provided <shader_bin_dir> path not exists or not valid" << std::endl;
 		return 1;
 	}
 
 	std::vector<std::string> totalShaderFiles;
 	std::vector<fs::path> needToCompileShaderFiles;
 
-	for (auto& p : fs::recursive_directory_iterator(shaderDirPath))
+	for (auto& p : fs::recursive_directory_iterator(shaderSrcDirPath))
 	{
 		if (!p.is_regular_file())
 		{
 			continue;
 		}
 
-		const bool isSourceShaderFile = findIsSourceShader(p.path().extension().string());
+		const bool isSourceShaderFile = isStemShaderSource(p.path().extension().string());
 		if (isSourceShaderFile)
 		{
-			const std::string binPathStr = p.path().generic_string() + ".spv";
-			fs::path binPath = binPathStr;
+			const std::string binPathStr = shaderBinDirPath + "/" + p.path().filename().generic_string() + ".spv";
 			totalShaderFiles.push_back(binPathStr);
 
+			const fs::path binPath = binPathStr;
 			if (fs::exists(binPath) && fs::is_regular_file(binPath))
 			{
 				const auto lastBinWriteTime = fs::last_write_time(binPath);
 				const auto lastCodeWriteTime = fs::last_write_time(p);
 				if (lastCodeWriteTime < lastBinWriteTime)
 				{
+					std::cout << binPathStr << " OK" << std::endl;
 					continue;
 				}
+				else
+				{
+					std::cout << binPathStr << " OLD" << std::endl;
+				}
+			}
+			else
+			{
+				std::cout << binPathStr << " MISSING" << std::endl;
 			}
 			needToCompileShaderFiles.push_back(p.path());
 		}

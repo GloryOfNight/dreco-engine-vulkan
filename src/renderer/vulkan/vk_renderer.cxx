@@ -13,7 +13,6 @@
 #include "vk_utils.hxx"
 
 #include <SDL_vulkan.h>
-#include <iostream>
 #include <stdexcept>
 
 #define VK_USE_DEBUG 1

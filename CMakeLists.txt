@@ -20,36 +20,42 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     EXPORT_COMPILE_COMMANDS TRUE
 )
 
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 include_directories("thirdparty")
 
-if (UNIX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-elseif(MSVC)
-target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDRECO_DECLSPEC=__declspec(dllexport)" "-D_USE_MATH_DEFINES=true")
-endif()
+set(DRECO_ASSETS_DIR "assets")
+set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
+set(DRECO_SHADERS_BINARY_DIR "shaders")
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
+target_compile_definitions(${PROJECT_NAME} PUBLIC 
+-DDRECO_ASSETS_DIR="${DRECO_ASSETS_DIR}"
+-DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
+-DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
+
+if(MSVC)
+target_compile_definitions(${PROJECT_NAME} PRIVATE "-DDRECO_DECLSPEC=__declspec(dllexport)" -D_USE_MATH_DEFINES)
+else()
+target_compile_definitions(${PROJECT_NAME} PRIVATE -DDRECO_DECLSPEC=)
+endif()
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 if (NOT DEFINED CMAKE_INSTALL_RPATH)
 set(CMAKE_INSTALL_RPATH "${CMAKE_CURRENT_LIST_DIR}/install")
 endif()
 
-add_subdirectory(examples/triangle)
+add_subdirectory(launcher)
 
 include(tools/tools.cmake)
 
-set(CONTENT_DIR "${CMAKE_SOURCE_DIR}/content")
+install(FILES ${SHADER_BINARY_FILES} DESTINATION ${CMAKE_INSTALL_RPATH}/${DRECO_SHADERS_BINARY_DIR})
+install(DIRECTORY ${DRECO_ASSETS_DIR} DESTINATION ${CMAKE_INSTALL_RPATH})
 
-install(FILES ${SHADER_BINARY_FILES} DESTINATION ${CMAKE_INSTALL_RPATH}/shaders)
-install(DIRECTORY ${CONTENT_DIR} DESTINATION ${CMAKE_INSTALL_RPATH})
-
-install(TARGETS dreco triangle
+install(TARGETS dreco dreco-launcher
         RUNTIME DESTINATION ${CMAKE_INSTALL_RPATH}
         LIBRARY DESTINATION ${CMAKE_INSTALL_RPATH})
 
+## Copy dll dependencies
 if (MSVC)
-
 # Locate SDL2.dll
 if(CMAKE_SIZEOF_VOID_P EQUAL 8) 
 	set(PATH_SUFFIXES lib64 lib/x64 lib bin)
