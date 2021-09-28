@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2  
       - name: Install SDL2
-        run: sudo apt install libsdl2-dev --fix-missing
+        run: git clone https://github.com/libsdl-org/SDL.git -b release-2.0.16 && cmake -S SDL -B SDL/build -DSDL_STATIC=FALSE -DCMAKE_BUILD_TYPE=Release && sudo make install --directory=SDL/build
         
       - uses: actions/checkout@v2  
       - name: Install GLM
