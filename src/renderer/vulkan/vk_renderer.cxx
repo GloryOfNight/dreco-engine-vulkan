@@ -94,9 +94,23 @@ void vk_renderer::init()
 {
 	vkEnumerateInstanceVersion(&_apiVersion);
 	createWindow();
+
 	createInstance();
 	_surface.create(_vkInstance, _window);
 	_physicalDevice.setup(_vkInstance, _surface.get());
+
+	// if instance was created with api version bigger that device can support, recreate stuff with lower version
+	if (const uint32_t deviceApiVersion = _physicalDevice.getProperties().apiVersion; _apiVersion > deviceApiVersion)
+	{
+		_apiVersion = deviceApiVersion;
+		vkDestroySurfaceKHR(_vkInstance, _surface.get(), vkGetAllocator());
+		vkDestroyInstance(_vkInstance, vkGetAllocator());
+
+		createInstance();
+		_surface.create(_vkInstance, _window);
+		_physicalDevice.setup(_vkInstance, _surface.get());
+	}
+
 	_surface.setup(_physicalDevice.get());
 	_queueFamily.setup(_physicalDevice.get(), _surface.get());
 	_device.create(_physicalDevice, _queueFamily);
@@ -364,7 +378,7 @@ void vk_renderer::createRenderPass()
 	colorAttachment.format = _surface.getFormat().format;
 	colorAttachment.samples = sampleCount;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.storeOp = isSamplingSupported ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -386,7 +400,7 @@ void vk_renderer::createRenderPass()
 		colorAttachmentResolve.format = colorAttachment.format;
 		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
