@@ -10,7 +10,7 @@ void vk_depth_image::create()
 	_format = findDepthFormat();
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
-	createImage(vkDevice, _format, vkExtent.width, vkExtent.height, renderer->getPhysicalDevice().getMaxSupportedSampleCount());
+	createImage(vkDevice, _format, vkExtent.width, vkExtent.height, renderer->getSettings().getPrefferedSampleCount());
 
 	VkMemoryRequirements memoryRequirements;
 	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);

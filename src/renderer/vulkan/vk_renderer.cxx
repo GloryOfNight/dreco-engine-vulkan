@@ -101,6 +101,8 @@ void vk_renderer::init()
 	_queueFamily.setup(_physicalDevice.get(), _surface.get());
 	_device.create(_physicalDevice, _queueFamily);
 
+	_settings.init(this);
+
 	createSwapchain();
 	createImageViews();
 
@@ -162,36 +164,6 @@ SDL_Window* vk_renderer::getWindow() const
 	return _window;
 }
 
-VkAllocationCallbacks* vk_renderer::getAllocator() const
-{
-	return vkGetAllocator();
-}
-
-vk_device& vk_renderer::getDevice()
-{
-	return _device;
-}
-
-vk_surface& vk_renderer::getSurface()
-{
-	return _surface;
-}
-
-vk_physical_device& vk_renderer::getPhysicalDevice()
-{
-	return _physicalDevice;
-}
-
-vk_queue_family& vk_renderer::getQueueFamily()
-{
-	return _queueFamily;
-}
-
-const vk_texture_image& vk_renderer::getTextureImagePlaceholder() const
-{
-	return _placeholderTextureImage;
-}
-
 VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 {
 	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
@@ -228,6 +200,11 @@ void vk_renderer::submitSingleTimeTransferCommands(const std::vector<VkSubmitInf
 {
 	vkQueueSubmit(_device.getTransferQueue(), submits.size(), submits.data(), VK_NULL_HANDLE);
 	vkQueueWaitIdle(_device.getTransferQueue());
+}
+
+void vk_renderer::applySettings()
+{
+	recreateSwapchain();
 }
 
 void vk_renderer::createWindow()
@@ -377,23 +354,25 @@ void vk_renderer::createImageViews()
 
 void vk_renderer::createRenderPass()
 {
-	std::array<VkAttachmentDescription, 3> attachmentsDescriptions{};
+	std::vector<VkAttachmentDescription> attachmentsDescriptions;
+	attachmentsDescriptions.reserve(3);
 
-	const VkSampleCountFlagBits samples = _physicalDevice.getMaxSupportedSampleCount();
+	const VkSampleCountFlagBits sampleCount = _settings.getPrefferedSampleCount();
+	const bool isSamplingSupported = _settings.getIsSamplingSupported();
 
-	VkAttachmentDescription& colorAttachment = attachmentsDescriptions[0];
+	VkAttachmentDescription& colorAttachment = attachmentsDescriptions.emplace_back();
 	colorAttachment.format = _surface.getFormat().format;
-	colorAttachment.samples = samples;
+	colorAttachment.samples = sampleCount;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	colorAttachment.finalLayout = isSamplingSupported ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentDescription& depthAttachment = attachmentsDescriptions[1];
+	VkAttachmentDescription& depthAttachment = attachmentsDescriptions.emplace_back();
 	depthAttachment.format = _depthImage.getFormat();
-	depthAttachment.samples = samples;
+	depthAttachment.samples = sampleCount;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -401,15 +380,18 @@ void vk_renderer::createRenderPass()
 	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	VkAttachmentDescription& colorAttachmentResolve = attachmentsDescriptions[2];
-	colorAttachmentResolve.format = colorAttachment.format;
-	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	if (isSamplingSupported)
+	{
+		VkAttachmentDescription& colorAttachmentResolve = attachmentsDescriptions.emplace_back();
+		colorAttachmentResolve.format = colorAttachment.format;
+		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	}
 
 	VkAttachmentReference colorAttachmentRef{};
 	colorAttachmentRef.attachment = 0;
@@ -428,7 +410,7 @@ void vk_renderer::createRenderPass()
 	subpassDescription.colorAttachmentCount = 1;
 	subpassDescription.pColorAttachments = &colorAttachmentRef;
 	subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
-	subpassDescription.pResolveAttachments = &colorAttachmentResolveRef;
+	subpassDescription.pResolveAttachments = isSamplingSupported ? &colorAttachmentResolveRef : nullptr;
 
 	VkSubpassDependency subpassDependecy{};
 	subpassDependecy.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -458,7 +440,20 @@ void vk_renderer::createFramebuffers()
 
 	for (size_t i = 0; i < _vkSwapchainImageViews.size(); ++i)
 	{
-		const std::array<VkImageView, 3> attachments{_msaaImage.getImageView(), _depthImage.getImageView(), _vkSwapchainImageViews[i]};
+		std::vector<VkImageView> attachments;
+		attachments.reserve(3);
+
+		if (_settings.getIsSamplingSupported())
+		{
+			attachments.push_back(_msaaImage.getImageView());
+			attachments.push_back(_depthImage.getImageView());
+			attachments.push_back(_vkSwapchainImageViews[i]);
+		}
+		else
+		{
+			attachments.push_back(_vkSwapchainImageViews[i]);
+			attachments.push_back(_depthImage.getImageView());
+		}
 
 		VkFramebufferCreateInfo framebufferCreateInfo{};
 		framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

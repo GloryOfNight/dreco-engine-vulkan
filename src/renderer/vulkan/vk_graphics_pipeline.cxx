@@ -134,7 +134,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
-	const VkSampleCountFlagBits samples = renderer->getPhysicalDevice().getMaxSupportedSampleCount();
+	const VkSampleCountFlagBits samples{renderer->getSettings().getPrefferedSampleCount()};
 
 	std::string vertShaderCode;
 	file_utils::readFile(SHADER_BASIC_VERTEX_BIN_URI, vertShaderCode);
@@ -217,7 +217,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
 	multisampleState.alphaToCoverageEnable = VK_TRUE;
-	multisampleState.alphaToOneEnable = VK_FALSE;
+	multisampleState.alphaToOneEnable = VK_TRUE;
 
 	VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.blendEnable = VK_TRUE;

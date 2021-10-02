@@ -9,7 +9,7 @@ void vk_msaa_image::create()
 	const VkDevice vkDevice{renderer->getDevice().get()};
 
 	const VkFormat format{renderer->getSurface().getFormat().format};
-	const VkSampleCountFlagBits samples{renderer->getPhysicalDevice().getMaxSupportedSampleCount()};
+	const VkSampleCountFlagBits samples{renderer->getSettings().getPrefferedSampleCount()};
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
 
 	createImage(vkDevice, format, vkExtent.width, vkExtent.height, samples);

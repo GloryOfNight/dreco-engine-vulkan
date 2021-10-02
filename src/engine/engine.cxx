@@ -299,6 +299,23 @@ void engine::startMainLoop()
 				{
 					_camera.setPosition(cameraTranform._translation + vec3(0, -camMoveSpeed * deltaTime, 0));
 				}
+
+				if (event.key.keysym.sym == SDLK_MINUS)
+				{
+					auto& settings = _renderer->getSettings();
+					if (settings.setPrefferedSampleCount(static_cast<VkSampleCountFlagBits>(settings.getPrefferedSampleCount() / 2)))
+					{
+						_renderer->applySettings();
+					}
+				}
+				else if (event.key.keysym.sym == SDLK_EQUALS)
+				{
+					auto& settings = _renderer->getSettings();
+					if (settings.setPrefferedSampleCount(static_cast<VkSampleCountFlagBits>(settings.getPrefferedSampleCount() * 2)))
+					{
+						_renderer->applySettings();
+					}
+				}
 			}
 		}
 	}

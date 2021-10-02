@@ -11,9 +11,10 @@
 #include "vk_msaa_image.hxx"
 #include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
+#include "vk_scene.hxx"
+#include "vk_settings.hxx"
 #include "vk_surface.hxx"
 #include "vk_texture_image.hxx"
-#include "vk_scene.hxx"
 
 #include <SDL.h>
 #include <vector>
@@ -53,23 +54,30 @@ public:
 
 	SDL_Window* getWindow() const;
 
-	VkAllocationCallbacks* getAllocator() const;
+	const vk_device& getDevice() const { return _device; }
+	vk_device& getDevice() { return _device; }
 
-	vk_device& getDevice();
+	const vk_surface& getSurface() const { return _surface; }
+	vk_surface& getSurface() { return _surface; }
 
-	vk_surface& getSurface();
+	const vk_physical_device& getPhysicalDevice() const { return _physicalDevice; }
+	vk_physical_device& getPhysicalDevice() { return _physicalDevice; }
 
-	vk_physical_device& getPhysicalDevice();
+	const vk_queue_family& getQueueFamily() const { return _queueFamily; }
+	vk_queue_family& getQueueFamily() { return _queueFamily; }
 
-	vk_queue_family& getQueueFamily();
+	const vk_settings& getSettings() const { return _settings; }
+	vk_settings& getSettings() { return _settings; }
 
-	const vk_texture_image& getTextureImagePlaceholder() const;
+	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
 	VkCommandBuffer beginSingleTimeTransferCommands();
 
 	void submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
 
 	void submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits);
+
+	void applySettings();
 
 protected:
 	void drawFrame();
@@ -113,9 +121,11 @@ private:
 
 	vk_physical_device _physicalDevice;
 
+	vk_device _device;
+
 	vk_queue_family _queueFamily;
 
-	vk_device _device;
+	vk_settings _settings;
 
 	vk_msaa_image _msaaImage;
 
