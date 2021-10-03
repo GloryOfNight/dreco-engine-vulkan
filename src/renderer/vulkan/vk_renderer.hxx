@@ -1,7 +1,6 @@
 #pragma once
 #include "core/containers/scene.hxx"
 #include "math/vec3.hxx"
-#include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"

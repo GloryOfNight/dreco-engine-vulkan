@@ -1,8 +1,7 @@
 #pragma once
 
 #include "core/containers/image.hxx"
-#include "renderer/containers/material.hxx"
-#include "renderer/containers/texture_data.hxx"
+#include "core/containers/image_data.hxx"
 
 #include "vk_image.hxx"
 
@@ -20,7 +19,7 @@ public:
 
 	void create(const image& img);
 
-	void create(const texture_data& textureData);
+	void create(const image_data& textureData);
 
 	void destroy() override;
 

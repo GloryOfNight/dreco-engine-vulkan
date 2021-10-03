@@ -13,7 +13,7 @@ struct async_load_texture_task : public thread_task
 		: _texUri{texUri}
 		, _texIndex{texIndex}
 		, _scene{scene}
-		, _texData{nullptr}
+		, _texData{}
 	{
 	}
 
@@ -21,15 +21,15 @@ struct async_load_texture_task : public thread_task
 
 	virtual void doJob() override
 	{
-		_texData = texture_data::createNew(_texUri);
+		_texData.load(_texUri);
 	};
 
 	virtual void completed() override
 	{
 		vk_texture_image* texImage = _scene->getTextureImages()[_texIndex];
 		new (texImage) vk_texture_image();
-		texImage->create(*_texData);
-		delete _texData;
+
+		texImage->create(_texData);
 
 		const auto& meshes = _scene->getMeshes();
 		for (auto& mesh : meshes)
@@ -39,11 +39,11 @@ struct async_load_texture_task : public thread_task
 	};
 
 private:
-	std::string _texUri;
+	std::string_view _texUri;
 
 	uint32_t _texIndex;
 
 	vk_scene* _scene;
 
-	texture_data* _texData;
+	image_data _texData;
 };

@@ -19,38 +19,43 @@ vk_texture_image::~vk_texture_image()
 
 void vk_texture_image::create()
 {
-	auto* texture = texture_data::createNew(TEXTURE_PLACEHOLDER_URI);
-	unsigned char* pixels{nullptr};
-	texture->getData(&pixels, nullptr, nullptr, nullptr);
-	if (nullptr == pixels)
+	image_data imageData;
+	if (!imageData.load(TEXTURE_PLACEHOLDER_URI))
 	{
 		DE_LOG(Critical, "Failed to load placeholder texture! Cannot proceed. . .");
 		std::abort();
 		return;
 	}
-	create(*texture);
-	delete texture;
+	create(imageData);
 }
 
 void vk_texture_image::create(const image& img)
 {
-	auto* texture = texture_data::createNew(img._uri);
-	create(*texture);
-	delete texture;
+	image_data imageData;
+	if (imageData.load(img._uri))
+	{
+		create(imageData);
+	}
+	else
+	{
+		DE_LOG(Error, "Failed to load texture from uri: %s; Loading default instead.", img._uri.data());
+		create();
+	}
 }
 
-void vk_texture_image::create(const texture_data& textureData)
+void vk_texture_image::create(const image_data& textureData)
 {
-	int texWidth, texHeight, texChannels;
-	unsigned char* pixels{nullptr};
-	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
-
-	if (!pixels)
+	if (!textureData.isLoaded())
 	{
-		DE_LOG(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI.c_str());
+		DE_LOG(Error, "No valid texture data, using placeholder instead.");
 		create();
 		return;
 	}
+
+	uint16_t texWidth, texHeight;
+	uint8_t texChannels;
+	uint8_t* pixels{nullptr};
+	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
 
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkDevice vkDevice{renderer->getDevice().get()};
