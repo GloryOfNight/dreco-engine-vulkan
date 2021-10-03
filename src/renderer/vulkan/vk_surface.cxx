@@ -3,7 +3,6 @@
 #include "vk_allocator.hxx"
 #include "vk_utils.hxx"
 
-#include <SDL.h>
 #include <SDL_vulkan.h>
 #include <vector>
 

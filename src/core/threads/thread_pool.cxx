@@ -63,7 +63,7 @@ thread_pool::thread_pool(const char* name, const uint32_t threadCount, const thr
 	_threads.resize(num);
 	for (uint32_t i = 0U; i < num; ++i)
 	{
-		SDL_CreateThread(thread_loop_func, name, this);
+		_threads[i] = SDL_CreateThread(thread_loop_func, name, this);
 
 		const SDL_ThreadPriority sdlPriority = static_cast<SDL_ThreadPriority>(priority);
 		SDL_SetThreadPriority(sdlPriority);
@@ -74,14 +74,11 @@ thread_pool::~thread_pool()
 {
 	_threadsLoopCondition = false;
 
-	{
-		std::scoped_lock<std::mutex> lock(_waitingTasksMutex);
-		_waitingTasks.clear();
-	}
-
 	for (auto* thread : _threads)
 	{
-		SDL_WaitThread(thread, nullptr);
+		int status{0};
+		SDL_WaitThread(thread, &status);
+		DE_LOG(Verbose, "Thread %p exit with code: %i", thread, status);
 	}
 	processCompletedTasks();
 }

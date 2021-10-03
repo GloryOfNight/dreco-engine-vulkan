@@ -15,7 +15,12 @@ struct vk_settings
 
 	bool getIsSamplingSupported() const;
 
+	VkPolygonMode getDefaultPolygonMode() const;
+	bool setDefaultPolygonMode(const VkPolygonMode mode);
+
 private:
 	VkSampleCountFlagBits _maxSampleCount;
 	VkSampleCountFlagBits _prefferedSampleCount;
+	
+	VkPolygonMode _polygonMode;
 };

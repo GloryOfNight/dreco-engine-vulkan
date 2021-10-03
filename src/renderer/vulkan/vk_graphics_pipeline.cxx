@@ -201,7 +201,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizationState.depthClampEnable = VK_FALSE;
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizationState.polygonMode = renderer->getSettings().getDefaultPolygonMode();
 	rasterizationState.lineWidth = 1.0F;
 	rasterizationState.cullMode = _mat._doubleSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
 	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;

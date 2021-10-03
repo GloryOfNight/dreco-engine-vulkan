@@ -316,6 +316,18 @@ void engine::startMainLoop()
 						_renderer->applySettings();
 					}
 				}
+				if (event.key.keysym.sym == SDLK_F1)
+				{
+					auto& settings = _renderer->getSettings();
+					if (settings.setDefaultPolygonMode(VK_POLYGON_MODE_FILL))
+					{
+						_renderer->applySettings();
+					}
+					else if (settings.setDefaultPolygonMode(VK_POLYGON_MODE_LINE))
+					{
+						_renderer->applySettings();
+					}
+				}
 			}
 		}
 	}

@@ -5,6 +5,7 @@
 vk_settings::vk_settings()
 	: _maxSampleCount{VK_SAMPLE_COUNT_1_BIT}
 	, _prefferedSampleCount{VK_SAMPLE_COUNT_1_BIT}
+	, _polygonMode{VK_POLYGON_MODE_FILL}
 {
 }
 
@@ -39,4 +40,19 @@ bool vk_settings::setPrefferedSampleCount(const VkSampleCountFlagBits sampleCoun
 bool vk_settings::getIsSamplingSupported() const
 {
 	return _prefferedSampleCount != VK_SAMPLE_COUNT_1_BIT;
+}
+
+VkPolygonMode vk_settings::getDefaultPolygonMode() const
+{
+	return _polygonMode;
+}
+
+bool vk_settings::setDefaultPolygonMode(const VkPolygonMode mode)
+{
+	const bool isDifferent = _polygonMode != mode;
+	if (isDifferent)
+	{
+		_polygonMode = mode;
+	}
+	return isDifferent;
 }
