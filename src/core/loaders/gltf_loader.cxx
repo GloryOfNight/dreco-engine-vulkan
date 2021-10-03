@@ -4,6 +4,7 @@
 #define TINYGLTF_NO_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define TINYGLTF_NO_EXTERNAL_IMAGE
+#include "core/utils/log.hxx"
 #include "tinygltf/tiny_gltf.h"
 
 #include <filesystem>
@@ -22,13 +23,12 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
 	if (!result)
 	{
-		std::cerr << __FUNCTION__ << ": " << "Err: " << err;
-		std::cout << __FUNCTION__ << ": " << "Verb: " << "Current working directory: " << std::filesystem::current_path() << std::endl;
+		DE_LOG(Error, "Failed to load scene: %s; Current work dir: %s", sceneFile.data(), std::filesystem::current_path());
 		return {};
 	}
 	else if (!warn.empty())
 	{
-		std::cout << __FUNCTION__ << ": " << "Warn: " << warn << std::endl;
+		DE_LOG(Warn, "Load scene warning: %s", warn.data());
 	}
 
 	const size_t totalMeshes = model.meshes.size();
@@ -126,11 +126,11 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 	{
 		newScene._materials[i]._doubleSided = model.materials[i].doubleSided;
 		auto index = model.materials[i].pbrMetallicRoughness.baseColorTexture.index;
-		if (index >= 0) 
+		if (index >= 0)
 		{
 			newScene._materials[i]._baseColorTexture = index;
 		}
-		else 
+		else
 		{
 			// should not do this, but not yet supported untextured stuff
 			newScene._materials[i]._baseColorTexture = 0;
