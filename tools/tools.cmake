@@ -26,9 +26,15 @@ execute_process(COMMAND
 )
 include(${GENERATED_SHADER_LIST_PATH})
 
+if(Vulkan_GLSLC_EXECUTABLE)
+
 foreach(shader_path shader_name IN ZIP_LISTS SHADER_COMPILE_PATH_LIST SHADER_COMPILE_NAMES_LIST)
 set (SHADER_SOURCE_FILE "${shader_path}/${shader_name}")
 set (SHADER_OUTPUT_FILE "${CMAKE_SOURCE_DIR}/${DRECO_SHADERS_BINARY_DIR}/${shader_name}.spv")
 message(STATUS "Compiling shader: ${SHADER_SOURCE_FILE} -> ${SHADER_OUTPUT_FILE}")
 execute_process(COMMAND ${Vulkan_GLSLC_EXECUTABLE} "${SHADER_SOURCE_FILE}" "-o" "${SHADER_OUTPUT_FILE}")
 endforeach()
+
+else()
+message(STATUS "GLSLC Executeable not found!")
+endif()

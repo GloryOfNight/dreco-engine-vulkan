@@ -23,7 +23,7 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
 	if (!result)
 	{
-		DE_LOG(Error, "Failed to load scene: %s; Current work dir: %s", sceneFile.data(), std::filesystem::current_path());
+		DE_LOG(Error, "Failed to load scene: %s; Current work dir: %s", sceneFile.data(), std::filesystem::current_path().generic_string().data());
 		return {};
 	}
 	else if (!warn.empty())
