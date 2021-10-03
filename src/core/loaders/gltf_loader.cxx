@@ -53,6 +53,7 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 			sceneMeshPrimitive._material = primitive.material;
 
 			uint32_t vertPosAccessor{UINT32_MAX};
+			uint32_t normalAccessor{UINT32_MAX};
 			uint32_t texCoordAccessor{UINT32_MAX};
 			uint32_t indexAccessor{static_cast<uint32_t>(primitive.indices)};
 			for (const auto& attr : primitive.attributes)
@@ -60,6 +61,10 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 				if (attr.first == "POSITION")
 				{
 					vertPosAccessor = attr.second;
+				}
+				else if (attr.first == "NORMAL")
+				{
+					normalAccessor = attr.second;
 				}
 				else if (attr.first == "TEXCOORD_0")
 				{
@@ -88,16 +93,23 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 						pos._y = positions[q * 3 + 1];
 						pos._z = positions[q * 3 + 2];
 					}
+					else if (j == indexAccessor)
+					{
+						const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+						sceneMeshPrimitive._indexes[q] = indexPos[q];
+					}
 					else if (j == texCoordAccessor)
 					{
 						vec2& texCoor{sceneMeshPrimitive._vertexes[q]._texCoord};
 						texCoor._x = positions[q * 2 + 0];
 						texCoor._y = positions[q * 2 + 1];
 					}
-					else if (j == indexAccessor)
+					else if (j == normalAccessor)
 					{
-						const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-						sceneMeshPrimitive._indexes[q] = indexPos[q];
+						vec3& normal{sceneMeshPrimitive._vertexes[q]._normal};
+						normal._x = positions[q * 3 + 0];
+						normal._y = positions[q * 3 + 1];
+						normal._z = positions[q * 3 + 2];
 					}
 				}
 			}

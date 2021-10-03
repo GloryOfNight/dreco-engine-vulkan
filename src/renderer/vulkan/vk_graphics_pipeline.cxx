@@ -2,7 +2,7 @@
 
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
-#include "renderer/containers/vertex.hxx"
+#include "renderer/containers/vk_vertex.hxx"
 
 #include "dreco.hxx"
 #include "vk_allocator.hxx"
@@ -134,7 +134,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	vk_renderer* renderer{vk_renderer::get()};
 	const VkRenderPass vkRenderPass{renderer->getRenderPass()};
 	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
-	const VkSampleCountFlagBits samples{renderer->getSettings().getPrefferedSampleCount()};
+	const VkSampleCountFlagBits sampleCount{renderer->getSettings().getPrefferedSampleCount()};
 
 	std::string vertShaderCode;
 	file_utils::readFile(SHADER_BASIC_VERTEX_BIN_URI, vertShaderCode);
@@ -163,8 +163,8 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 
 	const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStagesInfo{vertShaderStageInfo, fragShaderStageInfo};
 
-	const std::vector<VkVertexInputBindingDescription> vertexInputBindingDescription{vertex::getInputBindingDescription()};
-	const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions{vertex::getInputAttributeDescription()};
+	const auto vertexInputBindingDescription{vk_vertex::getInputBindingDescription()};
+	const auto vertexInputAttributeDescriptions{vk_vertex::getInputAttributeDescription()};
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -213,7 +213,7 @@ void vk_graphics_pipeline::createPipeline(const VkDevice vkDevice)
 	VkPipelineMultisampleStateCreateInfo multisampleState{};
 	multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleState.sampleShadingEnable = VK_FALSE;
-	multisampleState.rasterizationSamples = samples;
+	multisampleState.rasterizationSamples = sampleCount;
 	multisampleState.minSampleShading = 1.0F;
 	multisampleState.pSampleMask = nullptr;
 	multisampleState.alphaToCoverageEnable = VK_TRUE;

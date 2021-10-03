@@ -15,6 +15,8 @@ struct mesh
 		{
 			vec3 _pos;
 
+			vec3 _normal;
+
 			vec2 _texCoord;
 		};
 

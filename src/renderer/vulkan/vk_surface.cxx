@@ -80,7 +80,7 @@ void vk_surface::setupPresentModes(VkPhysicalDevice vkPhysicaLDevice)
 {
 	uint32_t presentCount;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicaLDevice, _vkSurface, &presentCount, nullptr);
-	std::vector<VkPresentModeKHR> vkPresentModes(presentCount);
+	std::vector<VkPresentModeKHR> vkPresentModes(presentCount, {});
 	VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(vkPhysicaLDevice, _vkSurface, &presentCount, vkPresentModes.data()));
 
 	for (const auto& vkPresentMode : vkPresentModes)

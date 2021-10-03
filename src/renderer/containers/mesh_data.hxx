@@ -1,13 +1,14 @@
 #pragma once
+#include "core/containers/mesh.hxx"
+
 #include "material.hxx"
-#include "vertex.hxx"
 
 #include <cstdint>
 #include <vector>
 
 struct mesh_data
 {
-	std::vector<vertex> _vertexes;
+	std::vector<mesh::primitive::vertex> _vertexes;
 	std::vector<uint32_t> _indexes;
 
 	material_data _material;
@@ -18,10 +19,10 @@ struct mesh_data
 		const mesh_data mesh
 		{
 			{
-				{vec3(-0.5, -0.5, 0.0), vec2{1.0F, 0.0F}}, 
-				{vec3(0.5, -0.5, 0.0), vec2{0.0F, 0.0F}}, 
-				{vec3(0.5, 0.5, 0.0), vec2{0.0F, 1.0F}}, 
-				{vec3(-0.5, 0.5, 0.0), vec2{1.0F, 1.0F}}
+				{vec3(-0.5, -0.5, 0.0), vec3{}, vec2{1.0F, 0.0F}}, 
+				{vec3(0.5, -0.5, 0.0), vec3{}, vec2{0.0F, 0.0F}}, 
+				{vec3(0.5, 0.5, 0.0), vec3{}, vec2{0.0F, 1.0F}}, 
+				{vec3(-0.5, 0.5, 0.0), vec3{}, vec2{1.0F, 1.0F}}
 			},
 			{
 				0, 1, 2,
@@ -38,14 +39,14 @@ struct mesh_data
 		const mesh_data mesh
 		{
 			{
-				{vec3(-0.5, 0.5, 0.5), vec2{1.0F, 1.0F}}, 
-				{vec3(-0.5, -0.5, 0.5), vec2{1.0F, 0.0F}}, 
-				{vec3(0.5, -0.5, 0.5), vec2{0.0F, 0.0F}}, 
-				{vec3(0.5, 0.5, 0.5), vec2{0.0F, 1.0F}},
-				{vec3(-0.5, 0.5, -0.5), vec2{1.0F, 1.0F}}, 
-				{vec3(-0.5, -0.5, -0.5), vec2{1.0F, 0.0F}}, 
-				{vec3(0.5, -0.5, -0.5),vec2{0.0F, 0.0F}}, 
-				{vec3(0.5, 0.5, -0.5), vec2{0.0F, 1.0F}}
+				{vec3(-0.5, 0.5, 0.5), vec3{}, vec2{1.0F, 1.0F}}, 
+				{vec3(-0.5, -0.5, 0.5), vec3{}, vec2{1.0F, 0.0F}}, 
+				{vec3(0.5, -0.5, 0.5), vec3{}, vec2{0.0F, 0.0F}}, 
+				{vec3(0.5, 0.5, 0.5), vec3{}, vec2{0.0F, 1.0F}},
+				{vec3(-0.5, 0.5, -0.5), vec3{}, vec2{1.0F, 1.0F}}, 
+				{vec3(-0.5, -0.5, -0.5), vec3{}, vec2{1.0F, 0.0F}}, 
+				{vec3(0.5, -0.5, -0.5), vec3{}, vec2{0.0F, 0.0F}}, 
+				{vec3(0.5, 0.5, -0.5), vec3{}, vec2{0.0F, 1.0F}}
 			},
 			{
 				0, 1, 3, 3, 1, 2,
