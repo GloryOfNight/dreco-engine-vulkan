@@ -1,4 +1,5 @@
-if (MSVC)
+get_property(IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if (IS_MULTI_CONFIG)
 set(TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE")
 else()
 set(TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY")
@@ -6,7 +7,7 @@ endif()
 
 # configure and compile tools
 execute_process(COMMAND "cmake" 
-"${TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM}=${CMAKE_SOURCE_DIR}/bin/tools" 
+"${TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM}=${CMAKE_SOURCE_DIR}/build/tools" 
 "-S" "${CMAKE_SOURCE_DIR}/tools/shader_list_generator" 
 "-B" "${CMAKE_SOURCE_DIR}/tools/build")
 execute_process(COMMAND "cmake" "--build" "${CMAKE_SOURCE_DIR}/tools/build" "--config" "Release")
@@ -16,7 +17,7 @@ execute_process(COMMAND "cmake" "--build" "${CMAKE_SOURCE_DIR}/tools/build" "--c
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/build/generated/")
 set(GENERATED_SHADER_LIST_PATH "${CMAKE_SOURCE_DIR}/build/generated/shader_list.cmake")
 
-set(SHADER_LIST_GENERATOR_EXECUTABLE "${CMAKE_SOURCE_DIR}/bin/tools/shader_list_generator")
+set(SHADER_LIST_GENERATOR_EXECUTABLE "${CMAKE_SOURCE_DIR}/build/tools/shader_list_generator")
 
 execute_process(COMMAND 
 "${SHADER_LIST_GENERATOR_EXECUTABLE}"
