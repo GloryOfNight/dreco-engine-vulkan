@@ -348,9 +348,9 @@ void engine::stopMainLoop()
 
 double engine::calculateNewDeltaTime()
 {
-#define FRAMETIME_FROM_FPS(FPS) (1.0 / static_cast<double>(FPS))
-	constexpr double FPS_MAX = FRAMETIME_FROM_FPS(60);
-	constexpr double FPS_MIN = FRAMETIME_FROM_FPS(24);
+	const auto frametime_from_fps_lam = [](const double fps) constexpr { return (1.0 / static_cast<double>(fps)); };
+	constexpr double FPS_MAX = frametime_from_fps_lam(60);
+	constexpr double FPS_MIN = frametime_from_fps_lam(24);
 
 	static std::chrono::time_point past = std::chrono::steady_clock::now();
 	const std::chrono::time_point now = std::chrono::steady_clock::now();
