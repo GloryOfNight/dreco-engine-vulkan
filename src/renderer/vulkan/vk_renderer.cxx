@@ -244,20 +244,22 @@ void vk_renderer::createInstance()
 	std::vector<const char*> instLayers{};
 	for (const auto& vkLayerProperty : avaibleLayers)
 	{
-#define PUSH_LAYER_IF_AVAIBLE(layer)                      \
-	if (vkLayerProperty.layerName == std::string(#layer)) \
-		instLayers.push_back(#layer);
+		const auto push_layer_if_available_lam = [&instLayers, &vkLayerProperty](const std::string_view& layer) -> void
+		{
+			if (vkLayerProperty.layerName == layer)
+				instLayers.push_back(layer.data());
+		};
 
 #ifdef VK_ENABLE_VALIDATION
-		PUSH_LAYER_IF_AVAIBLE(VK_LAYER_KHRONOS_validation);
+		push_layer_if_available_lam("VK_LAYER_KHRONOS_validation");
 #endif
 
 #ifdef VK_ENABLE_MESA_OVERLAY
-		PUSH_LAYER_IF_AVAIBLE(VK_LAYER_MESA_overlay);
+		push_layer_if_available_lam("VK_LAYER_MESA_overlay");
 #endif
 
 #ifdef VK_ENABLE_LUNAR_MONITOR
-		PUSH_LAYER_IF_AVAIBLE(VK_LAYER_LUNARG_monitor);
+		push_layer_if_available_lam("VK_LAYER_LUNARG_monitor");
 #endif
 	}
 
