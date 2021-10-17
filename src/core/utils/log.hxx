@@ -23,4 +23,4 @@ namespace de
 	}
 } // namespace de
 
-#define DE_LOG(priority, message, ...) de::log(de::log_priority::##priority, message, ##__VA_ARGS__)
+#define DE_LOG(priority, message, ...) de::log(de::log_priority::priority, message, ##__VA_ARGS__)
