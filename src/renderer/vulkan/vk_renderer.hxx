@@ -5,19 +5,16 @@
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
-#include "vk_device.hxx"
 #include "vk_graphics_pipeline.hxx"
 #include "vk_msaa_image.hxx"
-#include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_scene.hxx"
 #include "vk_settings.hxx"
-#include "vk_surface.hxx"
 #include "vk_texture_image.hxx"
 
 #include <SDL.h>
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class engine;
 class vk_mesh;
@@ -53,14 +50,11 @@ public:
 
 	SDL_Window* getWindow() const;
 
-	const vk_device& getDevice() const { return _device; }
-	vk_device& getDevice() { return _device; }
+	vk::Device getDevice() const { return _device; }
 
-	const vk_surface& getSurface() const { return _surface; }
-	vk_surface& getSurface() { return _surface; }
+	vk::SurfaceKHR getSurface() const { return _surface; }
 
-	const vk_physical_device& getPhysicalDevice() const { return _physicalDevice; }
-	vk_physical_device& getPhysicalDevice() { return _physicalDevice; }
+	vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
 
 	const vk_queue_family& getQueueFamily() const { return _queueFamily; }
 	vk_queue_family& getQueueFamily() { return _queueFamily; }
@@ -85,6 +79,12 @@ protected:
 
 	void createInstance();
 
+	void createSurface();
+
+	void createPhysicalDevice();
+
+	void createDevice();
+
 	void createSwapchain();
 
 	void createImageViews();
@@ -101,7 +101,7 @@ protected:
 
 	void createSemaphores();
 
-	void cleanupSwapchain(VkSwapchainKHR& swapchain);
+	void cleanupSwapchain(VkSwapchainKHR swapchain);
 
 	void recreateSwapchain();
 
@@ -116,11 +116,15 @@ private:
 
 	SDL_Window* _window;
 
-	vk_surface _surface;
+	vk::SurfaceKHR _surface;
 
-	vk_physical_device _physicalDevice;
+	vk::Instance _instance;
 
-	vk_device _device;
+	vk::PhysicalDevice _physicalDevice;
+
+	vk::Device _device;
+
+	vk::Queue _graphicsQueue, _presentQueue, _transferQueue;
 
 	vk_queue_family _queueFamily;
 
@@ -130,24 +134,20 @@ private:
 
 	vk_depth_image _depthImage;
 
-	VkInstance _vkInstance;
+	vk::SwapchainKHR _swapchain;
 
-	VkSwapchainKHR _vkSwapchain;
+	std::vector<vk::ImageView> _swapchainImageViews;
 
-	std::vector<VkImageView> _vkSwapchainImageViews;
+	vk::RenderPass _renderPass;
 
-	std::vector<VkFramebuffer> _vkFramebuffers;
+	std::vector<vk::Framebuffer> _framebuffers;
 
-	VkRenderPass _vkRenderPass;
+	std::vector<vk::CommandPool> _graphicsCommandPools;
+	std::vector<vk::CommandBuffer> _graphicsCommandBuffers;
 
-	std::vector<VkCommandPool> _vkGraphicsCommandPools;
-	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
+	VkCommandPool _transferCommandPool;
 
-	VkCommandPool _vkTransferCommandPool;
+	std::vector<VkFence> _submitQueueFences;
 
-	std::vector<VkFence> _vkSubmitQueueFences;
-
-	VkSemaphore _vkSemaphoreImageAvaible;
-
-	VkSemaphore _vkSemaphoreRenderFinished;
+	VkSemaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };

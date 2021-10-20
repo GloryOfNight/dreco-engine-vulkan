@@ -25,6 +25,8 @@ public:
 
 	std::vector<uint32_t> getUniqueQueueIndexes() const;
 
+	std::vector<uint32_t> getUniqueQueueIndexes(const VkSharingMode sharingMode) const;
+
 private:
 	bool isSupported;
 

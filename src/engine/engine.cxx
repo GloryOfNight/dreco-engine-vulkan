@@ -319,11 +319,11 @@ void engine::startMainLoop()
 				if (event.key.keysym.sym == SDLK_F1)
 				{
 					auto& settings = _renderer->getSettings();
-					if (settings.setDefaultPolygonMode(VK_POLYGON_MODE_FILL))
+					if (settings.setDefaultPolygonMode(vk::PolygonMode::eFill))
 					{
 						_renderer->applySettings();
 					}
-					else if (settings.setDefaultPolygonMode(VK_POLYGON_MODE_LINE))
+					else if (settings.setDefaultPolygonMode(vk::PolygonMode::eLine))
 					{
 						_renderer->applySettings();
 					}

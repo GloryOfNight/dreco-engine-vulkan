@@ -84,3 +84,8 @@ std::vector<uint32_t> vk_queue_family::getUniqueQueueIndexes() const
 	const std::set<uint32_t> indexesSet{presentIndex, graphicsIndex, transferIndex};
 	return std::vector<uint32_t>(indexesSet.begin(), indexesSet.end());
 }
+
+std::vector<uint32_t> vk_queue_family::getUniqueQueueIndexes(const VkSharingMode sharingMode) const
+{
+	return sharingMode == VK_SHARING_MODE_CONCURRENT ? getUniqueQueueIndexes() : std::vector<uint32_t>{presentIndex};
+}
