@@ -303,7 +303,8 @@ void engine::startMainLoop()
 				if (event.key.keysym.sym == SDLK_MINUS)
 				{
 					auto& settings = _renderer->getSettings();
-					if (settings.setPrefferedSampleCount(static_cast<VkSampleCountFlagBits>(settings.getPrefferedSampleCount() / 2)))
+					const auto value = static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(settings.getPrefferedSampleCount()) / 2);
+					if (settings.setPrefferedSampleCount(value))
 					{
 						_renderer->applySettings();
 					}
@@ -311,7 +312,8 @@ void engine::startMainLoop()
 				else if (event.key.keysym.sym == SDLK_EQUALS)
 				{
 					auto& settings = _renderer->getSettings();
-					if (settings.setPrefferedSampleCount(static_cast<VkSampleCountFlagBits>(settings.getPrefferedSampleCount() * 2)))
+					const auto value = static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(settings.getPrefferedSampleCount()) * 2);
+					if (settings.setPrefferedSampleCount(value))
 					{
 						_renderer->applySettings();
 					}

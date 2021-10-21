@@ -32,11 +32,11 @@ vk_renderer::vk_renderer()
 	, _device()
 	, _instance{}
 	, _swapchain{}
-	, _swapchainImageViews{VK_NULL_HANDLE}
+	, _swapchainImageViews{}
 	, _framebuffers{}
 	, _renderPass{}
 	, _graphicsCommandPools{}
-	, _transferCommandPool{VK_NULL_HANDLE}
+	, _transferCommandPool{}
 	, _submitQueueFences{}
 	, _semaphoreImageAvaible{}
 	, _semaphoreRenderFinished{}
@@ -141,8 +141,9 @@ void vk_renderer::tick(double deltaTime)
 
 void vk_renderer::loadScene(const scene& scn)
 {
-	vk_scene* newScene = _scenes.emplace_back(new vk_scene());
+	vk_scene* newScene = new vk_scene();
 	newScene->create(scn);
+	_scenes.push_back(newScene);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -161,57 +162,40 @@ uint32_t vk_renderer::getImageCount() const
 	return _swapchainImageViews.size();
 }
 
-VkRenderPass vk_renderer::getRenderPass() const
-{
-	return _renderPass;
-}
-
-VkCommandPool vk_renderer::getTransferCommandPool() const
-{
-	return _transferCommandPool;
-}
-
 SDL_Window* vk_renderer::getWindow() const
 {
 	return _window;
 }
 
-VkCommandBuffer vk_renderer::beginSingleTimeTransferCommands()
+vk::CommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 {
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.pNext = nullptr;
-	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = 1;
-	commandBufferAllocateInfo.commandPool = _transferCommandPool;
+	const vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
+		vk::CommandBufferAllocateInfo()
+			.setLevel(vk::CommandBufferLevel::ePrimary)
+			.setCommandBufferCount(1)
+			.setCommandPool(_transferCommandPool);
 
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(_device, &commandBufferAllocateInfo, &commandBuffer);
+	vk::CommandBuffer commandBuffer = _device.allocateCommandBuffers(commandBufferAllocateInfo)[0];
 
-	VkCommandBufferBeginInfo commandBufferBeginInfo{};
-	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandBufferBeginInfo.pNext = nullptr;
-	commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	commandBufferBeginInfo.pInheritanceInfo = nullptr;
-
-	vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+	const vk::CommandBufferBeginInfo commandBufferBeginInfo =
+		vk::CommandBufferBeginInfo({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+	commandBuffer.begin(commandBufferBeginInfo);
 
 	return commandBuffer;
 }
 
-void vk_renderer::submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer)
+void vk_renderer::submitSingleTimeTransferCommands(vk::CommandBuffer commandBuffer)
 {
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	const vk::SubmitInfo submitInfo =
+		vk::SubmitInfo().setCommandBuffers(std::array<vk::CommandBuffer, 1>{commandBuffer});
+
 	submitSingleTimeTransferCommands({submitInfo});
 }
 
-void vk_renderer::submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits)
+void vk_renderer::submitSingleTimeTransferCommands(const std::vector<vk::SubmitInfo>& submits)
 {
-	vkQueueSubmit(_transferQueue, submits.size(), submits.data(), VK_NULL_HANDLE);
-	vkQueueWaitIdle(_transferQueue);
+	_transferQueue.submit(submits);
+	_transferQueue.waitIdle();
 }
 
 void vk_renderer::applySettings()
@@ -351,7 +335,7 @@ void vk_renderer::createDevice()
 
 void vk_renderer::createSwapchain()
 {
-	const VkSharingMode sharingMode{_queueFamily.getSharingMode()};
+	const vk::SharingMode sharingMode{_queueFamily.getSharingMode()};
 	const std::vector<uint32_t> queueFamilyIndexes = _queueFamily.getUniqueQueueIndexes(sharingMode);
 
 	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
@@ -505,7 +489,7 @@ void vk_renderer::createRenderPass()
 
 void vk_renderer::createFramebuffers()
 {
-	const size_t imageCount = _swapchainImageViews.size();
+	const size_t imageCount = getImageCount();
 	_framebuffers.resize(imageCount);
 
 	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
@@ -543,7 +527,7 @@ void vk_renderer::createCommandPools()
 {
 	vk::CommandPoolCreateInfo commandPoolCreateInfo({}, _queueFamily.getGraphicsIndex());
 
-	_graphicsCommandPools.resize(_swapchainImageViews.size());
+	_graphicsCommandPools.resize(getImageCount());
 	for (auto& pool : _graphicsCommandPools)
 	{
 		pool = _device.createCommandPool(commandPoolCreateInfo);
@@ -571,7 +555,7 @@ void vk_renderer::createPrimaryCommandBuffers()
 
 inline void vk_renderer::createFences()
 {
-	_submitQueueFences.resize(_swapchainImageViews.size());
+	_submitQueueFences.resize(getImageCount());
 	for (auto& fence : _submitQueueFences)
 	{
 		const vk::FenceCreateInfo fenceCreateInfo({vk::FenceCreateFlagBits::eSignaled});
@@ -630,9 +614,10 @@ void vk_renderer::drawFrame()
 			.setSwapchains(std::vector<vk::SwapchainKHR>{_swapchain})
 			.setImageIndices(std::vector<uint32_t>{imageIndex});
 
-	_presentQueue.presentKHR(presentInfo);
+	const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
 
-	if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result)
+	if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
+		vk::Result::eSuboptimalKHR == presentResult)
 	{
 		recreateSwapchain();
 	}
@@ -683,7 +668,7 @@ void vk_renderer::recreateSwapchain()
 	}
 }
 
-VkCommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
+vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 {
 	const auto currentExtent = _physicalDevice.getSurfaceCapabilitiesKHR(_surface).currentExtent;
 

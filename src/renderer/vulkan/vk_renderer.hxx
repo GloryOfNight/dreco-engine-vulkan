@@ -44,9 +44,9 @@ public:
 
 	uint32_t getImageCount() const;
 
-	VkRenderPass getRenderPass() const;
+	vk::RenderPass getRenderPass() const { return _renderPass; };
 
-	VkCommandPool getTransferCommandPool() const;
+	vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; };
 
 	SDL_Window* getWindow() const;
 
@@ -64,11 +64,11 @@ public:
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
-	VkCommandBuffer beginSingleTimeTransferCommands();
+	vk::CommandBuffer beginSingleTimeTransferCommands();
 
-	void submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
+	void submitSingleTimeTransferCommands(vk::CommandBuffer commandBuffer);
 
-	void submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits);
+	void submitSingleTimeTransferCommands(const std::vector<vk::SubmitInfo>& submits);
 
 	void applySettings();
 
@@ -105,7 +105,7 @@ protected:
 
 	void recreateSwapchain();
 
-	VkCommandBuffer prepareCommandBuffer(uint32_t imageIndex);
+	vk::CommandBuffer prepareCommandBuffer(uint32_t imageIndex);
 
 private:
 	uint32_t _apiVersion;
@@ -145,9 +145,9 @@ private:
 	std::vector<vk::CommandPool> _graphicsCommandPools;
 	std::vector<vk::CommandBuffer> _graphicsCommandBuffers;
 
-	VkCommandPool _transferCommandPool;
+	vk::CommandPool _transferCommandPool;
 
-	std::vector<VkFence> _submitQueueFences;
+	std::vector<vk::Fence> _submitQueueFences;
 
-	VkSemaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
+	vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };

@@ -1,32 +1,44 @@
 #include "vk_depth_image.hxx"
 
 #include "vk_renderer.hxx"
+#include "vk_utils.hxx"
 
 void vk_depth_image::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
-	const VkDevice vkDevice{renderer->getDevice().get()};
 
-	_format = findDepthFormat();
-	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
+	const vk::Device device = renderer->getDevice();
+	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
+	const vk::SurfaceKHR surface = renderer->getSurface();
+	const VkExtent2D extent = physicalDevice.getSurfaceCapabilitiesKHR(surface).currentExtent;
 
-	createImage(vkDevice, _format, vkExtent.width, vkExtent.height, renderer->getSettings().getPrefferedSampleCount());
+	_format = findSupportedDepthFormat();
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
+	createImage(device, _format, extent.width, extent.height, renderer->getSettings().getPrefferedSampleCount());
 
+	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
 
-	bindToMemory(vkDevice, _deviceMemory.get(), 0);
+	bindToMemory(device, _deviceMemory.get(), 0);
 
-	createImageView(vkDevice, _format);
+	createImageView(device, _format);
 
-	VkCommandBuffer commandBuffer = transitionImageLayout(_vkImage, _format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		0, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, getImageAspectFlags());
+	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
+
+	vk_image_transition_layout_info transitionImageLayoutInfo;
+	transitionImageLayoutInfo._image = _image;
+	transitionImageLayoutInfo._format = _format;
+	transitionImageLayoutInfo._layoutOld = vk::ImageLayout::eUndefined;
+	transitionImageLayoutInfo._layoutNew = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	transitionImageLayoutInfo._accessFlagsSrc = vk::AccessFlagBits();
+	transitionImageLayoutInfo._accessFlagsDst = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+	transitionImageLayoutInfo._pipelineStageFlagsSrc = vk::PipelineStageFlagBits::eTopOfPipe;
+	transitionImageLayoutInfo._pipelineStageFlagsDst = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+	transitionImageLayoutInfo._imageAspectFlags = getImageAspectFlags();
 
 	renderer->submitSingleTimeTransferCommands(commandBuffer);
 
-	vkFreeCommandBuffers(vkDevice, renderer->getTransferCommandPool(), 1, &commandBuffer);
+	device.freeCommandBuffers(renderer->getTransferCommandPool(), std::array<vk::CommandBuffer, 1>{commandBuffer});
 }
 
 void vk_depth_image::recreate()
@@ -35,27 +47,33 @@ void vk_depth_image::recreate()
 	create();
 }
 
-VkFormat vk_depth_image::getFormat() const
+vk::Format vk_depth_image::getFormat() const
 {
 	return _format;
 }
 
-VkImageAspectFlags vk_depth_image::getImageAspectFlags() const
+vk::ImageAspectFlags vk_depth_image::getImageAspectFlags() const
 {
-	return hasStencilComponent() ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
+	return hasStencilComponent() ? vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlagBits::eDepth;
 }
 
-VkImageUsageFlags vk_depth_image::getImageUsageFlags() const
+vk::ImageUsageFlags vk_depth_image::getImageUsageFlags() const
 {
-	return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	return vk::ImageUsageFlagBits::eDepthStencilAttachment;
 }
 
-VkFormat vk_depth_image::findDepthFormat() const
+vk::Format vk_depth_image::findSupportedDepthFormat() const
 {
-	return vk_renderer::get()->getPhysicalDevice().findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	const vk::PhysicalDevice physicalDevice = vk_renderer::get()->getPhysicalDevice();
+	vk_utils::find_supported_format_info findSupportedFormatInfo{};
+	findSupportedFormatInfo.formatCandidates = {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
+	findSupportedFormatInfo.imageTiling = vk::ImageTiling::eOptimal;
+	findSupportedFormatInfo.formatFeatureFlags = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+
+	return vk_utils::findSupportedFormat(physicalDevice, findSupportedFormatInfo);
 }
 
 bool vk_depth_image::hasStencilComponent() const
 {
-	return _format == VK_FORMAT_D32_SFLOAT_S8_UINT || _format == VK_FORMAT_D24_UNORM_S8_UINT;
+	return _format == vk::Format::eD32SfloatS8Uint || _format == vk::Format::eD24UnormS8Uint;
 }

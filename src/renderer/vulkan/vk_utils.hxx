@@ -28,3 +28,15 @@
 			return;                                                                          \
 		}                                                                                    \
 	}
+
+class vk_utils
+{
+public:
+	struct find_supported_format_info
+	{
+		std::vector<vk::Format> formatCandidates;
+		vk::ImageTiling imageTiling;
+		vk::FormatFeatureFlags formatFeatureFlags;
+	};
+	static vk::Format findSupportedFormat(const vk::PhysicalDevice physicalDevice, const find_supported_format_info& info) noexcept;
+};

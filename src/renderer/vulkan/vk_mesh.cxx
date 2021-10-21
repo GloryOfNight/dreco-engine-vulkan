@@ -3,8 +3,6 @@
 #include "core/utils/file_utils.hxx"
 #include "engine/engine.hxx"
 
-#include "vk_device.hxx"
-#include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_scene.hxx"

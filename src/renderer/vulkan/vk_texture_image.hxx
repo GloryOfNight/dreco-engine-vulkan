@@ -23,16 +23,16 @@ public:
 
 	void destroy() override;
 
-	VkSampler getSampler() const;
+	vk::Sampler getSampler() const;
 
 	bool isValid() const;
 
 protected:
-	virtual VkImageAspectFlags getImageAspectFlags() const override;
+	virtual vk::ImageAspectFlags getImageAspectFlags() const override;
 
-	virtual VkImageUsageFlags getImageUsageFlags() const override;
+	virtual vk::ImageUsageFlags getImageUsageFlags() const override;
 
-	void createSampler(const VkDevice vkDevice);
+	void createSampler(const vk::Device device);
 
-	VkSampler _vkSampler;
+	vk::Sampler _sampler;
 };

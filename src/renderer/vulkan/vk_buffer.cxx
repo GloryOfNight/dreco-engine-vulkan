@@ -1,8 +1,6 @@
 #include "vk_buffer.hxx"
 
 #include "vk_allocator.hxx"
-#include "vk_device.hxx"
-#include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"

@@ -1,27 +1,26 @@
 #include "vk_msaa_image.hxx"
 
 #include "vk_renderer.hxx"
-#include "vk_surface.hxx"
 
 void vk_msaa_image::create()
 {
 	vk_renderer* renderer{vk_renderer::get()};
-	const VkDevice vkDevice{renderer->getDevice().get()};
+	const vk::Device device = renderer->getDevice();
+	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
+	const vk::SurfaceKHR surface = renderer->getSurface();
+	
+	const vk::Extent2D extent = physicalDevice.getSurfaceCapabilitiesKHR(surface).currentExtent;
+	const vk::Format format = renderer->getSettings().getSurfaceFormat().format;
+	const vk::SampleCountFlagBits samples = renderer->getSettings().getPrefferedSampleCount();
 
-	const VkFormat format{renderer->getSurface().getFormat().format};
-	const VkSampleCountFlagBits samples{renderer->getSettings().getPrefferedSampleCount()};
-	const VkExtent2D vkExtent{renderer->getSurface().getCapabilities().currentExtent};
+	createImage(device, format, extent.width, extent.height, samples);
 
-	createImage(vkDevice, format, vkExtent.width, vkExtent.height, samples);
-
-	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
-
+	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
 
-	bindToMemory(vkDevice, _deviceMemory.get(), 0);
+	bindToMemory(device, _deviceMemory.get(), 0);
 
-	createImageView(vkDevice, format);
+	createImageView(device, format);
 }
 
 void vk_msaa_image::recreate() 
@@ -30,12 +29,12 @@ void vk_msaa_image::recreate()
 	create();
 }
 
-VkImageAspectFlags vk_msaa_image::getImageAspectFlags() const
+vk::ImageAspectFlags vk_msaa_image::getImageAspectFlags() const
 {
-	return VK_IMAGE_ASPECT_COLOR_BIT;
+	return vk::ImageAspectFlagBits::eColor;
 }
 
-VkImageUsageFlags vk_msaa_image::getImageUsageFlags() const
+vk::ImageUsageFlags vk_msaa_image::getImageUsageFlags() const
 {
-	return VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	return vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
 }

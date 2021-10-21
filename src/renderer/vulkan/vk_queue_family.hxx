@@ -1,17 +1,13 @@
 #pragma once
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class vk_queue_family final
 {
 public:
 	vk_queue_family();
 
-	vk_queue_family(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface);
-
-	void setup(const VkPhysicalDevice& vkPhysicalDevice, const VkSurfaceKHR& vkSurface);
-
-	bool isVulkanSupported() const;
+	void setup(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface);
 
 	uint32_t getGraphicsIndex() const;
 
@@ -19,22 +15,20 @@ public:
 
 	uint32_t getPresentIndex() const;
 
-	VkSharingMode getSharingMode() const;
+	vk::SharingMode getSharingMode() const;
 
 	std::vector<uint32_t> getQueueIndexes() const;
 
 	std::vector<uint32_t> getUniqueQueueIndexes() const;
 
-	std::vector<uint32_t> getUniqueQueueIndexes(const VkSharingMode sharingMode) const;
+	std::vector<uint32_t> getUniqueQueueIndexes(const vk::SharingMode sharingMode) const;
 
 private:
-	bool isSupported;
-
 	uint32_t graphicsIndex;
 
 	uint32_t transferIndex;
 
 	uint32_t presentIndex;
 
-	VkSharingMode sharingMode;
+	vk::SharingMode sharingMode;
 };
