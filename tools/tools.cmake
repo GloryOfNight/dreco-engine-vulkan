@@ -1,12 +1,7 @@
-if (MSVC)
-set(TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE")
-else()
-set(TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY")
-endif()
 
 # configure and compile tools
 execute_process(COMMAND "cmake" 
-"${TOOLS_CMAKE_RUNTIME_OUTPUT_DIRECTORY_PARAM}=${CMAKE_SOURCE_DIR}/build/tools" 
+"-DOUTPUT_DIRECTORY=${CMAKE_SOURCE_DIR}/build/tools" 
 "-S" "${CMAKE_SOURCE_DIR}/tools/shader_list_generator" 
 "-B" "${CMAKE_SOURCE_DIR}/tools/build")
 execute_process(COMMAND "cmake" "--build" "${CMAKE_SOURCE_DIR}/tools/build" "--config" "Release")
