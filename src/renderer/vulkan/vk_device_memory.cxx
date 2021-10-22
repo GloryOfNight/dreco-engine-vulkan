@@ -1,11 +1,10 @@
 #include "vk_device_memory.hxx"
 
-#include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
 vk_device_memory::vk_device_memory()
-	: _vkDeviceMemory{VK_NULL_HANDLE}
+	: _deviceMemory{}
 {
 }
 
@@ -14,67 +13,51 @@ vk_device_memory::~vk_device_memory()
 	free();
 }
 
-void vk_device_memory::allocate(const VkMemoryRequirements& vkMemoryRequirements, const VkMemoryPropertyFlags vkMemoryPropertyFlags)
+void vk_device_memory::allocate(const vk::MemoryRequirements& vkMemoryRequirements, const vk::MemoryPropertyFlags vkMemoryPropertyFlags)
 {
-	vk_renderer* renderer{vk_renderer::get()};
+	vk_renderer* renderer = vk_renderer::get();
+	const vk::Device device = renderer->getDevice();
+	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
 
-	// clang-format off
-	const uint32_t memoryTypeIndex
-	{
-		findMemoryTypeIndex(renderer->getPhysicalDevice().getMemoryProperties(),
-		vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags)
-	};
-	// clang-format on
+	const uint32_t memoryTypeIndex =
+		findMemoryTypeIndex(physicalDevice.getMemoryProperties(), vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
 
 	if (UINT32_MAX != memoryTypeIndex)
 	{
-		VkMemoryAllocateInfo memoryAllocateInfo{};
-		memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memoryAllocateInfo.pNext = nullptr;
-		memoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
-		memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-
-		VK_CHECK(vkAllocateMemory(renderer->getDevice().get(), &memoryAllocateInfo, vkGetAllocator(), &_vkDeviceMemory));
+		const vk::MemoryAllocateInfo memoryAllocateInfo(vkMemoryRequirements.size, memoryTypeIndex);
+		_deviceMemory = device.allocateMemory(memoryAllocateInfo);
 	}
 }
 
 void vk_device_memory::free()
 {
-	if (VK_NULL_HANDLE != _vkDeviceMemory)
+	if (_deviceMemory)
 	{
-		vkFreeMemory(vk_renderer::get()->getDevice().get(), _vkDeviceMemory, vkGetAllocator());
-		_vkDeviceMemory = VK_NULL_HANDLE;
+		const vk::Device device = vk_renderer::get()->getDevice();
+		device.freeMemory(_deviceMemory);
 	}
 }
 
-void vk_device_memory::map(const void* data, const VkDeviceSize size, const VkDeviceSize offset)
+void vk_device_memory::map(const void* data, const vk::DeviceSize size, const vk::DeviceSize offset)
 {
-	const VkDevice vkDevice = vk_renderer::get()->getDevice().get();
-	void* region;
-	VK_CHECK(vkMapMemory(vkDevice, _vkDeviceMemory, offset, VK_WHOLE_SIZE, 0, &region));
+	const vk::Device device = vk_renderer::get()->getDevice();
+	void* region = device.mapMemory(_deviceMemory, offset, size);
 	memcpy(region, data, size);
-	vkUnmapMemory(vkDevice, _vkDeviceMemory);
+	device.unmapMemory(_deviceMemory);
 }
 
-void vk_device_memory::map(const std::vector<map_memory_region>& regions, const VkDeviceSize offset)
+void vk_device_memory::map(const std::vector<map_memory_region>& regions, const vk::DeviceSize offset)
 {
-	const VkDevice vkDevice = vk_renderer::get()->getDevice().get();
-	void* region;
-	VK_CHECK(vkMapMemory(vkDevice, _vkDeviceMemory, offset, VK_WHOLE_SIZE, 0, &region));
-	for (const auto& reg : regions) 
+	const vk::Device device = vk_renderer::get()->getDevice();
+	void* region = device.mapMemory(_deviceMemory, offset, VK_WHOLE_SIZE);
+	for (const auto& reg : regions)
 	{
 		memcpy(reinterpret_cast<uint8_t*>(region) + reg.offset, reg.data, reg.size);
 	}
-	vkUnmapMemory(vkDevice, _vkDeviceMemory);
+	device.unmapMemory(_deviceMemory);
 }
 
-VkDeviceMemory vk_device_memory::get() const
-{
-	return _vkDeviceMemory;
-}
-
-uint32_t vk_device_memory::findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkMemoryProperties,
-	uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags)
+uint32_t vk_device_memory::findMemoryTypeIndex(const vk::PhysicalDeviceMemoryProperties& vkMemoryProperties, uint32_t memoryTypeBits, vk::MemoryPropertyFlags vkMemoryPropertyFlags)
 {
 	for (uint32_t i = 0; i < vkMemoryProperties.memoryTypeCount; ++i)
 	{

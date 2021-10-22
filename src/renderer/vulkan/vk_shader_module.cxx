@@ -1,11 +1,10 @@
 #include "vk_shader_module.hxx"
 
-#include "vk_allocator.hxx"
+#include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
 vk_shader_module::vk_shader_module()
-	: _vkDevice{VK_NULL_HANDLE}
-	, _vkShaderModule{VK_NULL_HANDLE}
+	: _shaderModule{}
 {
 }
 
@@ -14,30 +13,17 @@ vk_shader_module::~vk_shader_module()
 	destroy();
 }
 
-void vk_shader_module::create(VkDevice vkDevice, const char* code, const size_t& codeSize)
+void vk_shader_module::create(const uint32_t* code, const size_t& size)
 {
-	_vkDevice = vkDevice;
-
-	VkShaderModuleCreateInfo shaderModuleCreateInfo{};
-	shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	shaderModuleCreateInfo.pNext = nullptr;
-	shaderModuleCreateInfo.flags = 0;
-	shaderModuleCreateInfo.codeSize = codeSize;
-	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(code);
-
-	VK_CHECK(vkCreateShaderModule(_vkDevice, &shaderModuleCreateInfo, vkGetAllocator(), &_vkShaderModule));
-}
-
-VkShaderModule vk_shader_module::get() const
-{
-	return _vkShaderModule;
+	const vk::Device device = vk_renderer::get()->getDevice();
+	_shaderModule = device.createShaderModule(vk::ShaderModuleCreateInfo({}, size, code));
 }
 
 void vk_shader_module::destroy()
 {
-	if (VK_NULL_HANDLE != _vkDevice && VK_NULL_HANDLE != _vkShaderModule)
+	if (_shaderModule)
 	{
-		vkDestroyShaderModule(_vkDevice, _vkShaderModule, vkGetAllocator());
-		_vkDevice = VK_NULL_HANDLE;
+		const vk::Device device = vk_renderer::get()->getDevice();
+		device.destroyShaderModule(_shaderModule);
 	}
 }

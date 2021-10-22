@@ -7,7 +7,6 @@
 #include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
 
-#include "vk_allocator.hxx"
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"

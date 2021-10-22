@@ -104,7 +104,7 @@ vk_descriptor_set& vk_mesh::getDescriptorSet()
 void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice,
 	const _memory_regions& vertRegions, const _memory_regions& indxRegions)
 {
-	vk_buffer_create_info buffer_create_info{};
+	vk_buffer::create_info buffer_create_info{};
 	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
 	buffer_create_info.size = _vertsBufferSize + _indxsBufferSize;

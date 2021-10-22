@@ -9,44 +9,41 @@ class vk_device;
 class vk_physical_device;
 class vk_queue_family;
 
-struct vk_buffer_create_info
-{
-	VkFlags usage;
-	vk_device_memory_properties memory_properties_flags;
-	VkDeviceSize size;
-};
-
 class vk_buffer final
 {
 public:
+	struct create_info
+	{
+		vk::BufferUsageFlagBits usage;
+		vk::MemoryPropertyFlags memoryPropertiesFlags;
+		vk::DeviceSize size;
+
+		static inline vk::MemoryPropertyFlags deviceMemoryPropertiesFlags =
+			vk::MemoryPropertyFlagBits::eDeviceLocal;
+
+		static inline vk::MemoryPropertyFlags hostMemoryPropertiesFlags =
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+	};
+
 	vk_buffer();
 	vk_buffer(const vk_buffer&) = delete;
-	vk_buffer(vk_buffer&&) = delete;
+	vk_buffer(vk_buffer&&) = default;
 	~vk_buffer();
 
-	vk_buffer& operator=(const vk_buffer&) = delete;
-	vk_buffer& operator=(vk_buffer&&) = delete;
-
-	void create(const vk_buffer_create_info& create_info);
+	void create(const create_info& createInfo);
 
 	void destroy();
 
-	VkBuffer get() const;
+	vk::Buffer get() const;
 
 	vk_device_memory& getDeviceMemory();
 
-	static void copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDst, const std::vector<VkBufferCopy>& vkBufferCopyRegions);
+	static void copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer bufferDst, const std::vector<vk::BufferCopy>& bufferCopyRegions);
 
-	[[nodiscard]]
-	static VkCommandBuffer copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height);
-
-protected:
-	void createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info);
-
-	void bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset);
+	[[nodiscard]] static vk::CommandBuffer copyBufferToImage(const vk::Buffer buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height);
 
 private:
 	vk_device_memory _deviceMemory;
 
-	VkBuffer _vkBuffer;
+	vk::Buffer _buffer;
 };

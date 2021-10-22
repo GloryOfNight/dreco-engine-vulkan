@@ -16,7 +16,7 @@ void vk_msaa_image::create()
 	createImage(device, format, extent.width, extent.height, samples);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
-	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
+	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
 
 	bindToMemory(device, _deviceMemory.get(), 0);
 

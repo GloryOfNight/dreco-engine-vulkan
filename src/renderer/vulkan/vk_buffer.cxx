@@ -1,6 +1,5 @@
 #include "vk_buffer.hxx"
 
-#include "vk_allocator.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
@@ -8,7 +7,7 @@
 #include <cstring>
 
 vk_buffer::vk_buffer()
-	: _vkBuffer{VK_NULL_HANDLE}
+	: _buffer{}
 {
 }
 
@@ -17,32 +16,47 @@ vk_buffer::~vk_buffer()
 	destroy();
 }
 
-void vk_buffer::create(const vk_buffer_create_info& create_info)
+void vk_buffer::create(const create_info& createInfo)
 {
-	const VkDevice vkDevice{vk_renderer::get()->getDevice().get()};
-	createBuffer(vkDevice, create_info);
+	vk_renderer* renderer = vk_renderer::get();
+	const vk::Device device = renderer->getDevice();
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(vkDevice, _vkBuffer, &memoryRequirements);
+	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
+	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
 
-	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(create_info.memory_properties_flags));
+	std::vector<uint32_t> queueIndexes;
+	if (sharingMode == vk::SharingMode::eConcurrent)
+	{
+		queueIndexes = queueFamily.getUniqueQueueIndexes();
+	}
 
-	bindToMemory(vkDevice, _deviceMemory.get(), 0);
+	const vk::BufferCreateInfo bufferCreateInfo =
+		vk::BufferCreateInfo()
+			.setSize(createInfo.size)
+			.setUsage(createInfo.usage)
+			.setSharingMode(sharingMode)
+			.setQueueFamilyIndices(queueIndexes);
+
+	_buffer = device.createBuffer(bufferCreateInfo);
+
+	const vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(_buffer);
+	_deviceMemory.allocate(memoryRequirements, createInfo.memoryPropertiesFlags);
+
+	device.bindBufferMemory(_buffer, _deviceMemory.get(), 0);
 }
 
 void vk_buffer::destroy()
 {
-	if (VK_NULL_HANDLE != _vkBuffer)
+	if (_buffer)
 	{
-		vkDestroyBuffer(vk_renderer::get()->getDevice().get(), _vkBuffer, vkGetAllocator());
-		_vkBuffer = VK_NULL_HANDLE;
+		vk_renderer::get()->getDevice().destroyBuffer(_buffer);
 	}
 	_deviceMemory.free();
 }
 
-VkBuffer vk_buffer::get() const
+vk::Buffer vk_buffer::get() const
 {
-	return _vkBuffer;
+	return _buffer;
 }
 
 vk_device_memory& vk_buffer::getDeviceMemory()
@@ -50,65 +64,42 @@ vk_device_memory& vk_buffer::getDeviceMemory()
 	return _deviceMemory;
 }
 
-void vk_buffer::copyBuffer(const VkBuffer vkBufferSrc, const VkBuffer VkBufferDst, const std::vector<VkBufferCopy>& vkBufferCopyRegions)
+void vk_buffer::copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer bufferDst, const std::vector<vk::BufferCopy>& bufferCopyRegions)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
-	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
+	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
 
-	vkCmdCopyBuffer(vkCommandBuffer, vkBufferSrc, VkBufferDst, vkBufferCopyRegions.size(), vkBufferCopyRegions.data());
+	commandBuffer.copyBuffer(bufferSrc, bufferDst, bufferCopyRegions);
+	commandBuffer.end();
 
-	vkEndCommandBuffer(vkCommandBuffer);
-
-	renderer->submitSingleTimeTransferCommands(vkCommandBuffer);
+	renderer->submitSingleTimeTransferCommands(commandBuffer);
 }
 
-VkCommandBuffer vk_buffer::copyBufferToImage(const VkBuffer vkBuffer, const VkImage vkImage, const VkImageLayout vkImageLayout, const uint32_t width, const uint32_t height)
+vk::CommandBuffer vk_buffer::copyBufferToImage(const vk::Buffer buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 
-	VkCommandBuffer vkCommandBuffer{renderer->beginSingleTimeTransferCommands()};
+	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
 
-	VkBufferImageCopy copyRegion{};
-	copyRegion.bufferOffset = 0;
-	copyRegion.bufferRowLength = 0;
-	copyRegion.bufferImageHeight = 0;
-	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copyRegion.imageSubresource.mipLevel = 0;
-	copyRegion.imageSubresource.baseArrayLayer = 0;
-	copyRegion.imageSubresource.layerCount = 1;
-	copyRegion.imageOffset = {0, 0, 0};
-	copyRegion.imageExtent = {width, height, 1};
+	const vk::ImageSubresourceLayers imageSubresourceLayers =
+		vk::ImageSubresourceLayers()
+			.setAspectMask(vk::ImageAspectFlagBits::eColor)
+			.setMipLevel(0)
+			.setBaseArrayLayer(0)
+			.setLayerCount(1);
 
-	vkCmdCopyBufferToImage(vkCommandBuffer, vkBuffer, vkImage, vkImageLayout, 1, &copyRegion);
-	vkEndCommandBuffer(vkCommandBuffer);
+	const vk::BufferImageCopy copyRegion =
+		vk::BufferImageCopy()
+			.setBufferOffset(0)
+			.setBufferRowLength(0)
+			.setBufferImageHeight(0)
+			.setImageSubresource(imageSubresourceLayers)
+			.setImageOffset(vk::Offset3D(0, 0, 0))
+			.setImageExtent(vk::Extent3D(width, height, 0));
 
-	return vkCommandBuffer;
-}
+	commandBuffer.copyBufferToImage(buffer, image, imageLayout, std::array<vk::BufferImageCopy, 1>{copyRegion});
+	commandBuffer.end();
 
-void vk_buffer::createBuffer(const VkDevice vkDevice, const vk_buffer_create_info& create_info)
-{
-	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-	std::vector<uint32_t> queueIndexes;
-
-	VkBufferCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.size = create_info.size;
-	createInfo.usage = static_cast<VkBufferUsageFlagBits>(create_info.usage);
-	createInfo.sharingMode = queueFamily.getSharingMode();
-	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
-	{
-		queueIndexes = queueFamily.getUniqueQueueIndexes();
-		createInfo.queueFamilyIndexCount = queueIndexes.size();
-		createInfo.pQueueFamilyIndices = queueIndexes.data();
-	}
-
-	VK_CHECK(vkCreateBuffer(vkDevice, &createInfo, vkGetAllocator(), &_vkBuffer));
-}
-
-void vk_buffer::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)
-{
-	vkBindBufferMemory(vkDevice, _vkBuffer, vkDeviceMemory, memoryOffset);
+	return commandBuffer;
 }

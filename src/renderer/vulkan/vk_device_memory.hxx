@@ -1,12 +1,6 @@
 #pragma once
 #include <vector>
-#include <vulkan/vulkan.h>
-
-enum class vk_device_memory_properties : VkFlags
-{
-	HOST = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-	DEVICE_ONLY = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-};
+#include <vulkan/vulkan.hpp>
 
 class vk_device_memory final
 {
@@ -14,29 +8,29 @@ public:
 	struct map_memory_region
 	{
 		const void* data{nullptr};
-		const VkDeviceSize size{0};
-		const VkDeviceSize offset{0};
+		const vk::DeviceSize size{0};
+		const vk::DeviceSize offset{0};
 	};
 
 	vk_device_memory();
 	vk_device_memory(const vk_device_memory&) = delete;
-	vk_device_memory(vk_device_memory&&) = delete;
+	vk_device_memory(vk_device_memory&&) = default;
 	~vk_device_memory();
 
-	void allocate(const VkMemoryRequirements& vkMemoryRequirements, const VkMemoryPropertyFlags vkMemoryPropertyFlags);
+	void allocate(const vk::MemoryRequirements& memoryRequirements, const vk::MemoryPropertyFlags memoryPropertyFlags);
 
 	void free();
 
-	void map(const void* data, const VkDeviceSize size, const VkDeviceSize offset = 0);
+	void map(const void* data, const vk::DeviceSize size, const vk::DeviceSize offset = 0);
 
-	void map(const std::vector<map_memory_region>& regions, const VkDeviceSize offset = 0);
+	void map(const std::vector<map_memory_region>& regions, const vk::DeviceSize offset = 0);
 
-	VkDeviceMemory get() const;
+	vk::DeviceMemory get() const;
 
 protected:
-	static uint32_t findMemoryTypeIndex(const VkPhysicalDeviceMemoryProperties& vkMemoryProperties,
-		uint32_t memoryTypeBits, VkMemoryPropertyFlags vkMemoryPropertyFlags);
+	static uint32_t findMemoryTypeIndex(const vk::PhysicalDeviceMemoryProperties& memoryProperties,
+		uint32_t memoryTypeBits, vk::MemoryPropertyFlags memoryPropertyFlags);
 
 private:
-	VkDeviceMemory _vkDeviceMemory;
+	vk::DeviceMemory _deviceMemory;
 };

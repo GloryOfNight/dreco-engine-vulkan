@@ -1,6 +1,5 @@
 #include "vk_descriptor_set.hxx"
 
-#include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
 #include "vk_texture_image.hxx"
 #include "vk_utils.hxx"
@@ -183,10 +182,10 @@ void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<
 
 void vk_descriptor_set::createUniformBuffer()
 {
-	vk_buffer_create_info buffer_create_info{};
-	buffer_create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
-	buffer_create_info.size = sizeof(uniforms);
+	vk_buffer::create_info bufferCreateInfo{};
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags();
+	bufferCreateInfo.size = sizeof(uniforms);
 
-	_uniformBuffer.create(buffer_create_info);
+	_uniformBuffer.create(bufferCreateInfo);
 }

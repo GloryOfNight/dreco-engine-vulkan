@@ -3,7 +3,6 @@
 #include "core/utils/log.hxx"
 
 #include "dreco.hxx"
-#include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
@@ -64,17 +63,17 @@ void vk_texture_image::create(const image_data& textureData)
 	createImage(device, format, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
-	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
+	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
 
 	bindToMemory(device, _deviceMemory.get(), 0);
 
 	createImageView(device, format);
 	createSampler(device);
 
-	vk_buffer_create_info info;
-	info.memory_properties_flags = vk_device_memory_properties::HOST;
+	vk_buffer::create_info info;
+	info.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
 	info.size = memoryRequirements.size;
-	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	info.usage = vk::BufferUsageFlagBits::eTransferSrc;
 
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
@@ -103,7 +102,7 @@ void vk_texture_image::create(const image_data& textureData)
 
 	commandBuffers[0] = transitionImageLayout(transitionLayoutInfo);
 
-	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _image, vk::ImageLayout::eTransferDstOptimal,
 		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	transitionLayoutInfo._layoutOld = vk::ImageLayout::eTransferDstOptimal;

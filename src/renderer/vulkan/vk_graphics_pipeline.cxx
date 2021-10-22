@@ -5,7 +5,6 @@
 #include "renderer/containers/vk_vertex.hxx"
 
 #include "dreco.hxx"
-#include "vk_allocator.hxx"
 #include "vk_descriptor_set.hxx"
 #include "vk_renderer.hxx"
 #include "vk_shader_module.hxx"
