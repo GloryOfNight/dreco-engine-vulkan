@@ -128,7 +128,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 	const vk::SurfaceKHR surface = renderer->getSurface();
 	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
 
-	const vk::Extent2D extent = physicalDevice.getSurfaceCapabilitiesKHR(surface).currentExtent;
+	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
 
 	std::string vertShaderCode;

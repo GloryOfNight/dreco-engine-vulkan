@@ -17,9 +17,6 @@ mat4 camera::getView() const
 
 mat4 camera::getProjection() const
 {
-	const vk_renderer* renderer = vk_renderer::get();
-	const auto surfaceCapabilities = renderer->getPhysicalDevice().getSurfaceCapabilitiesKHR(renderer->getSurface());
-	const vk::Extent2D currentExtent = surfaceCapabilities.currentExtent;
-
+	const vk::Extent2D currentExtent = vk_renderer::get()->getCurrentExtent();
 	return mat4::makeProjection(0.1F, 1000, static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), 45.F);
 }

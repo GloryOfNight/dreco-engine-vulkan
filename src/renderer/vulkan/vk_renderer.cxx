@@ -109,6 +109,7 @@ void vk_renderer::init()
 		createSurface();
 		createPhysicalDevice();
 	}
+	updateExtent();
 	_settings.init(this);
 
 	_queueFamily.setup(_physicalDevice, _surface);
@@ -135,6 +136,10 @@ void vk_renderer::init()
 
 void vk_renderer::tick(double deltaTime)
 {
+	if (updateExtent())
+	{
+		recreateSwapchain();
+	}
 	drawFrame();
 }
 
@@ -348,7 +353,7 @@ void vk_renderer::createSwapchain()
 			.setMinImageCount(minImageCount)
 			.setImageFormat(surfaceFormat.format)
 			.setImageColorSpace(surfaceFormat.colorSpace)
-			.setImageExtent(surfaceCapabilities.currentExtent)
+			.setImageExtent(_currentExtent)
 			.setImageArrayLayers(1)
 			.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
 			.setImageSharingMode(static_cast<vk::SharingMode>(sharingMode))
@@ -489,8 +494,6 @@ void vk_renderer::createFramebuffers()
 	const size_t imageCount = getImageCount();
 	_framebuffers.resize(imageCount);
 
-	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
-
 	for (size_t i = 0; i < imageCount; ++i)
 	{
 		std::vector<vk::ImageView> attachments;
@@ -512,8 +515,8 @@ void vk_renderer::createFramebuffers()
 			vk::FramebufferCreateInfo()
 				.setRenderPass(_renderPass)
 				.setAttachments(attachments)
-				.setWidth(surfaceCapabilities.currentExtent.width)
-				.setHeight(surfaceCapabilities.currentExtent.height)
+				.setWidth(_currentExtent.width)
+				.setHeight(_currentExtent.height)
 				.setLayers(1);
 
 		_framebuffers[i] = _device.createFramebuffer(framebufferCreateInfo);
@@ -619,6 +622,17 @@ void vk_renderer::drawFrame()
 	}
 }
 
+bool vk_renderer::updateExtent()
+{
+	const vk::Extent2D newExtent = _physicalDevice.getSurfaceCapabilitiesKHR(_surface).currentExtent;
+	if (_currentExtent != newExtent)
+	{
+		_currentExtent = newExtent;
+		return true;
+	}
+	return false;
+}
+
 void vk_renderer::cleanupSwapchain(vk::SwapchainKHR swapchain)
 {
 	_device.waitIdle();
@@ -642,8 +656,7 @@ void vk_renderer::cleanupSwapchain(vk::SwapchainKHR swapchain)
 
 void vk_renderer::recreateSwapchain()
 {
-	const vk::Extent2D currentExtent{_physicalDevice.getSurfaceCapabilitiesKHR(_surface).currentExtent};
-	if (0 == currentExtent.height || 0 == currentExtent.width)
+	if (0 == _currentExtent.height || 0 == _currentExtent.width)
 	{
 		return;
 	}
@@ -666,8 +679,6 @@ void vk_renderer::recreateSwapchain()
 
 vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 {
-	const auto currentExtent = _physicalDevice.getSurfaceCapabilitiesKHR(_surface).currentExtent;
-
 	vk::CommandBuffer commandBuffer = _graphicsCommandBuffers[imageIndex];
 
 	const vk::CommandBufferBeginInfo commandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
@@ -681,7 +692,7 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 		vk::RenderPassBeginInfo()
 			.setRenderPass(_renderPass)
 			.setFramebuffer(_framebuffers[imageIndex])
-			.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(currentExtent)))
+			.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), _currentExtent))
 			.setClearValues(clearValues);
 
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);

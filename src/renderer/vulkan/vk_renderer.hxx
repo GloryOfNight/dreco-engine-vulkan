@@ -50,6 +50,8 @@ public:
 
 	SDL_Window* getWindow() const;
 
+	vk::Extent2D getCurrentExtent() const { return _currentExtent; };
+
 	vk::Device getDevice() const { return _device; }
 
 	vk::SurfaceKHR getSurface() const { return _surface; }
@@ -74,6 +76,8 @@ public:
 
 protected:
 	void drawFrame();
+
+	bool updateExtent();
 
 	void createWindow();
 
@@ -115,6 +119,8 @@ private:
 	std::vector<vk_scene*> _scenes;
 
 	SDL_Window* _window;
+
+	vk::Extent2D _currentExtent;
 
 	vk::SurfaceKHR _surface;
 
