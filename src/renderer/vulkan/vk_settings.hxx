@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hPP>
+#include <vulkan/vulkan.hpp>
 
 class vk_renderer;
 

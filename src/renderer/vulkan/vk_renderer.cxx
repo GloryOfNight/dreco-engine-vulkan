@@ -178,7 +178,7 @@ vk::CommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 	vk::CommandBuffer commandBuffer = _device.allocateCommandBuffers(commandBufferAllocateInfo)[0];
 
 	const vk::CommandBufferBeginInfo commandBufferBeginInfo =
-		vk::CommandBufferBeginInfo({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+		vk::CommandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 	commandBuffer.begin(commandBufferBeginInfo);
 
 	return commandBuffer;
@@ -323,7 +323,7 @@ void vk_renderer::createDevice()
 	const vk::DeviceCreateInfo deviceCreateInfo =
 		vk::DeviceCreateInfo()
 			.setQueueCreateInfos(queueCreateInfoList)
-			.setPEnabledLayerNames(std::vector<const char*>{})
+			.setPEnabledLayerNames(nullptr)
 			.setPEnabledExtensionNames(deviceExtensions)
 			.setPEnabledFeatures(&physicalDeviceFeatures);
 
@@ -558,16 +558,15 @@ inline void vk_renderer::createFences()
 	_submitQueueFences.resize(getImageCount());
 	for (auto& fence : _submitQueueFences)
 	{
-		const vk::FenceCreateInfo fenceCreateInfo({vk::FenceCreateFlagBits::eSignaled});
+		const vk::FenceCreateInfo fenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
 		fence = _device.createFence(fenceCreateInfo);
 	}
 }
 
 void vk_renderer::createSemaphores()
 {
-	const vk::SemaphoreCreateInfo semaphorecreateInfo({});
-	_semaphoreImageAvaible = _device.createSemaphore(semaphorecreateInfo);
-	_semaphoreRenderFinished = _device.createSemaphore(semaphorecreateInfo);
+	_semaphoreImageAvaible = _device.createSemaphore(vk::SemaphoreCreateInfo());
+	_semaphoreRenderFinished = _device.createSemaphore(vk::SemaphoreCreateInfo());
 }
 
 void vk_renderer::drawFrame()
@@ -679,7 +678,7 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue({1.0F, 0U});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0F, 0U);
 
 	const vk::RenderPassBeginInfo renderPassBeginInfo =
 		vk::RenderPassBeginInfo()
