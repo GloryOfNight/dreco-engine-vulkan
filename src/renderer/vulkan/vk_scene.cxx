@@ -37,14 +37,14 @@ void vk_scene::create(const scene& scn)
 	_graphicsPipelines.reserve(scn._materials.size());
 	for (const auto& mat : scn._materials)
 	{
-		_graphicsPipelines.emplace_back(new vk_graphics_pipeline());
+		_graphicsPipelines.push_back(new vk_graphics_pipeline());
 		_graphicsPipelines.back()->create(mat);
 	}
 
 	_meshes.reserve(scn._meshes.size());
 	for (auto& mesh : scn._meshes)
 	{
-		_meshes.emplace_back(new vk_mesh());
+		_meshes.push_back(new vk_mesh());
 		_meshes.back()->create(mesh, this);
 	}
 }

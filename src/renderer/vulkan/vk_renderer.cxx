@@ -141,8 +141,9 @@ void vk_renderer::tick(double deltaTime)
 void vk_renderer::loadScene(const scene& scn)
 {
 	vk_scene* newScene = new vk_scene();
-	newScene->create(scn);
 	_scenes.push_back(newScene);
+	newScene->create(scn);
+	
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -342,7 +343,7 @@ void vk_renderer::createSwapchain()
 	const vk::SurfaceFormatKHR surfaceFormat = _settings.getSurfaceFormat();
 	const uint32_t minImageCount = surfaceCapabilities.maxImageCount >= 3 ? 3 : surfaceCapabilities.minImageCount;
 
-	vk::SwapchainCreateInfoKHR swapchainCreateInfo =
+	const vk::SwapchainCreateInfoKHR swapchainCreateInfo =
 		vk::SwapchainCreateInfoKHR()
 			.setFlags({})
 			.setSurface(_surface)

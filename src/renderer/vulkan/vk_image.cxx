@@ -34,13 +34,9 @@ vk::ImageUsageFlags vk_image::getImageUsageFlags() const
 void vk_image::createImage(const vk::Device vkDevice, const vk::Format vkFormat, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples)
 {
 	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
 
-	std::vector<uint32_t> queueIndexes;
-	if (vk::SharingMode::eConcurrent == sharingMode)
-	{
-		queueIndexes = queueFamily.getUniqueQueueIndexes();
-	}
+	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
+	const std::vector<uint32_t> queueIndexes = queueFamily.getUniqueQueueIndexes(sharingMode);
 
 	const vk::ImageCreateInfo imageCreateInfo =
 		vk::ImageCreateInfo()
@@ -53,6 +49,7 @@ void vk_image::createImage(const vk::Device vkDevice, const vk::Format vkFormat,
 			.setTiling(vk::ImageTiling::eOptimal)
 			.setUsage(getImageUsageFlags())
 			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setQueueFamilyIndices(queueIndexes)
 			.setSharingMode(sharingMode);
 
 	_image = vkDevice.createImage(imageCreateInfo);

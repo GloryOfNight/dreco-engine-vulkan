@@ -22,13 +22,9 @@ void vk_buffer::create(const create_info& createInfo)
 	const vk::Device device = renderer->getDevice();
 
 	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
 
-	std::vector<uint32_t> queueIndexes;
-	if (sharingMode == vk::SharingMode::eConcurrent)
-	{
-		queueIndexes = queueFamily.getUniqueQueueIndexes();
-	}
+	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
+	const std::vector<uint32_t> queueIndexes = queueFamily.getUniqueQueueIndexes(sharingMode);
 
 	const vk::BufferCreateInfo bufferCreateInfo =
 		vk::BufferCreateInfo()
