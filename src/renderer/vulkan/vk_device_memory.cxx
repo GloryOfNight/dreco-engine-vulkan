@@ -35,6 +35,7 @@ void vk_device_memory::free()
 	{
 		const vk::Device device = vk_renderer::get()->getDevice();
 		device.freeMemory(_deviceMemory);
+		_deviceMemory = nullptr;
 	}
 }
 

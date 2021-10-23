@@ -59,7 +59,7 @@ void vk_texture_image::create(const image_data& textureData)
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	const vk::Format format = vk::Format::eB8G8R8Unorm;
+	const vk::Format format = vk::Format::eR8G8B8A8Unorm;
 	createImage(device, format, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
@@ -114,8 +114,7 @@ void vk_texture_image::create(const image_data& textureData)
 
 	commandBuffers[2] = transitionImageLayout(transitionLayoutInfo);
 
-	std::array<vk::PipelineStageFlags, 2> stageFlags{
-		vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader};
+	const std::array<vk::PipelineStageFlags, 2> stageFlags{vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader};
 	std::vector<vk::SubmitInfo> submitInfos(3, vk::SubmitInfo());
 	submitInfos[0].commandBufferCount = 1;
 	submitInfos[0].pCommandBuffers = &commandBuffers[0];

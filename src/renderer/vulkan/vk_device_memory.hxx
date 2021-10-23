@@ -25,7 +25,7 @@ public:
 
 	void map(const std::vector<map_memory_region>& regions, const vk::DeviceSize offset = 0);
 
-	vk::DeviceMemory get() const;
+	vk::DeviceMemory get() const { return _deviceMemory; };
 
 protected:
 	static uint32_t findMemoryTypeIndex(const vk::PhysicalDeviceMemoryProperties& memoryProperties,

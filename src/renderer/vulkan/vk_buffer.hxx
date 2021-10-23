@@ -14,7 +14,7 @@ class vk_buffer final
 public:
 	struct create_info
 	{
-		vk::BufferUsageFlagBits usage;
+		vk::BufferUsageFlags usage;
 		vk::MemoryPropertyFlags memoryPropertiesFlags;
 		vk::DeviceSize size;
 

@@ -48,7 +48,7 @@ vk_renderer::~vk_renderer()
 
 	for (auto& fence : _submitQueueFences)
 	{
-		vkDestroyFence(_device, fence, vkGetAllocator());
+		_device.destroyFence(fence);
 	}
 
 	cleanupSwapchain(_swapchain);
@@ -56,14 +56,14 @@ vk_renderer::~vk_renderer()
 	clearVectorOfPtr(_scenes);
 	_placeholderTextureImage.destroy();
 
-	vkDestroySemaphore(_device, _semaphoreImageAvaible, vkGetAllocator());
-	vkDestroySemaphore(_device, _semaphoreRenderFinished, vkGetAllocator());
+	_device.destroySemaphore(_semaphoreImageAvaible);
+	_device.destroySemaphore(_semaphoreRenderFinished);
 
-	for (auto pool : _graphicsCommandPools)
+	for (auto graphicsCommandPool : _graphicsCommandPools)
 	{
-		vkDestroyCommandPool(_device, pool, vkGetAllocator());
+		_device.destroyCommandPool(graphicsCommandPool);
 	}
-	vkDestroyCommandPool(_device, _transferCommandPool, vkGetAllocator());
+	_device.destroyCommandPool(_transferCommandPool);
 
 	_depthImage.destroy();
 	_msaaImage.destroy();
@@ -117,7 +117,7 @@ void vk_renderer::init()
 	createSwapchain();
 	createImageViews();
 
-	createCommandPools();
+	createCommandPools();	
 	createPrimaryCommandBuffers();
 
 	_depthImage.create();
@@ -186,7 +186,7 @@ vk::CommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 void vk_renderer::submitSingleTimeTransferCommands(vk::CommandBuffer commandBuffer)
 {
 	const vk::SubmitInfo submitInfo =
-		vk::SubmitInfo().setCommandBuffers(std::array<vk::CommandBuffer, 1>{commandBuffer});
+		vk::SubmitInfo().setCommandBuffers({1, &commandBuffer});
 
 	submitSingleTimeTransferCommands({submitInfo});
 }
@@ -243,13 +243,13 @@ void vk_renderer::createInstance()
 
 	const vk::ApplicationInfo applicationInfo("dreco-launcher", 0, "dreco", 0, _apiVersion);
 	const vk::InstanceCreateInfo instanceCreateInfo({}, &applicationInfo, instanceLayers, instanceExtensions);
-	vk::createInstance(instanceCreateInfo);
+	_instance = vk::createInstance(instanceCreateInfo);
 }
 
 void vk_renderer::createSurface()
 {
 	VkSurfaceKHR newSurface;
-	if (SDL_Vulkan_CreateSurface(_window, _instance, &newSurface) != SDL_TRUE)
+	if (SDL_Vulkan_CreateSurface(_window, _instance, &newSurface) == SDL_TRUE)
 	{
 		_surface = newSurface;
 	}
@@ -386,7 +386,7 @@ void vk_renderer::createImageViews()
 			vk::ImageSubresourceRange()
 				.setAspectMask(vk::ImageAspectFlagBits::eColor)
 				.setBaseArrayLayer(0)
-				.setBaseMipLevel(1)
+				.setBaseMipLevel(0)
 				.setLayerCount(1)
 				.setLevelCount(1);
 
@@ -480,8 +480,8 @@ void vk_renderer::createRenderPass()
 	const vk::RenderPassCreateInfo renderPassCreateInfo =
 		vk::RenderPassCreateInfo()
 			.setAttachments(attachmentsDescriptions)
-			.setSubpasses(std::vector<vk::SubpassDescription>{subpassDescription})
-			.setDependencies(std::vector<vk::SubpassDependency>{subpassDependecy});
+			.setSubpasses({1, &subpassDescription})
+			.setDependencies({1, &subpassDependecy});
 
 	_renderPass = _device.createRenderPass(renderPassCreateInfo);
 }
@@ -598,7 +598,7 @@ void vk_renderer::drawFrame()
 	const std::array<vk::PipelineStageFlags, 1> submitWaitDstStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 	const std::array<vk::CommandBuffer, 1> submitCommandBuffers = {commandBuffer};
 
-	vk::SubmitInfo submitInfo =
+	const vk::SubmitInfo submitInfo =
 		vk::SubmitInfo()
 			.setWaitSemaphores(submitWaitSemaphores)
 			.setSignalSemaphores(submitSignalSemaphores)
@@ -610,8 +610,8 @@ void vk_renderer::drawFrame()
 	const vk::PresentInfoKHR presentInfo =
 		vk::PresentInfoKHR()
 			.setWaitSemaphores(submitSignalSemaphores)
-			.setSwapchains(std::vector<vk::SwapchainKHR>{_swapchain})
-			.setImageIndices(std::vector<uint32_t>{imageIndex});
+			.setSwapchains({1, &_swapchain})
+			.setImageIndices({1, &imageIndex});
 
 	const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
 

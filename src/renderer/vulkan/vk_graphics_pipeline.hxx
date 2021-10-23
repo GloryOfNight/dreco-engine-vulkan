@@ -2,7 +2,7 @@
 #include "core/containers/material.hxx"
 
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class vk_descriptor_set;
 
@@ -11,7 +11,7 @@ class vk_graphics_pipeline final
 public:
 	vk_graphics_pipeline();
 	vk_graphics_pipeline(const vk_graphics_pipeline&) = delete;
-	vk_graphics_pipeline(vk_graphics_pipeline&&) = delete;
+	vk_graphics_pipeline(vk_graphics_pipeline&&) = default;
 	~vk_graphics_pipeline();
 
 	void create(const material& mat);
@@ -20,29 +20,29 @@ public:
 
 	void destroy();
 
-	void bindToCmdBuffer(const VkCommandBuffer commandBuffer);
+	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer);
 
 	const material& getMaterial() const;
 
-	const std::vector<VkDescriptorSetLayout>& getDescriptorSetLayouts() const;
+	const std::vector<vk::DescriptorSetLayout>& getDescriptorSetLayouts() const;
 
-	VkPipelineLayout getLayout() const;
+	vk::PipelineLayout getLayout() const;
 
-	VkPipeline get() const;
+	vk::Pipeline get() const;
 
 protected:
-	void createDescriptorLayouts(const VkDevice vkDevice);
+	void createDescriptorLayouts(const vk::Device device);
 
-	void createPipelineLayout(const VkDevice vkDevice);
+	void createPipelineLayout(const vk::Device device);
 
-	void createPipeline(const VkDevice vkDevice);
+	void createPipeline(const vk::Device device);
 
 private:
 	material _mat;
 
-	std::vector<VkDescriptorSetLayout> _vkDescriptorSetLayouts;
+	std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts;
 
-	VkPipelineLayout _vkPipelineLayout;
+	vk::PipelineLayout _pipelineLayout;
 
-	VkPipeline _vkPipeline;
+	vk::Pipeline  _pipeline;
 };

@@ -23,8 +23,6 @@ void vk_depth_image::create()
 
 	createImageView(device, _format);
 
-	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
-
 	vk_image_transition_layout_info transitionImageLayoutInfo;
 	transitionImageLayoutInfo._image = _image;
 	transitionImageLayoutInfo._format = _format;
@@ -36,9 +34,10 @@ void vk_depth_image::create()
 	transitionImageLayoutInfo._pipelineStageFlagsDst = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 	transitionImageLayoutInfo._imageAspectFlags = getImageAspectFlags();
 
+	vk::CommandBuffer commandBuffer = transitionImageLayout(transitionImageLayoutInfo);
 	renderer->submitSingleTimeTransferCommands(commandBuffer);
 
-	device.freeCommandBuffers(renderer->getTransferCommandPool(), std::array<vk::CommandBuffer, 1>{commandBuffer});
+	device.freeCommandBuffers(renderer->getTransferCommandPool(), commandBuffer);
 }
 
 void vk_depth_image::recreate()

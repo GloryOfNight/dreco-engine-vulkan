@@ -43,7 +43,7 @@ public:
 	transform _transform;
 
 protected:
-	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
+	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
 
 private:
 	VkDeviceSize _vertsBufferSize{0};

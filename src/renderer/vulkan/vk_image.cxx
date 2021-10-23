@@ -8,9 +8,16 @@ void vk_image::destroy()
 {
 	const vk::Device device = vk_renderer::get()->getDevice();
 
-	device.destroyImageView(_imageView);
-	device.destroyImage(_image);
-
+	if (_imageView)
+	{
+		device.destroyImageView(_imageView);
+		_imageView = nullptr;
+	}
+	if (_image)
+	{
+		device.destroyImage(_image);
+		_image = nullptr;
+	}
 	_deviceMemory.free();
 }
 

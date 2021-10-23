@@ -50,6 +50,7 @@ void vk_buffer::destroy()
 	if (_buffer)
 	{
 		vk_renderer::get()->getDevice().destroyBuffer(_buffer);
+		_buffer = nullptr;
 	}
 	_deviceMemory.free();
 }
@@ -96,9 +97,9 @@ vk::CommandBuffer vk_buffer::copyBufferToImage(const vk::Buffer buffer, const vk
 			.setBufferImageHeight(0)
 			.setImageSubresource(imageSubresourceLayers)
 			.setImageOffset(vk::Offset3D(0, 0, 0))
-			.setImageExtent(vk::Extent3D(width, height, 0));
+			.setImageExtent(vk::Extent3D(width, height, 1));
 
-	commandBuffer.copyBufferToImage(buffer, image, imageLayout, std::array<vk::BufferImageCopy, 1>{copyRegion});
+	commandBuffer.copyBufferToImage(buffer, image, imageLayout, copyRegion);
 	commandBuffer.end();
 
 	return commandBuffer;
