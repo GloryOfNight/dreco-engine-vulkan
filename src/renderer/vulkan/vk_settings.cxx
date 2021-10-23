@@ -47,8 +47,6 @@ static vk::PresentModeKHR findPresentMode(const vk::PhysicalDevice physicalDevic
 			return mode;
 		}
 	}
-
-	throw std::runtime_error("Failed to find preffered present mode!");
 	return vk::PresentModeKHR::eImmediate;
 }
 
