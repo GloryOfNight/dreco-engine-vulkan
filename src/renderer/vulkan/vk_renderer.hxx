@@ -101,7 +101,7 @@ protected:
 
 	void createSemaphores();
 
-	void cleanupSwapchain(VkSwapchainKHR swapchain);
+	void cleanupSwapchain(vk::SwapchainKHR swapchain);
 
 	void recreateSwapchain();
 

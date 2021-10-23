@@ -117,7 +117,7 @@ void vk_renderer::init()
 	createSwapchain();
 	createImageViews();
 
-	createCommandPools();	
+	createCommandPools();
 	createPrimaryCommandBuffers();
 
 	_depthImage.create();
@@ -143,7 +143,6 @@ void vk_renderer::loadScene(const scene& scn)
 	vk_scene* newScene = new vk_scene();
 	_scenes.push_back(newScene);
 	newScene->create(scn);
-	
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -345,7 +344,6 @@ void vk_renderer::createSwapchain()
 
 	const vk::SwapchainCreateInfoKHR swapchainCreateInfo =
 		vk::SwapchainCreateInfoKHR()
-			.setFlags({})
 			.setSurface(_surface)
 			.setMinImageCount(minImageCount)
 			.setImageFormat(surfaceFormat.format)
@@ -415,7 +413,7 @@ void vk_renderer::createRenderPass()
 		attachmentsDescriptions.emplace_back()
 			.setFormat(_settings.getSurfaceFormat().format)
 			.setSamples(sampleCount)
-			.setLoadOp(vk::AttachmentLoadOp::eDontCare)
+			.setLoadOp(vk::AttachmentLoadOp::eClear)
 			.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -622,7 +620,7 @@ void vk_renderer::drawFrame()
 	}
 }
 
-void vk_renderer::cleanupSwapchain(VkSwapchainKHR swapchain)
+void vk_renderer::cleanupSwapchain(vk::SwapchainKHR swapchain)
 {
 	_device.waitIdle();
 
@@ -640,7 +638,7 @@ void vk_renderer::cleanupSwapchain(VkSwapchainKHR swapchain)
 	}
 	_swapchainImageViews.clear();
 
-	_device.destroySwapchainKHR(_swapchain);
+	_device.destroySwapchainKHR(swapchain);
 }
 
 void vk_renderer::recreateSwapchain()
