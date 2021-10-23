@@ -462,8 +462,7 @@ void vk_renderer::createRenderPass()
 	const vk::SubpassDescription subpassDescription =
 		vk::SubpassDescription()
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-			.setColorAttachmentCount(1)
-			.setPColorAttachments(&attachmentReferences[0])
+			.setColorAttachments({1, &attachmentReferences[0]})
 			.setPDepthStencilAttachment(&attachmentReferences[1])
 			.setResolveAttachments(resolveAttachmentReferences);
 

@@ -31,7 +31,7 @@ vk::ImageUsageFlags vk_image::getImageUsageFlags() const
 	return vk::ImageUsageFlags();
 }
 
-void vk_image::createImage(const vk::Device vkDevice, const vk::Format vkFormat, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples)
+void vk_image::createImage(const vk::Device device, const vk::Format format, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples)
 {
 	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
 
@@ -41,7 +41,7 @@ void vk_image::createImage(const vk::Device vkDevice, const vk::Format vkFormat,
 	const vk::ImageCreateInfo imageCreateInfo =
 		vk::ImageCreateInfo()
 			.setImageType(vk::ImageType::e2D)
-			.setFormat(vkFormat)
+			.setFormat(format)
 			.setExtent(vk::Extent3D(width, height, 1))
 			.setMipLevels(1)
 			.setArrayLayers(1)
@@ -52,15 +52,15 @@ void vk_image::createImage(const vk::Device vkDevice, const vk::Format vkFormat,
 			.setQueueFamilyIndices(queueIndexes)
 			.setSharingMode(sharingMode);
 
-	_image = vkDevice.createImage(imageCreateInfo);
+	_image = device.createImage(imageCreateInfo);
 }
 
-void vk_image::bindToMemory(const vk::Device vkDevice, const vk::DeviceMemory vkDeviceMemory, const vk::DeviceSize memoryOffset)
+void vk_image::bindToMemory(const vk::Device device, const vk::DeviceMemory deviceMemory, const vk::DeviceSize memoryOffset)
 {
-	vkDevice.bindImageMemory(_image, vkDeviceMemory, memoryOffset);
+	device.bindImageMemory(_image, deviceMemory, memoryOffset);
 }
 
-void vk_image::createImageView(const vk::Device vkDevice, const vk::Format vkFormat)
+void vk_image::createImageView(const vk::Device device, const vk::Format format)
 {
 	const vk::ImageSubresourceRange imageSubresourceRange =
 		vk::ImageSubresourceRange()
@@ -74,11 +74,11 @@ void vk_image::createImageView(const vk::Device vkDevice, const vk::Format vkFor
 		vk::ImageViewCreateInfo()
 			.setFlags({})
 			.setImage(_image)
-			.setFormat(vkFormat)
+			.setFormat(format)
 			.setViewType(vk::ImageViewType::e2D)
 			.setSubresourceRange(imageSubresourceRange);
 
-	_imageView = vkDevice.createImageView(imageViewCreateInfo);
+	_imageView = device.createImageView(imageViewCreateInfo);
 }
 
 VkCommandBuffer vk_image::transitionImageLayout(const vk_image_transition_layout_info& info)

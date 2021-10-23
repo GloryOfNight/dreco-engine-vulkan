@@ -34,7 +34,7 @@ public:
 
 	void destroy();
 
-	void bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer);
+	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer);
 
 	void update();
 

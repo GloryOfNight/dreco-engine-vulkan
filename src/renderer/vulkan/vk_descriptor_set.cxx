@@ -39,7 +39,7 @@ void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelin
 	update(writeDescriptorSetInfo);
 }
 
-void vk_descriptor_set::rewrite(const std::pair<uint32_t, vk_texture_image*>& _textureImage)
+void vk_descriptor_set::rewrite(const std::pair<uint32_t, vk_texture_image*>& textureImage)
 {
 	const size_t num = _pipelines.size();
 	std::vector<vk::DescriptorBufferInfo> writeBufferInfos(num, vk::DescriptorBufferInfo());
@@ -49,9 +49,9 @@ void vk_descriptor_set::rewrite(const std::pair<uint32_t, vk_texture_image*>& _t
 
 	for (size_t i = 0; i < num; ++i)
 	{
-		if (_textureImage.first == _pipelines[i]->getMaterial()._baseColorTexture && _textureImage.second->isValid())
+		if (textureImage.first == _pipelines[i]->getMaterial()._baseColorTexture && textureImage.second->isValid())
 		{
-			createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i], _textureImage.second);
+			createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i], textureImage.second);
 		}
 	}
 	update(writeDescriptorSetInfo);

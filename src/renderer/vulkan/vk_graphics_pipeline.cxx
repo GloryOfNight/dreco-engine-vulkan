@@ -180,7 +180,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 
 	const vk::Rect2D scissors =
 		vk::Rect2D()
-			.setOffset(vk::Offset2D())
+			.setOffset(vk::Offset2D(0, 0))
 			.setExtent(extent);
 
 	const vk::PipelineViewportStateCreateInfo viewportState =
@@ -218,7 +218,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 				vk::ColorComponentFlagBits::eG |
 				vk::ColorComponentFlagBits::eB |
 				vk::ColorComponentFlagBits::eA)
-			.setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
+			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
 			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
 			.setColorBlendOp(vk::BlendOp::eAdd)
 			.setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)

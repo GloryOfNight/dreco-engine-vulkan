@@ -201,7 +201,7 @@ void vk_texture_image::createSampler(const vk::Device device)
 			.setCompareOp(vk::CompareOp::eAlways)
 			.setMinLod(0.0F)
 			.setMaxLod(0.0F)
-			.setBorderColor(vk::BorderColor::eIntOpaqueWhite)
+			.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
 			.setUnnormalizedCoordinates(VK_FALSE);
 
 	_sampler = device.createSampler(samplerCreateInfo);

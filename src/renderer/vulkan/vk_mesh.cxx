@@ -72,16 +72,16 @@ void vk_mesh::destroy()
 	}
 }
 
-void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
+void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 {
-	_descriptorSet.bindToCmdBuffer(vkCommandBuffer);
+	_descriptorSet.bindToCmdBuffer(commandBuffer);
 
-	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
-	std::array<VkDeviceSize, 1> offsets{0};
-	vkCmdBindVertexBuffers(vkCommandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
-	vkCmdBindIndexBuffer(vkCommandBuffer, _viBuffer.get(), _vertsBufferSize, VK_INDEX_TYPE_UINT32);
+	const std::array <vk::Buffer, 1 > buffers{_viBuffer.get()};
+	const std::array<vk::DeviceSize, 1> offsets{0};
+	commandBuffer.bindVertexBuffers(0, buffers, offsets);
+	commandBuffer.bindIndexBuffer(_viBuffer.get(), _vertsBufferSize, vk::IndexType::eUint32);
 
-	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
+	commandBuffer.drawIndexed(static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
 }
 
 void vk_mesh::update()

@@ -13,18 +13,18 @@ vk_device_memory::~vk_device_memory()
 	free();
 }
 
-void vk_device_memory::allocate(const vk::MemoryRequirements& vkMemoryRequirements, const vk::MemoryPropertyFlags vkMemoryPropertyFlags)
+void vk_device_memory::allocate(const vk::MemoryRequirements& memoryRequirements, const vk::MemoryPropertyFlags memoryPropertyFlags)
 {
 	vk_renderer* renderer = vk_renderer::get();
 	const vk::Device device = renderer->getDevice();
 	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
 
 	const uint32_t memoryTypeIndex =
-		findMemoryTypeIndex(physicalDevice.getMemoryProperties(), vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
+		findMemoryTypeIndex(physicalDevice.getMemoryProperties(), memoryRequirements.memoryTypeBits, memoryPropertyFlags);
 
 	if (UINT32_MAX != memoryTypeIndex)
 	{
-		const vk::MemoryAllocateInfo memoryAllocateInfo(vkMemoryRequirements.size, memoryTypeIndex);
+		const vk::MemoryAllocateInfo memoryAllocateInfo(memoryRequirements.size, memoryTypeIndex);
 		_deviceMemory = device.allocateMemory(memoryAllocateInfo);
 	}
 }
@@ -58,13 +58,13 @@ void vk_device_memory::map(const std::vector<map_memory_region>& regions, const 
 	device.unmapMemory(_deviceMemory);
 }
 
-uint32_t vk_device_memory::findMemoryTypeIndex(const vk::PhysicalDeviceMemoryProperties& vkMemoryProperties, uint32_t memoryTypeBits, vk::MemoryPropertyFlags vkMemoryPropertyFlags)
+uint32_t vk_device_memory::findMemoryTypeIndex(const vk::PhysicalDeviceMemoryProperties& memoryProperties, uint32_t memoryTypeBits, vk::MemoryPropertyFlags memoryPropertyFlags)
 {
-	for (uint32_t i = 0; i < vkMemoryProperties.memoryTypeCount; ++i)
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
 	{
 		const bool isRequiredType = (1 << i) & memoryTypeBits;
 		const bool hasRequiredProperties =
-			(vkMemoryProperties.memoryTypes[i].propertyFlags & vkMemoryPropertyFlags) == vkMemoryPropertyFlags;
+			(memoryProperties.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags;
 
 		if (isRequiredType && hasRequiredProperties)
 		{
