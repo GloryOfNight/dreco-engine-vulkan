@@ -10,10 +10,10 @@
 class vk_texture_image : public vk_image
 {
 public:
-	vk_texture_image();
+	vk_texture_image() = default;
 	vk_texture_image(const vk_texture_image&) = delete;
 	vk_texture_image(vk_texture_image&&) = delete;
-	virtual ~vk_texture_image();
+	virtual ~vk_texture_image() { destroy(); };
 
 	void create() override;
 
@@ -23,16 +23,16 @@ public:
 
 	void destroy() override;
 
-	VkSampler getSampler() const;
+	vk::Sampler getSampler() const;
 
 	bool isValid() const;
 
 protected:
-	virtual VkImageAspectFlags getImageAspectFlags() const override;
+	virtual vk::ImageAspectFlags getImageAspectFlags() const override;
 
-	virtual VkImageUsageFlags getImageUsageFlags() const override;
+	virtual vk::ImageUsageFlags getImageUsageFlags() const override;
 
-	void createSampler(const VkDevice vkDevice);
+	void createSampler(const vk::Device device);
 
-	VkSampler _vkSampler;
+	vk::Sampler _sampler;
 };

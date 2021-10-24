@@ -1,25 +1,20 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class vk_shader_module final
 {
 public:
-	vk_shader_module();
+	vk_shader_module() = default;
 	vk_shader_module(const vk_shader_module&) = delete;
-	vk_shader_module(vk_shader_module&&) = delete;
-	~vk_shader_module();
+	vk_shader_module(vk_shader_module&&) = default;
+	~vk_shader_module() { destroy(); };
 
-	vk_shader_module& operator=(const vk_shader_module&) = delete;
-	vk_shader_module& operator=(const vk_shader_module&&) = delete;
+	void create(const uint32_t* code, const size_t& size);
 
-	void create(VkDevice vkDevice, const char* code, const size_t& code_size);
-
-	VkShaderModule get() const;
+	vk::ShaderModule get() const { return _shaderModule; };
 
 	void destroy();
 
 private:
-	VkDevice _vkDevice;
-
-	VkShaderModule _vkShaderModule;
+	vk::ShaderModule _shaderModule;
 };

@@ -1,34 +1,42 @@
 #include "vk_vertex.hxx"
 
-std::vector<VkVertexInputBindingDescription> vk_vertex::getInputBindingDescription()
+std::vector<vk::VertexInputBindingDescription> vk_vertex::getInputBindingDescription()
 {
-	std::vector<VkVertexInputBindingDescription> bindingDescriptions(1, VkVertexInputBindingDescription());
+	std::vector<vk::VertexInputBindingDescription> bindingDescriptions(1, VkVertexInputBindingDescription());
 
-	bindingDescriptions[0].binding = 0;
-	bindingDescriptions[0].stride = sizeof(vertex);
-	bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	bindingDescriptions[0] =
+		vk::VertexInputBindingDescription()
+			.setBinding(0)
+			.setStride(sizeof(vertex))
+			.setInputRate(vk::VertexInputRate::eVertex);
 
 	return bindingDescriptions;
 }
 
-std::vector<VkVertexInputAttributeDescription> vk_vertex::getInputAttributeDescription()
+std::vector<vk::VertexInputAttributeDescription> vk_vertex::getInputAttributeDescription()
 {
-	std::vector<VkVertexInputAttributeDescription> attributeDescriptions(3, VkVertexInputAttributeDescription());
+	std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(3, VkVertexInputAttributeDescription());
 
-	attributeDescriptions[0].binding = 0;
-	attributeDescriptions[0].location = 0;
-	attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-	attributeDescriptions[0].offset = offsetof(vertex, _pos);
+	attributeDescriptions[0] =
+		vk::VertexInputAttributeDescription()
+			.setBinding(0)
+			.setLocation(0)
+			.setFormat(vk::Format::eR32G32B32Sfloat)
+			.setOffset(offsetof(vertex, _pos));
 
-	attributeDescriptions[1].binding = 0;
-	attributeDescriptions[1].location = 1;
-	attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-	attributeDescriptions[1].offset = offsetof(vertex, _normal);
+	attributeDescriptions[1] =
+		vk::VertexInputAttributeDescription()
+			.setBinding(0)
+			.setLocation(1)
+			.setFormat(vk::Format::eR32G32B32Sfloat)
+			.setOffset(offsetof(vertex, _normal));
 
-	attributeDescriptions[2].binding = 0;
-	attributeDescriptions[2].location = 2;
-	attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-	attributeDescriptions[2].offset = offsetof(vertex, _texCoord);
+	attributeDescriptions[2] =
+		vk::VertexInputAttributeDescription()
+			.setBinding(0)
+			.setLocation(2)
+			.setFormat(vk::Format::eR32G32Sfloat)
+			.setOffset(offsetof(vertex, _texCoord));
 
 	return attributeDescriptions;
 }

@@ -9,7 +9,7 @@ public:
 	void recreate();
 
 protected:
-    VkImageAspectFlags getImageAspectFlags() const override;
+	vk::ImageAspectFlags getImageAspectFlags() const override;
 
-	VkImageUsageFlags getImageUsageFlags() const override;
+	vk::ImageUsageFlags getImageUsageFlags() const override;
 };

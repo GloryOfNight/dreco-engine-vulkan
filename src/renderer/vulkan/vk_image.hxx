@@ -1,41 +1,52 @@
 #pragma once
 #include "vk_device_memory.hxx"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
+
+struct vk_image_transition_layout_info
+{
+	vk::Image _image;
+	vk::Format _format;
+	vk::ImageLayout _layoutOld, _layoutNew;
+	vk::AccessFlags _accessFlagsSrc, _accessFlagsDst;
+	vk::PipelineStageFlags _pipelineStageFlagsSrc, _pipelineStageFlagsDst;
+	vk::ImageAspectFlags _imageAspectFlags;
+};
 
 class vk_image
 {
 public:
-    virtual ~vk_image() = default;
+	vk_image() = default;
+	vk_image(const vk_image&) = delete;
+	vk_image(vk_image&&) = default;
+	virtual ~vk_image() { destroy(); };
+
 	virtual void create() = 0;
 
-    virtual void destroy();
+	virtual void destroy();
 
-    VkImage getImage() const {return _vkImage;};
+	vk::Image getImage() const { return _image; };
 
-    VkImageView getImageView() const {return _vkImageView;};
+	vk::ImageView getImageView() const { return _imageView; };
 
-    const vk_device_memory& getDeviceMemory() const {return _deviceMemory;};
+	const vk_device_memory& getDeviceMemory() const { return _deviceMemory; };
 
-    [[nodiscard]]
-    static VkCommandBuffer transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
-		const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
-		const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags);
+	[[nodiscard]] static VkCommandBuffer transitionImageLayout(const vk_image_transition_layout_info& info);
 
 protected:
-    virtual VkImageAspectFlags getImageAspectFlags() const;
+	virtual vk::ImageAspectFlags getImageAspectFlags() const;
 
-	virtual VkImageUsageFlags getImageUsageFlags() const;
+	virtual vk::ImageUsageFlags getImageUsageFlags() const;
 
-    void createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height, const VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
+	void createImage(const vk::Device device, const vk::Format format, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples = vk::SampleCountFlagBits::e1);
 
-	void bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset);
+	void bindToMemory(const vk::Device device, const vk::DeviceMemory deviceMemory, const vk::DeviceSize memoryOffset);
 
-	void createImageView(const VkDevice vkDevice, const VkFormat vkFormat);
+	void createImageView(const vk::Device device, const vk::Format format);
 
-    VkImage _vkImage{VK_NULL_HANDLE};
+	vk::Image _image;
 
-    VkImageView _vkImageView{VK_NULL_HANDLE};
+	vk::ImageView _imageView;
 
-    vk_device_memory _deviceMemory;
+	vk_device_memory _deviceMemory;
 };

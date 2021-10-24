@@ -4,11 +4,11 @@
 #include "core/containers/mesh.hxx"
 
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 struct vk_vertex : public mesh::primitive::vertex
 {
-	static std::vector<VkVertexInputBindingDescription> getInputBindingDescription();
+	static std::vector<vk::VertexInputBindingDescription> getInputBindingDescription();
 
-	static std::vector<VkVertexInputAttributeDescription> getInputAttributeDescription();
+	static std::vector<vk::VertexInputAttributeDescription> getInputAttributeDescription();
 };

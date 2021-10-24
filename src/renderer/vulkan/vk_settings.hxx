@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class vk_renderer;
 
@@ -8,19 +8,25 @@ struct vk_settings
 	vk_settings();
 	void init(const vk_renderer* renderer);
 
-	VkSampleCountFlagBits getMaxSampleCount() const;
+	const vk::SurfaceFormatKHR& getSurfaceFormat() const;
 
-	VkSampleCountFlagBits getPrefferedSampleCount() const;
-	bool setPrefferedSampleCount(const VkSampleCountFlagBits sampleCount);
+	vk::PresentModeKHR getPresentMode() const;
+
+	vk::SampleCountFlagBits getMaxSampleCount() const;
+
+	vk::SampleCountFlagBits getPrefferedSampleCount() const;
+	bool setPrefferedSampleCount(const vk::SampleCountFlagBits sampleCount);
 
 	bool getIsSamplingSupported() const;
 
-	VkPolygonMode getDefaultPolygonMode() const;
-	bool setDefaultPolygonMode(const VkPolygonMode mode);
+	vk::PolygonMode getDefaultPolygonMode() const;
+	bool setDefaultPolygonMode(const vk::PolygonMode mode);
 
 private:
-	VkSampleCountFlagBits _maxSampleCount;
-	VkSampleCountFlagBits _prefferedSampleCount;
-	
-	VkPolygonMode _polygonMode;
+	vk::SurfaceFormatKHR _surfaceFormat;
+	vk::PresentModeKHR _presentMode;
+
+	vk::SampleCountFlagBits _maxSampleCount, _prefferedSampleCount;
+
+	vk::PolygonMode _polygonMode;
 };

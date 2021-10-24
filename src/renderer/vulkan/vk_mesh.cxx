@@ -3,8 +3,6 @@
 #include "core/utils/file_utils.hxx"
 #include "engine/engine.hxx"
 
-#include "vk_device.hxx"
-#include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_scene.hxx"
@@ -26,14 +24,13 @@ vk_mesh::~vk_mesh()
 
 void vk_mesh::create(const mesh& m, const vk_scene* scene)
 {
-	vk_renderer* renderer{vk_renderer::get()};
+	const vk_renderer* renderer = vk_renderer::get();
+	const vk::Device device = renderer->getDevice();
+	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
+
+	const vk_queue_family* queueFamily{&renderer->getQueueFamily()};
 
 	const auto& pipelines = scene->getGraphicPipelines();
-	const vk_device* vkDevice{&renderer->getDevice()};
-	const vk_queue_family* vkQueueFamily{&renderer->getQueueFamily()};
-	const vk_physical_device* vkPhysicalDevice{&renderer->getPhysicalDevice()};
-
-	_vkDevice = vkDevice->get();
 
 	const size_t primitivesSize = m._primitives.size();
 
@@ -55,10 +52,10 @@ void vk_mesh::create(const mesh& m, const vk_scene* scene)
 		indxRegions.push_back({prim._indexes.data(), indxBufferSize, _indxsBufferSize});
 		_indxsBufferSize += indxBufferSize;
 
-		usedPipelines.emplace_back(pipelines[prim._material]);
+		usedPipelines.push_back(pipelines[prim._material]);
 	}
 
-	createVIBuffer(m, vkQueueFamily, vkPhysicalDevice, vertRegions, indxRegions);
+	createVIBuffer(m, queueFamily, physicalDevice, vertRegions, indxRegions);
 
 	_descriptorSet.create(usedPipelines, scene->getTextureImages());
 }
@@ -75,16 +72,16 @@ void vk_mesh::destroy()
 	}
 }
 
-void vk_mesh::bindToCmdBuffer(const VkCommandBuffer vkCommandBuffer)
+void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 {
-	_descriptorSet.bindToCmdBuffer(vkCommandBuffer);
+	_descriptorSet.bindToCmdBuffer(commandBuffer);
 
-	std::array<VkBuffer, 1> buffers{_viBuffer.get()};
-	std::array<VkDeviceSize, 1> offsets{0};
-	vkCmdBindVertexBuffers(vkCommandBuffer, 0, buffers.size(), buffers.data(), offsets.data());
-	vkCmdBindIndexBuffer(vkCommandBuffer, _viBuffer.get(), _vertsBufferSize, VK_INDEX_TYPE_UINT32);
+	const std::array<vk::Buffer, 1> buffers{_viBuffer.get()};
+	const std::array<vk::DeviceSize, 1> offsets{0};
+	commandBuffer.bindVertexBuffers(0, buffers, offsets);
+	commandBuffer.bindIndexBuffer(_viBuffer.get(), _vertsBufferSize, vk::IndexType::eUint32);
 
-	vkCmdDrawIndexed(vkCommandBuffer, static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
+	commandBuffer.drawIndexed(static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
 }
 
 void vk_mesh::update()
@@ -103,12 +100,13 @@ vk_descriptor_set& vk_mesh::getDescriptorSet()
 	return _descriptorSet;
 }
 
-void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk_physical_device* physicalDevice,
+void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice,
 	const _memory_regions& vertRegions, const _memory_regions& indxRegions)
 {
-	vk_buffer_create_info buffer_create_info{};
-	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	buffer_create_info.memory_properties_flags = vk_device_memory_properties::HOST;
+	vk_buffer::create_info buffer_create_info;
+	buffer_create_info.usage =
+		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
+	buffer_create_info.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
 	buffer_create_info.size = _vertsBufferSize + _indxsBufferSize;
 
 	vk_buffer temp_buffer;
@@ -117,14 +115,12 @@ void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, 
 	temp_buffer.getDeviceMemory().map(vertRegions);
 	temp_buffer.getDeviceMemory().map(indxRegions, _vertsBufferSize);
 
-	buffer_create_info.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	buffer_create_info.memory_properties_flags = vk_device_memory_properties::DEVICE_ONLY;
+	buffer_create_info.usage =
+		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+	buffer_create_info.memoryPropertiesFlags = vk_buffer::create_info::deviceMemoryPropertiesFlags;
 
 	_viBuffer.create(buffer_create_info);
 
-	VkBufferCopy copyRegion;
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = buffer_create_info.size;
+	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, buffer_create_info.size);
 	vk_buffer::copyBuffer(temp_buffer.get(), _viBuffer.get(), {copyRegion});
 }
