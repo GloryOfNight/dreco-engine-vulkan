@@ -55,6 +55,4 @@ private:
 	vk_buffer _viBuffer;
 
 	vk_descriptor_set _descriptorSet;
-
-	VkDevice _vkDevice;
 };

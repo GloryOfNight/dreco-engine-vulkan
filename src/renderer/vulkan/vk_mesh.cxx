@@ -13,7 +13,6 @@
 
 vk_mesh::vk_mesh()
 	: _transform{}
-	, _vkDevice{VK_NULL_HANDLE}
 {
 }
 
@@ -62,14 +61,8 @@ void vk_mesh::create(const mesh& m, const vk_scene* scene)
 
 void vk_mesh::destroy()
 {
-	if (VK_NULL_HANDLE != _vkDevice)
-	{
-		_descriptorSet.destroy();
-
-		_viBuffer.destroy();
-
-		_vkDevice = VK_NULL_HANDLE;
-	}
+	_descriptorSet.destroy();
+	_viBuffer.destroy();
 }
 
 void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
