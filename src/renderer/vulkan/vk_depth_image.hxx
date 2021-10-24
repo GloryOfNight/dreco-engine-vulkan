@@ -9,17 +9,17 @@ public:
 
 	void recreate();
 
-	VkFormat getFormat() const;
+	vk::Format getFormat() const;
 
 protected:
-	VkImageAspectFlags getImageAspectFlags() const override;
+	vk::ImageAspectFlags getImageAspectFlags() const override;
 
-	VkImageUsageFlags getImageUsageFlags() const override;
+	vk::ImageUsageFlags getImageUsageFlags() const override;
 
-	VkFormat findDepthFormat() const;
+	vk::Format findSupportedDepthFormat() const;
 
 	bool hasStencilComponent() const;
 
 private:
-	VkFormat _format{VK_FORMAT_UNDEFINED};
+	vk::Format _format{VK_FORMAT_UNDEFINED};
 };

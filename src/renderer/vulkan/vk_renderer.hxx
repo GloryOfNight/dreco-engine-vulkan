@@ -1,23 +1,20 @@
 #pragma once
 #include "core/containers/scene.hxx"
 #include "math/vec3.hxx"
-#include "renderer/containers/mesh_data.hxx"
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
-#include "vk_device.hxx"
 #include "vk_graphics_pipeline.hxx"
 #include "vk_msaa_image.hxx"
-#include "vk_physical_device.hxx"
 #include "vk_queue_family.hxx"
-#include "vk_surface.hxx"
-#include "vk_texture_image.hxx"
 #include "vk_scene.hxx"
+#include "vk_settings.hxx"
+#include "vk_texture_image.hxx"
 
 #include <SDL.h>
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class engine;
 class vk_mesh;
@@ -47,36 +44,50 @@ public:
 
 	uint32_t getImageCount() const;
 
-	VkRenderPass getRenderPass() const;
+	vk::RenderPass getRenderPass() const { return _renderPass; };
 
-	VkCommandPool getTransferCommandPool() const;
+	vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; };
 
 	SDL_Window* getWindow() const;
 
-	VkAllocationCallbacks* getAllocator() const;
+	vk::Extent2D getCurrentExtent() const { return _currentExtent; };
 
-	vk_device& getDevice();
+	vk::Device getDevice() const { return _device; }
 
-	vk_surface& getSurface();
+	vk::SurfaceKHR getSurface() const { return _surface; }
 
-	vk_physical_device& getPhysicalDevice();
+	vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
 
-	vk_queue_family& getQueueFamily();
+	const vk_queue_family& getQueueFamily() const { return _queueFamily; }
+	vk_queue_family& getQueueFamily() { return _queueFamily; }
 
-	const vk_texture_image& getTextureImagePlaceholder() const;
+	const vk_settings& getSettings() const { return _settings; }
+	vk_settings& getSettings() { return _settings; }
 
-	VkCommandBuffer beginSingleTimeTransferCommands();
+	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
-	void submitSingleTimeTransferCommands(VkCommandBuffer commandBuffer);
+	vk::CommandBuffer beginSingleTimeTransferCommands();
 
-	void submitSingleTimeTransferCommands(const std::vector<VkSubmitInfo>& submits);
+	void submitSingleTimeTransferCommands(vk::CommandBuffer commandBuffer);
+
+	void submitSingleTimeTransferCommands(const std::vector<vk::SubmitInfo>& submits);
+
+	void applySettings();
 
 protected:
 	void drawFrame();
 
+	bool updateExtent();
+
 	void createWindow();
 
 	void createInstance();
+
+	void createSurface();
+
+	void createPhysicalDevice();
+
+	void createDevice();
 
 	void createSwapchain();
 
@@ -94,11 +105,11 @@ protected:
 
 	void createSemaphores();
 
-	void cleanupSwapchain(VkSwapchainKHR& swapchain);
+	void cleanupSwapchain(vk::SwapchainKHR swapchain);
 
 	void recreateSwapchain();
 
-	VkCommandBuffer prepareCommandBuffer(uint32_t imageIndex);
+	vk::CommandBuffer prepareCommandBuffer(uint32_t imageIndex);
 
 private:
 	uint32_t _apiVersion;
@@ -109,36 +120,40 @@ private:
 
 	SDL_Window* _window;
 
-	vk_surface _surface;
+	vk::Extent2D _currentExtent;
 
-	vk_physical_device _physicalDevice;
+	vk::SurfaceKHR _surface;
+
+	vk::Instance _instance;
+
+	vk::PhysicalDevice _physicalDevice;
+
+	vk::Device _device;
+
+	vk::Queue _graphicsQueue, _presentQueue, _transferQueue;
 
 	vk_queue_family _queueFamily;
 
-	vk_device _device;
+	vk_settings _settings;
 
 	vk_msaa_image _msaaImage;
 
 	vk_depth_image _depthImage;
 
-	VkInstance _vkInstance;
+	vk::SwapchainKHR _swapchain;
 
-	VkSwapchainKHR _vkSwapchain;
+	std::vector<vk::ImageView> _swapchainImageViews;
 
-	std::vector<VkImageView> _vkSwapchainImageViews;
+	vk::RenderPass _renderPass;
 
-	std::vector<VkFramebuffer> _vkFramebuffers;
+	std::vector<vk::Framebuffer> _framebuffers;
 
-	VkRenderPass _vkRenderPass;
+	std::vector<vk::CommandPool> _graphicsCommandPools;
+	std::vector<vk::CommandBuffer> _graphicsCommandBuffers;
 
-	std::vector<VkCommandPool> _vkGraphicsCommandPools;
-	std::vector<VkCommandBuffer> _vkGraphicsCommandBuffers;
+	vk::CommandPool _transferCommandPool;
 
-	VkCommandPool _vkTransferCommandPool;
+	std::vector<vk::Fence> _submitQueueFences;
 
-	std::vector<VkFence> _vkSubmitQueueFences;
-
-	VkSemaphore _vkSemaphoreImageAvaible;
-
-	VkSemaphore _vkSemaphoreRenderFinished;
+	vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };

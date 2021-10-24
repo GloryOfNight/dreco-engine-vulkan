@@ -299,6 +299,37 @@ void engine::startMainLoop()
 				{
 					_camera.setPosition(cameraTranform._translation + vec3(0, -camMoveSpeed * deltaTime, 0));
 				}
+
+				if (event.key.keysym.sym == SDLK_MINUS)
+				{
+					auto& settings = _renderer->getSettings();
+					const auto value = static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(settings.getPrefferedSampleCount()) / 2);
+					if (settings.setPrefferedSampleCount(value))
+					{
+						_renderer->applySettings();
+					}
+				}
+				else if (event.key.keysym.sym == SDLK_EQUALS)
+				{
+					auto& settings = _renderer->getSettings();
+					const auto value = static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(settings.getPrefferedSampleCount()) * 2);
+					if (settings.setPrefferedSampleCount(value))
+					{
+						_renderer->applySettings();
+					}
+				}
+				if (event.key.keysym.sym == SDLK_F1)
+				{
+					auto& settings = _renderer->getSettings();
+					if (settings.setDefaultPolygonMode(vk::PolygonMode::eFill))
+					{
+						_renderer->applySettings();
+					}
+					else if (settings.setDefaultPolygonMode(vk::PolygonMode::eLine))
+					{
+						_renderer->applySettings();
+					}
+				}
 			}
 		}
 	}
@@ -319,9 +350,9 @@ void engine::stopMainLoop()
 
 double engine::calculateNewDeltaTime()
 {
-#define FRAMETIME_FROM_FPS(FPS) (1.0 / static_cast<double>(FPS))
-	constexpr double FPS_MAX = FRAMETIME_FROM_FPS(60);
-	constexpr double FPS_MIN = FRAMETIME_FROM_FPS(24);
+	const auto frametime_from_fps_lam = [](const double fps) constexpr { return (1.0 / static_cast<double>(fps)); };
+	constexpr double FPS_MAX = frametime_from_fps_lam(60);
+	constexpr double FPS_MIN = frametime_from_fps_lam(24);
 
 	static std::chrono::time_point past = std::chrono::steady_clock::now();
 	const std::chrono::time_point now = std::chrono::steady_clock::now();

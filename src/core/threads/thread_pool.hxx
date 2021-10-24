@@ -3,8 +3,9 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
-#include <mutex>
 #include <deque>
+#include <memory>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -89,10 +90,10 @@ private:
 	std::atomic<bool> _threadsTaskAwaible{false};
 
 	std::mutex _waitingTasksMutex;
-	std::deque<thread_task*> _waitingTasks;
+	std::deque<std::unique_ptr<thread_task>> _waitingTasks;
 
 	std::mutex _completedTasksMutex;
-	std::deque<thread_task*> _completedTasks;
+	std::deque <std::unique_ptr<thread_task>> _completedTasks;
 
 	std::vector<SDL_Thread*> _threads;
 

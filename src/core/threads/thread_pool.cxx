@@ -10,12 +10,12 @@
 class thread_pool_accessor
 {
 public:
-	static thread_task* tryPopTask(thread_pool& pool)
+	static std::unique_ptr<thread_task> tryPopTask(thread_pool& pool)
 	{
 		std::scoped_lock<std::mutex> lock(pool._waitingTasksMutex);
 		if (!pool._waitingTasks.empty())
 		{
-			thread_task* task = std::move(pool._waitingTasks.front());
+			auto task = std::move(pool._waitingTasks.front());
 			pool._waitingTasks.pop_front();
 			pool._threadsTaskAwaible = !pool._waitingTasks.empty();
 			return task;
@@ -23,10 +23,10 @@ public:
 		return nullptr;
 	}
 
-	static void addCompletedTask(thread_pool& pool, thread_task*& task)
+	static void addCompletedTask(thread_pool& pool, std::unique_ptr<thread_task>&& task)
 	{
 		std::scoped_lock<std::mutex> lock(pool._completedTasksMutex);
-		pool._completedTasks.push_back(task);
+		pool._completedTasks.push_back(std::move(task));
 	}
 };
 
@@ -37,17 +37,13 @@ static int thread_loop_func(void* data)
 	{
 		if (pool.getThreadTaskAvaible())
 		{
-			thread_task* task = thread_pool_accessor::tryPopTask(pool);
+			auto task = thread_pool_accessor::tryPopTask(pool);
 			if (task)
 			{
 				task->doJob();
 				if (task->useCompleted())
 				{
-					thread_pool_accessor::addCompletedTask(pool, task);
-				}
-				else
-				{
-					delete task;
+					thread_pool_accessor::addCompletedTask(pool, std::move(task));
 				}
 			}
 		}
@@ -67,7 +63,7 @@ thread_pool::thread_pool(const char* name, const uint32_t threadCount, const thr
 	_threads.resize(num);
 	for (uint32_t i = 0U; i < num; ++i)
 	{
-		SDL_CreateThread(thread_loop_func, name, this);
+		_threads[i] = SDL_CreateThread(thread_loop_func, name, this);
 
 		const SDL_ThreadPriority sdlPriority = static_cast<SDL_ThreadPriority>(priority);
 		SDL_SetThreadPriority(sdlPriority);
@@ -77,16 +73,12 @@ thread_pool::thread_pool(const char* name, const uint32_t threadCount, const thr
 thread_pool::~thread_pool()
 {
 	_threadsLoopCondition = false;
+
 	for (auto* thread : _threads)
 	{
-		SDL_WaitThread(thread, nullptr);
-	}
-
-	while (!_waitingTasks.empty())
-	{
-		thread_task* task = std::move(_waitingTasks.front());
-		delete task;
-		_waitingTasks.pop_front();
+		int status{0};
+		SDL_WaitThread(thread, &status);
+		DE_LOG(Verbose, "Thread %p exit with code: %i", thread, status);
 	}
 	processCompletedTasks();
 }
@@ -101,7 +93,7 @@ void thread_pool::queueTask(thread_task* task)
 	task->_id = ++_totalTaskCount;
 
 	std::scoped_lock<std::mutex> guard(_waitingTasksMutex);
-	_waitingTasks.push_back(task);
+	_waitingTasks.push_back(std::unique_ptr<thread_task>(task));
 	task->init();
 	task->markStart();
 
@@ -118,13 +110,12 @@ void thread_pool::processCompletedTasks()
 	while (!_completedTasks.empty())
 	{
 		std::scoped_lock<std::mutex> lock(_completedTasksMutex);
-		thread_task* task = std::move(_completedTasks.front());
+		auto task = std::move(_completedTasks.front());
 		_completedTasks.pop_front();
 
 		task->completed();
 		task->markEnd();
 
 		DE_LOG(Info, "Completed async task with id: %u, took: %fs", static_cast<unsigned int>(task->getId()), task->getTaskCompletionTime());
-		delete task;
 	}
 }

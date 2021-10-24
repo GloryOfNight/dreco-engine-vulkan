@@ -3,104 +3,113 @@
 #include "core/utils/log.hxx"
 
 #include "dreco.hxx"
-#include "vk_allocator.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-vk_texture_image::vk_texture_image()
-	: _vkSampler{VK_NULL_HANDLE}
-{
-}
-
-vk_texture_image::~vk_texture_image()
-{
-	destroy();
-}
-
 void vk_texture_image::create()
 {
-	auto* texture = texture_data::createNew(TEXTURE_PLACEHOLDER_URI);
-	unsigned char* pixels{nullptr};
-	texture->getData(&pixels, nullptr, nullptr, nullptr);
-	if (nullptr == pixels)
+	image_data imageData;
+	if (!imageData.load(TEXTURE_PLACEHOLDER_URI))
 	{
 		DE_LOG(Critical, "Failed to load placeholder texture! Cannot proceed. . .");
 		std::abort();
 		return;
 	}
-	create(*texture);
-	delete texture;
+	create(imageData);
 }
 
 void vk_texture_image::create(const image& img)
 {
-	auto* texture = texture_data::createNew(img._uri);
-	create(*texture);
-	delete texture;
+	image_data imageData;
+	if (imageData.load(img._uri))
+	{
+		create(imageData);
+	}
+	else
+	{
+		DE_LOG(Error, "Failed to load texture from uri: %s; Loading default instead.", img._uri.data());
+		create();
+	}
 }
 
-void vk_texture_image::create(const texture_data& textureData)
+void vk_texture_image::create(const image_data& textureData)
 {
-	int texWidth, texHeight, texChannels;
-	unsigned char* pixels{nullptr};
-	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
-
-	if (!pixels)
+	if (!textureData.isLoaded())
 	{
-		DE_LOG(Error, "No valid texture data, trying use placeholder instead: %s", TEXTURE_PLACEHOLDER_URI.c_str());
+		DE_LOG(Error, "No valid texture data, using placeholder instead.");
 		create();
 		return;
 	}
 
+	uint16_t texWidth, texHeight;
+	uint8_t texChannels;
+	uint8_t* pixels{nullptr};
+	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
+
 	vk_renderer* renderer{vk_renderer::get()};
-	const VkDevice vkDevice{renderer->getDevice().get()};
+	const vk::Device device = renderer->getDevice();
 
-	const VkFormat vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	const vk::Format format = vk::Format::eR8G8B8A8Unorm;
+	createImage(device, format, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	createImage(vkDevice, vkFormat, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
+	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
 
-	VkMemoryRequirements memoryRequirements{};
-	vkGetImageMemoryRequirements(vkDevice, _vkImage, &memoryRequirements);
+	bindToMemory(device, _deviceMemory.get(), 0);
 
-	_deviceMemory.allocate(memoryRequirements, static_cast<VkMemoryPropertyFlags>(vk_device_memory_properties::DEVICE_ONLY));
+	createImageView(device, format);
+	createSampler(device);
 
-	bindToMemory(vkDevice, _deviceMemory.get(), 0);
-
-	createImageView(vkDevice, vkFormat);
-	createSampler(vkDevice);
-
-	vk_buffer_create_info info;
-	info.memory_properties_flags = vk_device_memory_properties::HOST;
+	vk_buffer::create_info info;
+	info.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
 	info.size = memoryRequirements.size;
-	info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	info.usage = vk::BufferUsageFlagBits::eTransferSrc;
 
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
 	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);
 
-	std::array<VkSemaphore, 2> semaphores;
-	VkSemaphoreCreateInfo semaphoreCreareInfo{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
-	vkCreateSemaphore(vkDevice, &semaphoreCreareInfo, vkGetAllocator(), &semaphores[0]);
-	vkCreateSemaphore(vkDevice, &semaphoreCreareInfo, vkGetAllocator(), &semaphores[1]);
+	// clang-format off
+	const std::array<vk::Semaphore, 2> semaphores =
+		{
+			device.createSemaphore(vk::SemaphoreCreateInfo()),
+			device.createSemaphore(vk::SemaphoreCreateInfo())
+		};
+	// clang-format on
 
-	std::array<VkCommandBuffer, 3> commandBuffers;
+	std::array<vk::CommandBuffer, 3> commandBuffers;
 
-	commandBuffers[0] = transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, getImageAspectFlags());
+	vk_image_transition_layout_info transitionLayoutInfo{};
+	transitionLayoutInfo._image = _image;
+	transitionLayoutInfo._format = format;
+	transitionLayoutInfo._layoutOld = vk::ImageLayout::eUndefined;
+	transitionLayoutInfo._layoutNew = vk::ImageLayout::eTransferDstOptimal;
+	transitionLayoutInfo._accessFlagsSrc = vk::AccessFlagBits();
+	transitionLayoutInfo._accessFlagsDst = vk::AccessFlagBits::eTransferWrite;
+	transitionLayoutInfo._pipelineStageFlagsSrc = vk::PipelineStageFlagBits::eTopOfPipe;
+	transitionLayoutInfo._pipelineStageFlagsDst = vk::PipelineStageFlagBits::eTransfer;
+	transitionLayoutInfo._imageAspectFlags = getImageAspectFlags();
 
-	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _vkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	commandBuffers[0] = transitionImageLayout(transitionLayoutInfo);
+
+	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _image, vk::ImageLayout::eTransferDstOptimal,
 		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	commandBuffers[2] = transitionImageLayout(_vkImage, vkFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, getImageAspectFlags());
+	transitionLayoutInfo._layoutOld = vk::ImageLayout::eTransferDstOptimal;
+	transitionLayoutInfo._layoutNew = vk::ImageLayout::eShaderReadOnlyOptimal;
+	transitionLayoutInfo._accessFlagsSrc = vk::AccessFlagBits::eTransferWrite;
+	transitionLayoutInfo._accessFlagsDst = vk::AccessFlagBits::eShaderRead;
+	transitionLayoutInfo._pipelineStageFlagsSrc = vk::PipelineStageFlagBits::eTransfer;
+	transitionLayoutInfo._pipelineStageFlagsDst = vk::PipelineStageFlagBits::eFragmentShader;
 
-	std::array<VkPipelineStageFlags, 2> stageFlags{
-		VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
-	std::vector<VkSubmitInfo> submitInfos(3, VkSubmitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO});
+	commandBuffers[2] = transitionImageLayout(transitionLayoutInfo);
+
+	const std::array<vk::PipelineStageFlags, 2> stageFlags{vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader};
+	std::vector<vk::SubmitInfo> submitInfos(3, vk::SubmitInfo());
 	submitInfos[0].commandBufferCount = 1;
 	submitInfos[0].pCommandBuffers = &commandBuffers[0];
 	submitInfos[0].waitSemaphoreCount = 0;
-	submitInfos[0].pWaitSemaphores = VK_NULL_HANDLE;
+	submitInfos[0].pWaitSemaphores = nullptr;
 	submitInfos[0].signalSemaphoreCount = 1;
 	submitInfos[0].pSignalSemaphores = &semaphores[0];
 	submitInfos[0].pWaitDstStageMask = &stageFlags[0];
@@ -118,31 +127,31 @@ void vk_texture_image::create(const texture_data& textureData)
 	submitInfos[2].waitSemaphoreCount = 1;
 	submitInfos[2].pWaitSemaphores = &semaphores[1];
 	submitInfos[2].signalSemaphoreCount = 0;
-	submitInfos[2].pSignalSemaphores = VK_NULL_HANDLE;
+	submitInfos[2].pSignalSemaphores = nullptr;
 	submitInfos[2].pWaitDstStageMask = &stageFlags[1];
 
 	renderer->submitSingleTimeTransferCommands(submitInfos);
 
-	vkDestroySemaphore(vkDevice, semaphores[0], vkGetAllocator());
-	vkDestroySemaphore(vkDevice, semaphores[1], vkGetAllocator());
+	device.destroySemaphore(semaphores[0]);
+	device.destroySemaphore(semaphores[1]);
 
-	vkFreeCommandBuffers(vkDevice, renderer->getTransferCommandPool(), commandBuffers.size(), commandBuffers.data());
+	device.freeCommandBuffers(renderer->getTransferCommandPool(), commandBuffers);
 }
 
 void vk_texture_image::destroy()
 {
-	const VkDevice vkDevice{vk_renderer::get()->getDevice().get()};
-	if (VK_NULL_HANDLE != _vkSampler)
+	const vk::Device device = vk_renderer::get()->getDevice();
+	if (_sampler)
 	{
-		vkDestroySampler(vkDevice, _vkSampler, vkGetAllocator());
-		_vkSampler = VK_NULL_HANDLE;
+		device.destroySampler(_sampler);
+		_sampler = nullptr;
 	}
 	vk_image::destroy();
 }
 
-VkSampler vk_texture_image::getSampler() const
+vk::Sampler vk_texture_image::getSampler() const
 {
-	return _vkSampler;
+	return _sampler;
 }
 
 bool vk_texture_image::isValid() const
@@ -150,41 +159,40 @@ bool vk_texture_image::isValid() const
 	return getImage() && getImageView() && getSampler();
 }
 
-VkImageAspectFlags vk_texture_image::getImageAspectFlags() const
+vk::ImageAspectFlags vk_texture_image::getImageAspectFlags() const
 {
-	return VK_IMAGE_ASPECT_COLOR_BIT;
+	return vk::ImageAspectFlagBits::eColor;
 }
 
-VkImageUsageFlags vk_texture_image::getImageUsageFlags() const
+vk::ImageUsageFlags vk_texture_image::getImageUsageFlags() const
 {
-	return VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	return vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
 }
 
-void vk_texture_image::createSampler(const VkDevice vkDevice)
+void vk_texture_image::createSampler(const vk::Device device)
 {
-	const vk_physical_device& physicalDevice = vk_renderer::get()->getPhysicalDevice();
-	const VkPhysicalDeviceProperties& physicalDeviceProperties = physicalDevice.getProperties();
-	const VkPhysicalDeviceFeatures& physicalDeviceFeatures = physicalDevice.getFeatures();
+	const vk::PhysicalDevice physicalDevice = vk_renderer::get()->getPhysicalDevice();
+	const vk::PhysicalDeviceProperties physicalDeviceProperties = physicalDevice.getProperties();
+	const vk::PhysicalDeviceFeatures physicalDeviceFeatures = physicalDevice.getFeatures();
 
-	VkSamplerCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.magFilter = VK_FILTER_LINEAR;
-	createInfo.minFilter = VK_FILTER_LINEAR;
-	createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	createInfo.mipLodBias = 0.0F;
-	createInfo.anisotropyEnable = physicalDeviceFeatures.samplerAnisotropy;
-	createInfo.maxAnisotropy = physicalDeviceProperties.limits.maxSamplerAnisotropy;
-	createInfo.compareEnable = VK_FALSE;
-	createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-	createInfo.minLod = 0.0F;
-	createInfo.maxLod = 0.0F;
-	createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	createInfo.unnormalizedCoordinates = VK_FALSE;
+	const vk::SamplerCreateInfo samplerCreateInfo =
+		vk::SamplerCreateInfo()
+			.setFlags({})
+			.setMagFilter(vk::Filter::eLinear)
+			.setMinFilter(vk::Filter::eLinear)
+			.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+			.setAddressModeU(vk::SamplerAddressMode::eRepeat)
+			.setAddressModeV(vk::SamplerAddressMode::eRepeat)
+			.setAddressModeW(vk::SamplerAddressMode::eRepeat)
+			.setMipLodBias(0.0F)
+			.setAnisotropyEnable(physicalDeviceFeatures.samplerAnisotropy)
+			.setMaxAnisotropy(physicalDeviceProperties.limits.maxSamplerAnisotropy)
+			.setCompareEnable(VK_FALSE)
+			.setCompareOp(vk::CompareOp::eAlways)
+			.setMinLod(0.0F)
+			.setMaxLod(0.0F)
+			.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+			.setUnnormalizedCoordinates(VK_FALSE);
 
-	vkCreateSampler(vkDevice, &createInfo, vkGetAllocator(), &_vkSampler);
+	_sampler = device.createSampler(samplerCreateInfo);
 }

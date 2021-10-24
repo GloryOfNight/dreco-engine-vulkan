@@ -1,112 +1,116 @@
 #include "vk_image.hxx"
 
-#include "vk_allocator.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-void vk_image::destroy() 
+void vk_image::destroy()
 {
-    const VkDevice vkDevice{vk_renderer::get()->getDevice().get()};
-	if (VK_NULL_HANDLE != _vkImageView)
+	const vk::Device device = vk_renderer::get()->getDevice();
+
+	if (_imageView)
 	{
-		vkDestroyImageView(vkDevice, _vkImageView, vkGetAllocator());
-		_vkImageView = VK_NULL_HANDLE;
+		device.destroyImageView(_imageView);
+		_imageView = nullptr;
 	}
-	if (VK_NULL_HANDLE != _vkImage)
+	if (_image)
 	{
-		vkDestroyImage(vkDevice, _vkImage, vkGetAllocator());
-		_vkImage = VK_NULL_HANDLE;
+		device.destroyImage(_image);
+		_image = nullptr;
 	}
 	_deviceMemory.free();
 }
 
-VkImageAspectFlags vk_image::getImageAspectFlags() const
+vk::ImageAspectFlags vk_image::getImageAspectFlags() const
 {
-	return 0;
+	return vk::ImageAspectFlags();
 }
 
-VkImageUsageFlags vk_image::getImageUsageFlags() const
+vk::ImageUsageFlags vk_image::getImageUsageFlags() const
 {
-	return 0;
+	return vk::ImageUsageFlags();
 }
 
-void vk_image::createImage(const VkDevice vkDevice, const VkFormat vkFormat, const uint32_t width, const uint32_t height, const VkSampleCountFlagBits samples)
+void vk_image::createImage(const vk::Device device, const vk::Format format, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples)
 {
 	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-	std::vector<uint32_t> queueIndexes;
 
-	VkImageCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.imageType = VK_IMAGE_TYPE_2D;
-	createInfo.format = vkFormat;
-	createInfo.extent = VkExtent3D{width, height, 1};
-	createInfo.mipLevels = 1;
-	createInfo.arrayLayers = 1;
-	createInfo.samples = samples;
-	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	createInfo.usage = getImageUsageFlags();
-	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	createInfo.sharingMode = queueFamily.getSharingMode();
-	if (VK_SHARING_MODE_CONCURRENT == createInfo.sharingMode)
-	{
-		queueIndexes = queueFamily.getUniqueQueueIndexes();
-		createInfo.queueFamilyIndexCount = queueIndexes.size();
-		createInfo.pQueueFamilyIndices = queueIndexes.data();
-	}
+	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
+	const std::vector<uint32_t> queueIndexes = queueFamily.getUniqueQueueIndexes(sharingMode);
 
-	VK_CHECK(vkCreateImage(vkDevice, &createInfo, vkGetAllocator(), &_vkImage));
+	const vk::ImageCreateInfo imageCreateInfo =
+		vk::ImageCreateInfo()
+			.setImageType(vk::ImageType::e2D)
+			.setFormat(format)
+			.setExtent(vk::Extent3D(width, height, 1))
+			.setMipLevels(1)
+			.setArrayLayers(1)
+			.setSamples(samples)
+			.setTiling(vk::ImageTiling::eOptimal)
+			.setUsage(getImageUsageFlags())
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setQueueFamilyIndices(queueIndexes)
+			.setSharingMode(sharingMode);
+
+	_image = device.createImage(imageCreateInfo);
 }
 
-void vk_image::bindToMemory(const VkDevice vkDevice, const VkDeviceMemory vkDeviceMemory, const VkDeviceSize memoryOffset)
+void vk_image::bindToMemory(const vk::Device device, const vk::DeviceMemory deviceMemory, const vk::DeviceSize memoryOffset)
 {
-	VK_CHECK(vkBindImageMemory(vkDevice, _vkImage, vkDeviceMemory, memoryOffset));
+	device.bindImageMemory(_image, deviceMemory, memoryOffset);
 }
 
-void vk_image::createImageView(const VkDevice vkDevice, const VkFormat vkFormat)
+void vk_image::createImageView(const vk::Device device, const vk::Format format)
 {
-	VkImageViewCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.image = _vkImage;
-	createInfo.format = vkFormat;
-	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	createInfo.subresourceRange.aspectMask = getImageAspectFlags();
-	createInfo.subresourceRange.baseArrayLayer = 0;
-	createInfo.subresourceRange.baseMipLevel = 0;
-	createInfo.subresourceRange.layerCount = 1;
-	createInfo.subresourceRange.levelCount = 1;
+	const vk::ImageSubresourceRange imageSubresourceRange =
+		vk::ImageSubresourceRange()
+			.setAspectMask(getImageAspectFlags())
+			.setBaseArrayLayer(0)
+			.setBaseMipLevel(0)
+			.setLayerCount(1)
+			.setLevelCount(1);
 
-	VK_CHECK(vkCreateImageView(vkDevice, &createInfo, vkGetAllocator(), &_vkImageView));
+	const vk::ImageViewCreateInfo imageViewCreateInfo =
+		vk::ImageViewCreateInfo()
+			.setFlags({})
+			.setImage(_image)
+			.setFormat(format)
+			.setViewType(vk::ImageViewType::e2D)
+			.setSubresourceRange(imageSubresourceRange);
+
+	_imageView = device.createImageView(imageViewCreateInfo);
 }
 
-VkCommandBuffer vk_image::transitionImageLayout(const VkImage vkImage, const VkFormat vkFormat, const VkImageLayout vkLayoutOld, const VkImageLayout vkLayoutNew,
-	const VkAccessFlags vkAccessFlagsSrc, const VkAccessFlags vkAccessFlagsDst,
-	const VkPipelineStageFlags vkPipelineStageFlagsSrc, const VkPipelineStageFlags vkPipelineStageFlagsDst, const VkImageAspectFlags vkAspectFlags)
+VkCommandBuffer vk_image::transitionImageLayout(const vk_image_transition_layout_info& info)
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
-	VkCommandBuffer vkCommandBuffer = renderer->beginSingleTimeTransferCommands();
+	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
 
-	VkImageMemoryBarrier barrier{};
-	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = vkLayoutOld;
-	barrier.newLayout = vkLayoutNew;
-	barrier.srcQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_CONCURRENT ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-	barrier.dstQueueFamilyIndex = queueFamily.getSharingMode() == VK_SHARING_MODE_CONCURRENT ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-	barrier.image = vkImage;
-	barrier.subresourceRange.aspectMask = vkAspectFlags;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.srcAccessMask = vkAccessFlagsSrc;
-	barrier.dstAccessMask = vkAccessFlagsDst;
+	const uint32_t srcQueueFamilyIndex = queueFamily.getSharingMode() == vk::SharingMode::eConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
+	const uint32_t dstQueueFamilyIndex = queueFamily.getSharingMode() == vk::SharingMode::eConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
 
-	vkCmdPipelineBarrier(vkCommandBuffer, vkPipelineStageFlagsSrc, vkPipelineStageFlagsDst, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-	vkEndCommandBuffer(vkCommandBuffer);
+	const vk::ImageSubresourceRange imageSubresourceRange =
+		vk::ImageSubresourceRange()
+			.setAspectMask(info._imageAspectFlags)
+			.setBaseMipLevel(0)
+			.setBaseArrayLayer(0)
+			.setLevelCount(1)
+			.setLayerCount(1);
 
-	return vkCommandBuffer;
+	const vk::ImageMemoryBarrier imageMemoryBarrier =
+		vk::ImageMemoryBarrier()
+			.setOldLayout(info._layoutOld)
+			.setNewLayout(info._layoutNew)
+			.setSrcQueueFamilyIndex(srcQueueFamilyIndex)
+			.setDstQueueFamilyIndex(dstQueueFamilyIndex)
+			.setImage(info._image)
+			.setSubresourceRange(imageSubresourceRange)
+			.setSrcAccessMask(info._accessFlagsSrc)
+			.setDstAccessMask(info._accessFlagsDst);
+
+	commandBuffer.pipelineBarrier(info._pipelineStageFlagsSrc, info._pipelineStageFlagsDst, {}, {}, {}, imageMemoryBarrier);
+	commandBuffer.end();
+
+	return commandBuffer;
 }
