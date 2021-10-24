@@ -198,7 +198,7 @@ void vk_renderer::submitSingleTimeTransferCommands(vk::CommandBuffer commandBuff
 
 void vk_renderer::submitSingleTimeTransferCommands(const std::vector<vk::SubmitInfo>& submits)
 {
-	_transferQueue.submit(submits);
+	_transferQueue.submit(submits, nullptr);
 	_transferQueue.waitIdle();
 }
 
