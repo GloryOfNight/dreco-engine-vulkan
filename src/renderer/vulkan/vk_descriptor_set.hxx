@@ -10,10 +10,10 @@ class vk_texture_image;
 class vk_descriptor_set final
 {
 public:
-	vk_descriptor_set();
+	vk_descriptor_set() = default;
 	vk_descriptor_set(const vk_descriptor_set&) = delete;
 	vk_descriptor_set(vk_descriptor_set&&) = default;
-	~vk_descriptor_set();
+	~vk_descriptor_set() { destroy(); };
 
 	void create(const std::vector<vk_graphics_pipeline*>& pipelines, const std::vector<vk_texture_image*>& textureImages);
 

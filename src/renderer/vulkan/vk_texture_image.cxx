@@ -6,16 +6,6 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-vk_texture_image::vk_texture_image()
-	: _sampler{}
-{
-}
-
-vk_texture_image::~vk_texture_image()
-{
-	destroy();
-}
-
 void vk_texture_image::create()
 {
 	image_data imageData;

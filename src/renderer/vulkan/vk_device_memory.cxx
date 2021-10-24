@@ -3,16 +3,6 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-vk_device_memory::vk_device_memory()
-	: _deviceMemory{}
-{
-}
-
-vk_device_memory::~vk_device_memory()
-{
-	free();
-}
-
 void vk_device_memory::allocate(const vk::MemoryRequirements& memoryRequirements, const vk::MemoryPropertyFlags memoryPropertyFlags)
 {
 	vk_renderer* renderer = vk_renderer::get();

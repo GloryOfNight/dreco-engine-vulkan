@@ -4,16 +4,6 @@
 #include "vk_texture_image.hxx"
 #include "vk_utils.hxx"
 
-vk_descriptor_set::vk_descriptor_set()
-	: _descriptorPool{}
-{
-}
-
-vk_descriptor_set::~vk_descriptor_set()
-{
-	destroy();
-}
-
 void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelines, const std::vector<vk_texture_image*>& textureImages)
 {
 	_pipelines = pipelines;

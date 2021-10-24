@@ -19,7 +19,7 @@ public:
 	vk_image() = default;
 	vk_image(const vk_image&) = delete;
 	vk_image(vk_image&&) = default;
-	virtual ~vk_image() = default;
+	virtual ~vk_image() { destroy(); };
 
 	virtual void create() = 0;
 

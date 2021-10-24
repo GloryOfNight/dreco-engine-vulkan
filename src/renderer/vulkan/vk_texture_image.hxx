@@ -10,10 +10,10 @@
 class vk_texture_image : public vk_image
 {
 public:
-	vk_texture_image();
+	vk_texture_image() = default;
 	vk_texture_image(const vk_texture_image&) = delete;
 	vk_texture_image(vk_texture_image&&) = delete;
-	virtual ~vk_texture_image();
+	virtual ~vk_texture_image() { destroy(); };
 
 	void create() override;
 

@@ -4,10 +4,10 @@
 class vk_shader_module final
 {
 public:
-	vk_shader_module();
+	vk_shader_module() = default;
 	vk_shader_module(const vk_shader_module&) = delete;
 	vk_shader_module(vk_shader_module&&) = default;
-	~vk_shader_module();
+	~vk_shader_module() { destroy(); };
 
 	void create(const uint32_t* code, const size_t& size);
 

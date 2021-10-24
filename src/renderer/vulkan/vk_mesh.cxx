@@ -76,7 +76,7 @@ void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 {
 	_descriptorSet.bindToCmdBuffer(commandBuffer);
 
-	const std::array <vk::Buffer, 1 > buffers{_viBuffer.get()};
+	const std::array<vk::Buffer, 1> buffers{_viBuffer.get()};
 	const std::array<vk::DeviceSize, 1> offsets{0};
 	commandBuffer.bindVertexBuffers(0, buffers, offsets);
 	commandBuffer.bindIndexBuffer(_viBuffer.get(), _vertsBufferSize, vk::IndexType::eUint32);
@@ -104,7 +104,7 @@ void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, 
 	const _memory_regions& vertRegions, const _memory_regions& indxRegions)
 {
 	vk_buffer::create_info buffer_create_info;
-	buffer_create_info.usage = 
+	buffer_create_info.usage =
 		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
 	buffer_create_info.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
 	buffer_create_info.size = _vertsBufferSize + _indxsBufferSize;
@@ -115,7 +115,7 @@ void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, 
 	temp_buffer.getDeviceMemory().map(vertRegions);
 	temp_buffer.getDeviceMemory().map(indxRegions, _vertsBufferSize);
 
-	buffer_create_info.usage = 
+	buffer_create_info.usage =
 		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
 	buffer_create_info.memoryPropertiesFlags = vk_buffer::create_info::deviceMemoryPropertiesFlags;
 

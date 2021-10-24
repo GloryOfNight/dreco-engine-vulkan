@@ -6,16 +6,6 @@
 
 #include <cstring>
 
-vk_buffer::vk_buffer()
-	: _buffer{}
-{
-}
-
-vk_buffer::~vk_buffer()
-{
-	destroy();
-}
-
 void vk_buffer::create(const create_info& createInfo)
 {
 	vk_renderer* renderer = vk_renderer::get();

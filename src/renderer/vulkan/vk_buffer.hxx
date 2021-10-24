@@ -25,10 +25,10 @@ public:
 			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 	};
 
-	vk_buffer();
+	vk_buffer() = default;
 	vk_buffer(const vk_buffer&) = delete;
 	vk_buffer(vk_buffer&&) = default;
-	~vk_buffer();
+	~vk_buffer() { destroy(); };
 
 	void create(const create_info& createInfo);
 

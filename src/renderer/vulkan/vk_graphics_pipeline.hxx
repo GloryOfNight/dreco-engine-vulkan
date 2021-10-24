@@ -9,10 +9,10 @@ class vk_descriptor_set;
 class vk_graphics_pipeline final
 {
 public:
-	vk_graphics_pipeline();
+	vk_graphics_pipeline() = default;
 	vk_graphics_pipeline(const vk_graphics_pipeline&) = delete;
 	vk_graphics_pipeline(vk_graphics_pipeline&&) = default;
-	~vk_graphics_pipeline();
+	~vk_graphics_pipeline() { destroy(); };
 
 	void create(const material& mat);
 
@@ -44,5 +44,5 @@ private:
 
 	vk::PipelineLayout _pipelineLayout;
 
-	vk::Pipeline  _pipeline;
+	vk::Pipeline _pipeline;
 };

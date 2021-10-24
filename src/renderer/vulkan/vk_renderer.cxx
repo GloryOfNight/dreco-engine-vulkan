@@ -605,7 +605,7 @@ void vk_renderer::drawFrame()
 			.setWaitDstStageMask(submitWaitDstStages)
 			.setCommandBuffers(submitCommandBuffers);
 
-	_graphicsQueue.submit(std::vector<vk::SubmitInfo>{submitInfo}, _submitQueueFences[imageIndex]);
+	_graphicsQueue.submit(submitInfo, _submitQueueFences[imageIndex]);
 
 	const vk::PresentInfoKHR presentInfo =
 		vk::PresentInfoKHR()

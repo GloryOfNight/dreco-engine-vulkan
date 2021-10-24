@@ -13,17 +13,6 @@
 #include <array>
 #include <vector>
 
-vk_graphics_pipeline::vk_graphics_pipeline()
-	: _pipelineLayout{}
-	, _pipeline{}
-{
-}
-
-vk_graphics_pipeline::~vk_graphics_pipeline()
-{
-	destroy();
-}
-
 void vk_graphics_pipeline::create(const material& mat)
 {
 	_mat = mat;

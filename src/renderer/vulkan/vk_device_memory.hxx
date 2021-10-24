@@ -12,10 +12,10 @@ public:
 		const vk::DeviceSize offset{0};
 	};
 
-	vk_device_memory();
+	vk_device_memory() = default;
 	vk_device_memory(const vk_device_memory&) = delete;
 	vk_device_memory(vk_device_memory&&) = default;
-	~vk_device_memory();
+	~vk_device_memory() { free(); };
 
 	void allocate(const vk::MemoryRequirements& memoryRequirements, const vk::MemoryPropertyFlags memoryPropertyFlags);
 
