@@ -46,8 +46,8 @@ protected:
 	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
 
 private:
-	VkDeviceSize _vertsBufferSize{0};
-	VkDeviceSize _indxsBufferSize{0};
+	vk::DeviceSize _vertsBufferSize{0};
+	vk::DeviceSize _indxsBufferSize{0};
 	std::vector<uint32_t> _primitiveIndexCounts;
 
 	uniforms _ubo;
