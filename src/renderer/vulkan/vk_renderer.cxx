@@ -18,7 +18,6 @@
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
-#define VK_ENABLE_LUNAR_MONITOR
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
@@ -615,12 +614,22 @@ void vk_renderer::drawFrame()
 			.setSwapchains({1, &_swapchain})
 			.setImageIndices({1, &imageIndex});
 
-	const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
-
-	if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
-		vk::Result::eSuboptimalKHR == presentResult)
+	try
 	{
-		recreateSwapchain();
+		const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
+
+		if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
+			vk::Result::eSuboptimalKHR == presentResult)
+		{
+			recreateSwapchain();
+		}
+	}
+	catch (vk::OutOfDateKHRError error)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
+		SDL_UpdateWindowSurface(_window);
+
+		DE_LOG(Error, "OutOfDateKHRError");
 	}
 }
 
