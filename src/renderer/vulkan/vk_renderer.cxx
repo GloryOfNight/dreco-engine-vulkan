@@ -308,16 +308,18 @@ void vk_renderer::createPhysicalDevice()
 void vk_renderer::createDevice()
 {
 	const auto uniqueQueueIndexes = _queueFamily.getUniqueQueueIndexes();
+	const size_t uniqueQueueIndexesNum = uniqueQueueIndexes.size();
 	const std::array<float, 1> priorities{1.0F};
 
-	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfoList(3, vk::DeviceQueueCreateInfo());
-	for (size_t i = 0; i < queueCreateInfoList.size(); ++i)
+	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfoList;
+	queueCreateInfoList.reserve(3);
+
+	for (size_t i = 0; i < uniqueQueueIndexesNum; ++i)
 	{
-		queueCreateInfoList[i] =
-			vk::DeviceQueueCreateInfo()
-				.setQueueFamilyIndex(i)
-				.setQueueCount(1)
-				.setQueuePriorities(priorities);
+		queueCreateInfoList.emplace_back()
+			.setQueueFamilyIndex(uniqueQueueIndexes[i])
+			.setQueueCount(1)
+			.setQueuePriorities(priorities);
 	}
 
 	const std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
