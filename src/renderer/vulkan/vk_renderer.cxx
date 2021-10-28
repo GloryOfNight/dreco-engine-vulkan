@@ -18,7 +18,6 @@
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
-#define VK_ENABLE_LUNAR_MONITOR
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
@@ -308,16 +307,18 @@ void vk_renderer::createPhysicalDevice()
 void vk_renderer::createDevice()
 {
 	const auto uniqueQueueIndexes = _queueFamily.getUniqueQueueIndexes();
+	const size_t uniqueQueueIndexesNum = uniqueQueueIndexes.size();
 	const std::array<float, 1> priorities{1.0F};
 
-	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfoList(3, vk::DeviceQueueCreateInfo());
-	for (size_t i = 0; i < queueCreateInfoList.size(); ++i)
+	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfoList;
+	queueCreateInfoList.reserve(3);
+
+	for (size_t i = 0; i < uniqueQueueIndexesNum; ++i)
 	{
-		queueCreateInfoList[i] =
-			vk::DeviceQueueCreateInfo()
-				.setQueueFamilyIndex(i)
-				.setQueueCount(1)
-				.setQueuePriorities(priorities);
+		queueCreateInfoList.emplace_back()
+			.setQueueFamilyIndex(uniqueQueueIndexes[i])
+			.setQueueCount(1)
+			.setQueuePriorities(priorities);
 	}
 
 	const std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
@@ -613,12 +614,22 @@ void vk_renderer::drawFrame()
 			.setSwapchains({1, &_swapchain})
 			.setImageIndices({1, &imageIndex});
 
-	const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
-
-	if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
-		vk::Result::eSuboptimalKHR == presentResult)
+	try
 	{
-		recreateSwapchain();
+		const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
+
+		if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
+			vk::Result::eSuboptimalKHR == presentResult)
+		{
+			recreateSwapchain();
+		}
+	}
+	catch (vk::OutOfDateKHRError error)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
+		SDL_UpdateWindowSurface(_window);
+
+		DE_LOG(Error, "OutOfDateKHRError");
 	}
 }
 
