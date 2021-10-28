@@ -71,6 +71,8 @@ void vk_descriptor_set::destroy()
 	{
 		const vk::Device device = vk_renderer::get()->getDevice();
 		device.destroyDescriptorPool(_descriptorPool);
+		_descriptorPool = nullptr;
+
 		_uniformBuffer.destroy();
 	}
 }
