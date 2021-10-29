@@ -116,6 +116,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 	const vk::RenderPass renderPass{renderer->getRenderPass()};
 	const vk::SurfaceKHR surface = renderer->getSurface();
 	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
+	const auto physicaDeviceFeatures = physicalDevice.getFeatures();
 
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
@@ -197,7 +198,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 			.setMinSampleShading(1.0F)
 			.setPSampleMask(nullptr)
 			.setAlphaToCoverageEnable(VK_TRUE)
-			.setAlphaToOneEnable(VK_TRUE);
+			.setAlphaToOneEnable(physicaDeviceFeatures.alphaToOne);
 
 	const vk::PipelineColorBlendAttachmentState colorBlendAttachment =
 		vk::PipelineColorBlendAttachmentState()

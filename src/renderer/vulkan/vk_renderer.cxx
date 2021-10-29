@@ -18,6 +18,8 @@
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
+// disabled due to unstabilities on linux
+// #define VK_ENABLE_LUNAR_MONITOR
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
