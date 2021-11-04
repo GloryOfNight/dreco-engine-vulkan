@@ -24,6 +24,12 @@ vec3 operator+(const vec3& first, const vec3& second)
 	return vec3(first._x + second._x, first._y + second._y, first._z + second._z);
 }
 
+vec3 operator+=(vec3& first, const vec3& second)
+{
+	first = first + second;
+	return first;
+}
+
 vec3 operator*(const vec3& first, const vec3& second)
 {
 	return vec3(first._x * second._x, first._y * second._y, first._z * second._z);

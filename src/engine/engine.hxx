@@ -1,5 +1,7 @@
 #pragma once
-#include "core/objects/camera.hxx"
+#include "core/managers/event_manager.hxx"
+#include "core/managers/input_manager.hxx"
+#include "core/objects/debug_camera.hxx"
 #include "core/threads/thread_pool.hxx"
 #include "math/vec3.hxx"
 
@@ -28,6 +30,12 @@ public:
 
 	thread_pool* getThreadPool() const;
 
+	const event_manager& getEventManager() const { return _eventManager; };
+	event_manager& getEventManager() { return _eventManager; };
+
+	const input_manager& getInputManager() const { return _inputManager; };
+	input_manager& getInputManager() { return _inputManager; };
+
 	[[nodiscard]] bool init();
 
 	void run();
@@ -37,23 +45,22 @@ public:
 private:
 	bool startRenderer();
 
-	void stopRenderer();
-
 	void startMainLoop();
 
 	void preMainLoop();
-
-	void stopMainLoop();
 
 	void postMainLoop();
 
 	double calculateNewDeltaTime();
 
+	event_manager _eventManager;
+	input_manager _inputManager;
+
 	thread_pool* _threadPool;
 
 	vk_renderer* _renderer;
 
-	camera _camera;
+	debug_camera _camera;
 
 	bool _isRunning;
 };

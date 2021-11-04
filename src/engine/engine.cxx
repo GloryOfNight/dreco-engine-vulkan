@@ -13,6 +13,13 @@
 
 static inline engine* gEngine{nullptr};
 
+static void onQuitEvent(const SDL_Event&)
+{
+	auto engine = engine::get();
+	if (engine)
+		engine->stop();
+}
+
 struct async_task_load_scene : public thread_task
 {
 	async_task_load_scene(const std::string_view& sceneFile)
@@ -45,10 +52,13 @@ private:
 };
 
 engine::engine()
-	: _threadPool{nullptr}
+	: _eventManager{}
+	, _inputManager(_eventManager)
+	, _threadPool{nullptr}
 	, _renderer{nullptr}
 	, _isRunning{false}
 {
+	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
 }
 
 engine::~engine()
@@ -140,10 +150,7 @@ void engine::stop()
 		DE_LOG(Error, "Run engine first. Cannot stop.");
 		return;
 	}
-
-	stopMainLoop();
-	stopRenderer();
-	SDL_Quit();
+	_isRunning = false;
 }
 
 bool engine::startRenderer()
@@ -167,15 +174,6 @@ bool engine::startRenderer()
 		}
 	}
 	return _renderer != nullptr;
-}
-
-void engine::stopRenderer()
-{
-	if (_renderer)
-	{
-		delete _renderer;
-		_renderer = nullptr;
-	}
 }
 
 void engine::preMainLoop()
@@ -203,8 +201,10 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
+		_eventManager.tick();
 		_threadPool->tick();
 
+		_camera.tick(deltaTime);
 		_renderer->tick(deltaTime);
 
 		const float camMoveSpeed = 100.F;
@@ -256,82 +256,6 @@ void engine::startMainLoop()
 				}
 			}
 		}
-
-		const vec3 camFowVec = _camera.getTransform()._rotation.toForwardVector();
-		const vec3 camRightVec = _camera.getTransform()._rotation.toRightDirection();
-
-		// event poll not working very well with high frame rate (>60)
-		// TODO: input state machine, should do job just fine
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			if (event.type == SDL_QUIT)
-			{
-				stop();
-			}
-			else if (event.type == SDL_KEYDOWN)
-			{
-				const transform cameraTranform = _camera.getTransform();
-
-				if (event.key.keysym.sym == SDLK_w)
-				{
-					_camera.setPosition(cameraTranform._translation + (camFowVec * (camMoveSpeed * deltaTime)));
-				}
-				else if (event.key.keysym.sym == SDLK_s)
-				{
-					_camera.setPosition(cameraTranform._translation + (camFowVec * (-camMoveSpeed * deltaTime)));
-				}
-
-				if (event.key.keysym.sym == SDLK_d)
-				{
-					_camera.setPosition(cameraTranform._translation + camRightVec * (camMoveSpeed * deltaTime));
-				}
-				else if (event.key.keysym.sym == SDLK_a)
-				{
-					_camera.setPosition(cameraTranform._translation + camRightVec * (-camMoveSpeed * deltaTime));
-				}
-
-				if (event.key.keysym.sym == SDLK_e)
-				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, camMoveSpeed * deltaTime, 0));
-				}
-				else if (event.key.keysym.sym == SDLK_q)
-				{
-					_camera.setPosition(cameraTranform._translation + vec3(0, -camMoveSpeed * deltaTime, 0));
-				}
-
-				if (event.key.keysym.sym == SDLK_MINUS)
-				{
-					auto& settings = _renderer->getSettings();
-					const auto value = static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(settings.getPrefferedSampleCount()) / 2);
-					if (settings.setPrefferedSampleCount(value))
-					{
-						_renderer->applySettings();
-					}
-				}
-				else if (event.key.keysym.sym == SDLK_EQUALS)
-				{
-					auto& settings = _renderer->getSettings();
-					const auto value = static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(settings.getPrefferedSampleCount()) * 2);
-					if (settings.setPrefferedSampleCount(value))
-					{
-						_renderer->applySettings();
-					}
-				}
-				if (event.key.keysym.sym == SDLK_F1)
-				{
-					auto& settings = _renderer->getSettings();
-					if (settings.setDefaultPolygonMode(vk::PolygonMode::eFill))
-					{
-						_renderer->applySettings();
-					}
-					else if (settings.setDefaultPolygonMode(vk::PolygonMode::eLine))
-					{
-						_renderer->applySettings();
-					}
-				}
-			}
-		}
 	}
 
 	postMainLoop();
@@ -341,11 +265,9 @@ void engine::postMainLoop()
 {
 	delete _threadPool;
 	_threadPool = nullptr;
-}
-
-void engine::stopMainLoop()
-{
-	_isRunning = false;
+	delete _renderer;
+	_renderer = nullptr;
+	SDL_Quit();
 }
 
 double engine::calculateNewDeltaTime()
