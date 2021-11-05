@@ -3,6 +3,7 @@
 #include "mat4.hxx"
 #include "vec3.hxx"
 
+#include <SDL2/SDL_hints.h>
 #include <cmath>
 
 rotator::rotator(const float pitch, const float yaw, const float roll)
