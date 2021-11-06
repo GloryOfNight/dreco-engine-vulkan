@@ -31,7 +31,7 @@ void vk_scene::create(const scene& scn)
 	for (size_t i = 0; i < imagesNum; ++i)
 	{
 		_textureImages[i] = new vk_texture_image();
-		engine::get()->getThreadPool()->queueTask(new async_load_texture_task(scn._images[i]._uri, this, i));
+		engine::get()->getThreadPool().queueTask(new async_load_texture_task(scn._images[i]._uri, this, i));
 	}
 
 	_graphicsPipelines.reserve(scn._materials.size());

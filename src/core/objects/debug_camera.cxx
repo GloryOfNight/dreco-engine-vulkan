@@ -51,15 +51,16 @@ void debug_camera::tick(double deltaTime)
 	{
 		rotator& rotation = transform._rotation;
 
-		vk_renderer* renderer = engine->getRenderer();
-		SDL_Window* window = renderer->getWindow();
+		const vk_renderer& renderer = engine->getRenderer();
+		SDL_Window* window = renderer.getWindow();
+
 		if (SDL_GetMouseFocus() == window)
 		{
 			int x, y;
 			const uint32_t mouseState = SDL_GetMouseState(&x, &y);
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
-				const auto extent = renderer->getCurrentExtent();
+				const auto extent = renderer.getCurrentExtent();
 				if (isMouseRightButtonRepeated)
 				{
 					const double cameraRotSpeed = 1800.0;

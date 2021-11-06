@@ -52,7 +52,7 @@ vk_renderer* vk_renderer::get()
 {
 	if (auto eng = engine::get())
 	{
-		return eng->getRenderer();
+		return &eng->getRenderer();
 	}
 	return nullptr;
 }
@@ -123,7 +123,7 @@ void vk_renderer::exit()
 
 	cleanupSwapchain(_swapchain);
 
-	clearVectorOfPtr(_scenes);
+	_scenes.clear();
 	_placeholderTextureImage.destroy();
 
 	_device.destroySemaphore(_semaphoreImageAvaible);
@@ -158,9 +158,7 @@ void vk_renderer::tick(double deltaTime)
 
 void vk_renderer::loadScene(const scene& scn)
 {
-	vk_scene* newScene = new vk_scene();
-	_scenes.push_back(newScene);
-	newScene->create(scn);
+	_scenes.emplace_back(vk_scene()).create(scn);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -696,9 +694,9 @@ void vk_renderer::recreateSwapchain()
 
 	createFramebuffers();
 
-	for (auto* scene : _scenes)
+	for (auto& scene : _scenes)
 	{
-		scene->recreatePipelines();
+		scene.recreatePipelines();
 	}
 }
 
@@ -721,10 +719,10 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 			.setClearValues(clearValues);
 
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-	for (auto* scene : _scenes)
+	for (auto& scene : _scenes)
 	{
-		scene->update();
-		scene->bindToCmdBuffer(commandBuffer);
+		scene.update();
+		scene.bindToCmdBuffer(commandBuffer);
 	}
 	commandBuffer.endRenderPass();
 

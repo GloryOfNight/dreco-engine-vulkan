@@ -118,7 +118,7 @@ private:
 
 	vk_texture_image _placeholderTextureImage;
 
-	std::vector<vk_scene*> _scenes;
+	std::vector<vk_scene> _scenes;
 
 	SDL_Window* _window;
 

@@ -32,18 +32,16 @@ struct async_task_load_scene : public thread_task
 	virtual void doJob() override
 	{
 		_scene = gltf_loader::loadScene(_file);
-	};
+	}
 
 	virtual void completed() override
 	{
 		if (auto* eng = engine::get())
 		{
-			if (auto* renderer = eng->getRenderer())
-			{
-				renderer->loadScene(_scene);
-			}
+			auto& renderer = eng->getRenderer();
+			renderer.loadScene(_scene);
 		}
-	};
+	}
 
 private:
 	std::string _file;
@@ -54,8 +52,8 @@ private:
 engine::engine()
 	: _eventManager{}
 	, _inputManager(_eventManager)
-	, _threadPool{nullptr}
-	, _renderer{nullptr}
+	, _threadPool("dreco-worker", thread_pool::hardwareConcurrency() / 2)
+	, _renderer{}
 	, _isRunning{false}
 {
 	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
@@ -74,19 +72,9 @@ engine* engine::get()
 	return gEngine;
 }
 
-vk_renderer* engine::getRenderer() const
-{
-	return _renderer;
-}
-
 const camera* engine::getCamera() const
 {
 	return &_camera;
-}
-
-thread_pool* engine::getThreadPool() const
-{
-	return _threadPool;
 }
 
 bool engine::init()
@@ -155,35 +143,29 @@ void engine::stop()
 
 bool engine::startRenderer()
 {
-	if (_renderer == nullptr)
+	if (vk_renderer::isSupported())
 	{
-		if (vk_renderer::isSupported())
-		{
-			_renderer = new vk_renderer();
-			_renderer->init();
+		_renderer.init();
 
-			uint32_t major;
-			uint32_t minor;
-			uint32_t patch;
-			_renderer->getVersion(major, minor, &patch);
-			DE_LOG(Info, "Vulkan Instance version: %u.%u.%u", major, minor, patch);
-		}
-		else
-		{
-			DE_LOG(Critical, "Vulkan not supported by current driver or GPU.");
-		}
+		uint32_t major;
+		uint32_t minor;
+		uint32_t patch;
+		_renderer.getVersion(major, minor, &patch);
+		DE_LOG(Info, "Vulkan Instance version: %u.%u.%u", major, minor, patch);
+
+		return true;
 	}
-	return _renderer != nullptr;
+	else
+	{
+		DE_LOG(Critical, "Vulkan not supported by current driver or GPU.");
+	}
+
+	return false;
 }
 
 void engine::preMainLoop()
 {
-	if (_threadPool == nullptr)
-	{
-		_threadPool = new thread_pool("dreco-worker", thread_pool::hardwareConcurrency() / 2);
-	}
-
-	_threadPool->queueTask(new async_task_load_scene(DRECO_ASSET("viking_room/scene.gltf")));
+	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("viking_room/scene.gltf")));
 
 	_camera.setPosition(vec3(0, 10, 50));
 	_camera.setRotation(rotator(0, 180, 0));
@@ -202,10 +184,10 @@ void engine::startMainLoop()
 			continue; // skip tick if delta time zero
 		}
 		_eventManager.tick();
-		_threadPool->tick();
+		_threadPool.tick();
 
 		_camera.tick(deltaTime);
-		_renderer->tick(deltaTime);
+		_renderer.tick(deltaTime);
 	}
 
 	postMainLoop();
@@ -213,10 +195,7 @@ void engine::startMainLoop()
 
 void engine::postMainLoop()
 {
-	delete _threadPool;
-	_threadPool = nullptr;
-	delete _renderer;
-	_renderer = nullptr;
+	_renderer.exit();
 	SDL_Quit();
 }
 
