@@ -36,6 +36,8 @@ public:
 
 	void init();
 
+	void exit();
+
 	void tick(double deltaTime);
 
 	void loadScene(const scene& scn);

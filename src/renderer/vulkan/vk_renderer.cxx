@@ -45,35 +45,7 @@ vk_renderer::vk_renderer()
 
 vk_renderer::~vk_renderer()
 {
-	_device.waitIdle();
-
-	for (auto& fence : _submitQueueFences)
-	{
-		_device.destroyFence(fence);
-	}
-
-	cleanupSwapchain(_swapchain);
-
-	clearVectorOfPtr(_scenes);
-	_placeholderTextureImage.destroy();
-
-	_device.destroySemaphore(_semaphoreImageAvaible);
-	_device.destroySemaphore(_semaphoreRenderFinished);
-
-	for (auto graphicsCommandPool : _graphicsCommandPools)
-	{
-		_device.destroyCommandPool(graphicsCommandPool);
-	}
-	_device.destroyCommandPool(_transferCommandPool);
-
-	_depthImage.destroy();
-	_msaaImage.destroy();
-	_device.destroy();
-
-	_instance.destroy(_surface);
-	_instance.destroy();
-
-	SDL_DestroyWindow(_window);
+	exit();
 }
 
 vk_renderer* vk_renderer::get()
@@ -133,6 +105,46 @@ void vk_renderer::init()
 	createSemaphores();
 
 	_placeholderTextureImage.create();
+}
+
+void vk_renderer::exit()
+{
+	if (!_device)
+	{
+		return;
+	}
+
+	_device.waitIdle();
+
+	for (auto& fence : _submitQueueFences)
+	{
+		_device.destroyFence(fence);
+	}
+
+	cleanupSwapchain(_swapchain);
+
+	clearVectorOfPtr(_scenes);
+	_placeholderTextureImage.destroy();
+
+	_device.destroySemaphore(_semaphoreImageAvaible);
+	_device.destroySemaphore(_semaphoreRenderFinished);
+
+	for (auto graphicsCommandPool : _graphicsCommandPools)
+	{
+		_device.destroyCommandPool(graphicsCommandPool);
+	}
+	_device.destroyCommandPool(_transferCommandPool);
+
+	_depthImage.destroy();
+	_msaaImage.destroy();
+	_device.destroy();
+
+	_instance.destroy(_surface);
+	_instance.destroy();
+
+	SDL_DestroyWindow(_window);
+
+	new (this) vk_renderer();
 }
 
 void vk_renderer::tick(double deltaTime)
