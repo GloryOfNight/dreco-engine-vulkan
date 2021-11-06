@@ -12,10 +12,10 @@
 #include "vk_settings.hxx"
 #include "vk_texture_image.hxx"
 
-#include <SDL.h>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+struct SDL_Window;
 class engine;
 class vk_mesh;
 

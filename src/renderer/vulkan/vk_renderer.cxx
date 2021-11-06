@@ -11,6 +11,7 @@
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
+#include <SDL_video.h>
 #include <SDL_vulkan.h>
 #include <stdexcept>
 
