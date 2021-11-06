@@ -13,6 +13,7 @@
 
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
+#include <chrono>
 #include <stdexcept>
 
 #define VK_USE_DEBUG 1
@@ -585,7 +586,16 @@ void vk_renderer::createSemaphores()
 
 void vk_renderer::drawFrame()
 {
-	const auto aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvaible, nullptr);
+	vk::ResultValue<uint32_t> aquireNextImageResult = vk::ResultValue<uint32_t>(vk::Result{}, UINT32_MAX);
+	try
+	{
+		aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvaible, nullptr);
+	}
+	catch (vk::OutOfDateKHRError outOfDateKHRError)
+	{
+		return;
+	}
+
 	const uint32_t imageIndex = aquireNextImageResult.value;
 
 	if (vk::Result::eSuccess != aquireNextImageResult.result && vk::Result::eSuboptimalKHR != aquireNextImageResult.result)
