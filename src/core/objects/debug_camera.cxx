@@ -61,18 +61,21 @@ void debug_camera::tick(double deltaTime)
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
 				const auto extent = renderer.getCurrentExtent();
+				const int halfExtentX = extent.width / 2;
+				const int halfExtentY = extent.height / 2;
+
 				if (isMouseRightButtonRepeated)
 				{
-					const double cameraRotSpeed = 1800.0;
-					if (x)
+					const double cameraRotSpeed = 1800.0 * deltaTime;
+					if (x && halfExtentX != x)
 					{
-						const auto coefDistX = (static_cast<float>(extent.width / 2) / static_cast<float>(x) - 1);
-						rotation._yaw = rotation._yaw - (cameraRotSpeed * coefDistX * deltaTime);
+						const auto coefDistX = (static_cast<float>(halfExtentX) / static_cast<float>(x) - 1);
+						rotation._yaw = rotation._yaw - (cameraRotSpeed * coefDistX);
 					}
-					if (y)
+					if (y && halfExtentY != y)
 					{
-						const auto coefDistY = (static_cast<float>(extent.height / 2) / static_cast<float>(y) - 1);
-						rotation._pitch = rotation._pitch + (cameraRotSpeed * coefDistY * deltaTime);
+						const auto coefDistY = (static_cast<float>(halfExtentY) / static_cast<float>(y) - 1);
+						rotation._pitch = rotation._pitch + (cameraRotSpeed * coefDistY);
 					}
 				}
 				else // on first button press
@@ -80,8 +83,7 @@ void debug_camera::tick(double deltaTime)
 					SDL_ShowCursor(SDL_DISABLE);
 					isMouseRightButtonRepeated = true;
 				}
-
-				SDL_WarpMouseInWindow(window, static_cast<int>(extent.width) / 2, static_cast<int>(extent.height) / 2);
+				SDL_WarpMouseInWindow(window, halfExtentX, halfExtentY);
 			}
 			else if (isMouseRightButtonRepeated)
 			{
