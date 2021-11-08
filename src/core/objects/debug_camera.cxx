@@ -6,7 +6,7 @@
 void debug_camera::tick(double deltaTime)
 {
 	auto* engine = engine::get();
-	const input_manager& inputManager = engine->getInputManager();
+	input_manager& inputManager = engine->getInputManager();
 
 	auto transform = getTransform();
 	const vec3 camFowVec = transform._rotation.toForwardVector();
@@ -54,10 +54,10 @@ void debug_camera::tick(double deltaTime)
 		const vk_renderer& renderer = engine->getRenderer();
 		SDL_Window* window = renderer.getWindow();
 
-		if (SDL_GetMouseFocus() == window)
+		if (inputManager.isInMouseFocus())
 		{
-			int x, y;
-			const uint32_t mouseState = SDL_GetMouseState(&x, &y);
+			uint16_t x, y;
+			const uint32_t mouseState = inputManager.getMouseState(&x, &y);
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
 				const auto extent = renderer.getCurrentExtent();
@@ -80,15 +80,15 @@ void debug_camera::tick(double deltaTime)
 				}
 				else // on first button press
 				{
-					SDL_ShowCursor(SDL_DISABLE);
+					inputManager.showCursor(false);
 					isMouseRightButtonRepeated = true;
 				}
-				SDL_WarpMouseInWindow(window, halfExtentX, halfExtentY);
+				inputManager.warpMouse(halfExtentX, halfExtentY);
 			}
 			else if (isMouseRightButtonRepeated)
 			{
 				isMouseRightButtonRepeated = false;
-				SDL_ShowCursor(SDL_ENABLE);
+				inputManager.showCursor(true);
 			}
 		}
 	}

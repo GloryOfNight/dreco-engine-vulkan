@@ -179,11 +179,6 @@ uint32_t vk_renderer::getImageCount() const
 	return _swapchainImageViews.size();
 }
 
-SDL_Window* vk_renderer::getWindow() const
-{
-	return _window;
-}
-
 vk::CommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 {
 	const vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
@@ -224,6 +219,7 @@ void vk_renderer::createWindow()
 {
 	_window = SDL_CreateWindow("dreco-launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 720, 720,
 		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	_windowId = SDL_GetWindowID(_window);
 }
 
 void vk_renderer::createInstance()
