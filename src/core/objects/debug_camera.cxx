@@ -66,7 +66,7 @@ void debug_camera::tick(double deltaTime)
 
 				if (isMouseRightButtonRepeated)
 				{
-					const double cameraRotSpeed = 1800.0 * deltaTime;
+					const double cameraRotSpeed = 45.0;
 					if (x && halfExtentX != x)
 					{
 						const auto coefDistX = (static_cast<float>(halfExtentX) / static_cast<float>(x) - 1);
