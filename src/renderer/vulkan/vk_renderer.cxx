@@ -20,14 +20,15 @@
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
-// disabled due to unstabilities on linux
-// #define VK_ENABLE_LUNAR_MONITOR
+//disabled due to unstabilities on linux
+//#define VK_ENABLE_LUNAR_MONITOR
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
 	, _window{nullptr}
+	, _windowId{}
 	, _surface()
 	, _physicalDevice()
 	, _queueFamily()
@@ -118,6 +119,8 @@ void vk_renderer::exit()
 
 	_device.waitIdle();
 
+	clearVectorOfPtr(_scenes);
+
 	for (auto& fence : _submitQueueFences)
 	{
 		_device.destroyFence(fence);
@@ -160,7 +163,7 @@ void vk_renderer::tick(double deltaTime)
 
 void vk_renderer::loadScene(const scene& scn)
 {
-	_scenes.emplace_back(vk_scene()).create(scn);
+	_scenes.emplace_back(new vk_scene())->create(scn);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -301,7 +304,7 @@ void vk_renderer::createPhysicalDevice()
 			}
 
 			_physicalDevice = physicalDevice;
-			if (vk::PhysicalDeviceType::eDiscreteGpu == physicalDeviceProperties.deviceType)
+			if (vk::PhysicalDeviceType::eIntegratedGpu == physicalDeviceProperties.deviceType)
 			{
 				break;
 			}
@@ -703,7 +706,7 @@ void vk_renderer::recreateSwapchain()
 
 	for (auto& scene : _scenes)
 	{
-		scene.recreatePipelines();
+		scene->recreatePipelines();
 	}
 }
 
@@ -728,8 +731,8 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 	for (auto& scene : _scenes)
 	{
-		scene.update();
-		scene.bindToCmdBuffer(commandBuffer);
+		scene->update();
+		scene->bindToCmdBuffer(commandBuffer);
 	}
 	commandBuffer.endRenderPass();
 

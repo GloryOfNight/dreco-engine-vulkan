@@ -1,5 +1,6 @@
 #pragma once
 #include "core/threads/thread_pool.hxx"
+#include "core/utils/log.hxx"
 #include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 #include "renderer/vulkan/vk_scene.hxx"
@@ -29,6 +30,10 @@ struct async_load_texture_task : public thread_task
 		vk_texture_image* texImage = _scene->getTextureImages()[_texIndex];
 		new (texImage) vk_texture_image();
 
+		if (!_texData.isLoaded())
+		{
+			DE_LOG(Error, "Failed to load texture from uri: %s", _texUri.data());
+		}
 		texImage->create(_texData);
 
 		const auto& meshes = _scene->getMeshes();
@@ -39,7 +44,7 @@ struct async_load_texture_task : public thread_task
 	};
 
 private:
-	std::string_view _texUri;
+	std::string _texUri;
 
 	uint32_t _texIndex;
 

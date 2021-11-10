@@ -68,8 +68,8 @@ public:
 	const vk_settings& getSettings() const { return _settings; }
 	vk_settings& getSettings() { return _settings; }
 
-	const std::vector<vk_scene>& getScenes() const { return _scenes; };
-	std::vector<vk_scene>& getScenes() { return _scenes; };
+	const std::vector<vk_scene*>& getScenes() const { return _scenes; };
+	std::vector<vk_scene*>& getScenes() { return _scenes; };
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
@@ -123,7 +123,7 @@ private:
 
 	vk_texture_image _placeholderTextureImage;
 
-	std::vector<vk_scene> _scenes;
+	std::vector<vk_scene*> _scenes;
 
 	SDL_Window* _window;
 
