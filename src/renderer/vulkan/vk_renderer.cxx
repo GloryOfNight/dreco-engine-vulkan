@@ -304,7 +304,7 @@ void vk_renderer::createPhysicalDevice()
 			}
 
 			_physicalDevice = physicalDevice;
-			if (vk::PhysicalDeviceType::eIntegratedGpu == physicalDeviceProperties.deviceType)
+			if (vk::PhysicalDeviceType::eDiscreteGpu == physicalDeviceProperties.deviceType)
 			{
 				break;
 			}
