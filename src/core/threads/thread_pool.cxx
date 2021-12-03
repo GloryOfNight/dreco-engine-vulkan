@@ -49,7 +49,7 @@ static int thread_loop_func(void* data)
 		}
 		else
 		{
-			std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::milliseconds(3));
 		}
 	}
 	return 0;

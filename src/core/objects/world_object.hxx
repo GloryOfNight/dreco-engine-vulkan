@@ -14,6 +14,8 @@ public:
 
 	void setScale(const vec3& scale);
 
+	virtual void tick(double deltaTime);
+
 	const transform& getTransform() const;
 
 private:

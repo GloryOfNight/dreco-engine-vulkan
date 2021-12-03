@@ -12,10 +12,10 @@
 #include "vk_settings.hxx"
 #include "vk_texture_image.hxx"
 
-#include <SDL.h>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
+struct SDL_Window;
 class engine;
 class vk_mesh;
 
@@ -36,6 +36,8 @@ public:
 
 	void init();
 
+	void exit();
+
 	void tick(double deltaTime);
 
 	void loadScene(const scene& scn);
@@ -48,7 +50,9 @@ public:
 
 	vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; };
 
-	SDL_Window* getWindow() const;
+	SDL_Window* getWindow() const { return _window; };
+
+	uint32_t getWindowId() const { return _windowId; };
 
 	vk::Extent2D getCurrentExtent() const { return _currentExtent; };
 
@@ -63,6 +67,9 @@ public:
 
 	const vk_settings& getSettings() const { return _settings; }
 	vk_settings& getSettings() { return _settings; }
+
+	const std::vector<vk_scene*>& getScenes() const { return _scenes; };
+	std::vector<vk_scene*>& getScenes() { return _scenes; };
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
@@ -119,6 +126,8 @@ private:
 	std::vector<vk_scene*> _scenes;
 
 	SDL_Window* _window;
+
+	uint32_t _windowId;
 
 	vk::Extent2D _currentExtent;
 

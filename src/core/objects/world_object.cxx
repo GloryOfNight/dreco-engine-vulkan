@@ -20,6 +20,10 @@ void world_object::setScale(const vec3& scale)
 	_transform._scale = scale;
 }
 
+void world_object::tick(const double deltaTime)
+{
+}
+
 const transform& world_object::getTransform() const
 {
 	return _transform;

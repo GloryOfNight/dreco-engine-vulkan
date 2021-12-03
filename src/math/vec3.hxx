@@ -16,6 +16,7 @@ struct DRECO_DECLSPEC vec3
 };
 
 vec3 operator+(const vec3& first, const vec3& second);
+vec3 operator+=(vec3& first, const vec3& second);
 
 vec3 operator*(const vec3& first, const vec3& second);
 

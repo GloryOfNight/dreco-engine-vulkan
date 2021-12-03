@@ -1,13 +1,13 @@
 #pragma once
-#include "core/objects/camera.hxx"
+#include "core/managers/event_manager.hxx"
+#include "core/managers/input_manager.hxx"
+#include "core/objects/debug_camera.hxx"
 #include "core/threads/thread_pool.hxx"
-#include "math/vec3.hxx"
+#include "renderer/vulkan/vk_renderer.hxx"
 
 #include "dreco.hxx"
 
 #include <cstdint>
-
-class vk_renderer;
 
 class DRECO_DECLSPEC engine
 {
@@ -22,11 +22,19 @@ public:
 
 	static engine* get();
 
-	vk_renderer* getRenderer() const;
-
 	const camera* getCamera() const;
 
-	thread_pool* getThreadPool() const;
+	const vk_renderer& getRenderer() const { return _renderer; };
+	vk_renderer& getRenderer() { return _renderer; };
+
+	const thread_pool& getThreadPool() const { return _threadPool; };
+	thread_pool& getThreadPool() { return _threadPool; };
+
+	const event_manager& getEventManager() const { return _eventManager; };
+	event_manager& getEventManager() { return _eventManager; };
+
+	const input_manager& getInputManager() const { return _inputManager; };
+	input_manager& getInputManager() { return _inputManager; };
 
 	[[nodiscard]] bool init();
 
@@ -37,23 +45,23 @@ public:
 private:
 	bool startRenderer();
 
-	void stopRenderer();
-
 	void startMainLoop();
 
 	void preMainLoop();
-
-	void stopMainLoop();
 
 	void postMainLoop();
 
 	double calculateNewDeltaTime();
 
-	thread_pool* _threadPool;
+	event_manager _eventManager;
 
-	vk_renderer* _renderer;
+	input_manager _inputManager;
 
-	camera _camera;
+	thread_pool _threadPool;
+
+	vk_renderer _renderer;
+
+	debug_camera _camera;
 
 	bool _isRunning;
 };

@@ -11,19 +11,24 @@
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
+#include <SDL_video.h>
 #include <SDL_vulkan.h>
+#include <chrono>
 #include <stdexcept>
 
 #define VK_USE_DEBUG 1
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
+//disabled due to unstabilities on linux
+//#define VK_ENABLE_LUNAR_MONITOR
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
 vk_renderer::vk_renderer()
 	: _apiVersion{0}
 	, _window{nullptr}
+	, _windowId{}
 	, _surface()
 	, _physicalDevice()
 	, _queueFamily()
@@ -43,42 +48,14 @@ vk_renderer::vk_renderer()
 
 vk_renderer::~vk_renderer()
 {
-	_device.waitIdle();
-
-	for (auto& fence : _submitQueueFences)
-	{
-		_device.destroyFence(fence);
-	}
-
-	cleanupSwapchain(_swapchain);
-
-	clearVectorOfPtr(_scenes);
-	_placeholderTextureImage.destroy();
-
-	_device.destroySemaphore(_semaphoreImageAvaible);
-	_device.destroySemaphore(_semaphoreRenderFinished);
-
-	for (auto graphicsCommandPool : _graphicsCommandPools)
-	{
-		_device.destroyCommandPool(graphicsCommandPool);
-	}
-	_device.destroyCommandPool(_transferCommandPool);
-
-	_depthImage.destroy();
-	_msaaImage.destroy();
-	_device.destroy();
-
-	_instance.destroy(_surface);
-	_instance.destroy();
-
-	SDL_DestroyWindow(_window);
+	exit();
 }
 
 vk_renderer* vk_renderer::get()
 {
 	if (auto eng = engine::get())
 	{
-		return eng->getRenderer();
+		return &eng->getRenderer();
 	}
 	return nullptr;
 }
@@ -133,6 +110,48 @@ void vk_renderer::init()
 	_placeholderTextureImage.create();
 }
 
+void vk_renderer::exit()
+{
+	if (!_device)
+	{
+		return;
+	}
+
+	_device.waitIdle();
+
+	clearVectorOfPtr(_scenes);
+
+	for (auto& fence : _submitQueueFences)
+	{
+		_device.destroyFence(fence);
+	}
+
+	cleanupSwapchain(_swapchain);
+
+	_scenes.clear();
+	_placeholderTextureImage.destroy();
+
+	_device.destroySemaphore(_semaphoreImageAvaible);
+	_device.destroySemaphore(_semaphoreRenderFinished);
+
+	for (auto graphicsCommandPool : _graphicsCommandPools)
+	{
+		_device.destroyCommandPool(graphicsCommandPool);
+	}
+	_device.destroyCommandPool(_transferCommandPool);
+
+	_depthImage.destroy();
+	_msaaImage.destroy();
+	_device.destroy();
+
+	_instance.destroy(_surface);
+	_instance.destroy();
+
+	SDL_DestroyWindow(_window);
+
+	new (this) vk_renderer();
+}
+
 void vk_renderer::tick(double deltaTime)
 {
 	if (updateExtent())
@@ -144,9 +163,7 @@ void vk_renderer::tick(double deltaTime)
 
 void vk_renderer::loadScene(const scene& scn)
 {
-	vk_scene* newScene = new vk_scene();
-	_scenes.push_back(newScene);
-	newScene->create(scn);
+	_scenes.emplace_back(new vk_scene())->create(scn);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -163,11 +180,6 @@ uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* pat
 uint32_t vk_renderer::getImageCount() const
 {
 	return _swapchainImageViews.size();
-}
-
-SDL_Window* vk_renderer::getWindow() const
-{
-	return _window;
 }
 
 vk::CommandBuffer vk_renderer::beginSingleTimeTransferCommands()
@@ -210,6 +222,7 @@ void vk_renderer::createWindow()
 {
 	_window = SDL_CreateWindow("dreco-launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 720, 720,
 		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	_windowId = SDL_GetWindowID(_window);
 }
 
 void vk_renderer::createInstance()
@@ -572,7 +585,16 @@ void vk_renderer::createSemaphores()
 
 void vk_renderer::drawFrame()
 {
-	const auto aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvaible, nullptr);
+	vk::ResultValue<uint32_t> aquireNextImageResult = vk::ResultValue<uint32_t>(vk::Result{}, UINT32_MAX);
+	try
+	{
+		aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvaible, nullptr);
+	}
+	catch (vk::OutOfDateKHRError outOfDateKHRError)
+	{
+		return;
+	}
+
 	const uint32_t imageIndex = aquireNextImageResult.value;
 
 	if (vk::Result::eSuccess != aquireNextImageResult.result && vk::Result::eSuboptimalKHR != aquireNextImageResult.result)
@@ -682,7 +704,7 @@ void vk_renderer::recreateSwapchain()
 
 	createFramebuffers();
 
-	for (auto* scene : _scenes)
+	for (auto& scene : _scenes)
 	{
 		scene->recreatePipelines();
 	}
@@ -707,7 +729,7 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 			.setClearValues(clearValues);
 
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-	for (auto* scene : _scenes)
+	for (auto& scene : _scenes)
 	{
 		scene->update();
 		scene->bindToCmdBuffer(commandBuffer);

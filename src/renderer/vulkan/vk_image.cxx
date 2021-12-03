@@ -85,10 +85,11 @@ VkCommandBuffer vk_image::transitionImageLayout(const vk_image_transition_layout
 {
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
+	const bool isQueueFamilyConcurrent = queueFamily.getSharingMode() == vk::SharingMode::eConcurrent;
 	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
 
-	const uint32_t srcQueueFamilyIndex = queueFamily.getSharingMode() == vk::SharingMode::eConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-	const uint32_t dstQueueFamilyIndex = queueFamily.getSharingMode() == vk::SharingMode::eConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
+	const uint32_t srcQueueFamilyIndex = isQueueFamilyConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
+	const uint32_t dstQueueFamilyIndex = isQueueFamilyConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
 
 	const vk::ImageSubresourceRange imageSubresourceRange =
 		vk::ImageSubresourceRange()
