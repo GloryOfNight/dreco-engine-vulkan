@@ -6,19 +6,22 @@
 
 void vk_image::destroy()
 {
-	const vk::Device device = vk_renderer::get()->getDevice();
+	if (_imageView || _image || _deviceMemory.get())
+	{
+		const vk::Device device = vk_renderer::get()->getDevice();
 
-	if (_imageView)
-	{
-		device.destroyImageView(_imageView);
-		_imageView = nullptr;
+		if (_imageView)
+		{
+			device.destroyImageView(_imageView);
+			_imageView = nullptr;
+		}
+		if (_image)
+		{
+			device.destroyImage(_image);
+			_image = nullptr;
+		}
+		_deviceMemory.free();
 	}
-	if (_image)
-	{
-		device.destroyImage(_image);
-		_image = nullptr;
-	}
-	_deviceMemory.free();
 }
 
 vk::ImageAspectFlags vk_image::getImageAspectFlags() const
