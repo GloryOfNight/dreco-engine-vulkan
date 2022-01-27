@@ -2,7 +2,7 @@
 
 #include "dreco.hxx"
 
-struct DRECO_DECLSPEC vec3
+struct DRECO_API vec3
 {
 	vec3();
 

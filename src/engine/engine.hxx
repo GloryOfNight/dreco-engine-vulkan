@@ -9,7 +9,7 @@
 
 #include <cstdint>
 
-class DRECO_DECLSPEC engine
+class DRECO_API engine
 {
 public:
 	engine();

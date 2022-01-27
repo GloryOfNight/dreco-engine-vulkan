@@ -34,12 +34,15 @@ int main(int argc, char* argv[])
 	const std::string& shaderBinDirPath = argv[2];
 	const std::string& outputCmakePath = argv[3];
 
+	std::cout << "<shader_src_dir>: " << shaderSrcDirPath << std::endl;
 	if (!fs::exists(shaderSrcDirPath) || !fs::is_directory(shaderSrcDirPath))
 	{
 		std::cerr << "provided <shader_src_dir> path not exists or not valid" << std::endl;
 		return 1;
 	}
-	if (!fs::exists(shaderBinDirPath) || !fs::is_directory(shaderBinDirPath))
+
+	std::cout << "<shader_bin_dir>: " << shaderBinDirPath << std::endl;
+	if ((!fs::exists(shaderBinDirPath) || !fs::is_directory(shaderBinDirPath)) ^ fs::create_directory(shaderBinDirPath))
 	{
 		std::cerr << "provided <shader_bin_dir> path not exists or not valid" << std::endl;
 		return 1;
