@@ -113,7 +113,16 @@ vk::DescriptorSet vk_descriptor_set::createDescriptorSet(const vk::Device device
 void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<vk::WriteDescriptorSet>& outWrite,
 	vk::DescriptorBufferInfo& exBufferInfo, vk::DescriptorImageInfo& exImageInfo, const std::vector<vk_texture_image*>& textureImages)
 {
-	const uint32_t texImageIndex = _pipelines[index]->getMaterial().pbrMetallicRoughness._baseColorTexture._index;
+	uint32_t texImageIndex = 0;
+	if (const auto pbrTexImage = _pipelines[index]->getMaterial().pbrMetallicRoughness._baseColorTexture._index; pbrTexImage != UINT32_MAX)
+	{
+		texImageIndex = pbrTexImage;
+	}
+	else if (const auto emissiveTexture = _pipelines[index]->getMaterial()._emissiveTexture._index; emissiveTexture != UINT32_MAX)
+	{
+		texImageIndex = emissiveTexture;
+	}
+
 	const vk_texture_image* texImage = textureImages[texImageIndex];
 	if (!texImage->isValid())
 	{

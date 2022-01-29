@@ -192,6 +192,8 @@ static void parseMaterials(const tinygltf::Model& tModel, model& dModel)
 		dMat._normalTexture._index = static_cast<uint32_t>(tMat.normalTexture.index);
 		dMat._normalTexture._scale = tMat.normalTexture.scale;
 
+		dMat._emissiveTexture._index = static_cast<uint32_t>(tMat.emissiveTexture.index);
+
 		dMat._occlusionTexture._index = static_cast<uint32_t>(tMat.occlusionTexture.index);
 		dMat._occlusionTexture._strength = tMat.occlusionTexture.strength;
 

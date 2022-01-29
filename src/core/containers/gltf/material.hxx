@@ -36,6 +36,8 @@ struct material
 
 	normal_texture _normalTexture;
 
+	base_texture _emissiveTexture;
+
 	occlusion_texture _occlusionTexture;
 
 	pbr_metallic_roughness pbrMetallicRoughness;
