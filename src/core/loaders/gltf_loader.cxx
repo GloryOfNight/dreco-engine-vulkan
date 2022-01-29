@@ -42,12 +42,10 @@ static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node&
 	if (self.mesh >= 0)
 	{
 		const auto& modelMesh = model.meshes[self.mesh];
-
-		const size_t totalMeshPrimites = modelMesh.primitives.size();
-
 		auto& sceneMesh = outScene._meshes[self.mesh];
 		sceneMesh._matrix = selfMatrix;
 
+		const size_t totalMeshPrimites = modelMesh.primitives.size();
 		sceneMesh._primitives.resize(totalMeshPrimites);
 
 		for (size_t k = 0; k < totalMeshPrimites; ++k)
@@ -142,48 +140,55 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 		DE_LOG(Warn, "Load scene warning: %s", warn.data());
 	}
 
+	scene outScene{};
+	outScene._sceneRootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
+
 	const size_t totalNodes = model.nodes.size();
 	const size_t totalMeshes = model.meshes.size();
-	const size_t totalImages = model.images.size();
-	const size_t totalMaterials = model.materials.size();
-
-	scene newScene{};
-	newScene._meshes.resize(totalMeshes);
-	newScene._images.resize(totalImages);
-	newScene._materials.resize(totalMaterials);
-
+	outScene._meshes.resize(totalMeshes);
 	for (const auto& modelScene : model.scenes)
 	{
 		for (const int sceneNodeIndex : modelScene.nodes)
 		{
 			const auto& sceneNode = model.nodes[sceneNodeIndex];
 
-			mat4 rot = mat4::makeRotation(rotator(90, 0, 0));
-			mat4 rootNodeMatrix = rot * parseMatrix(sceneNode.matrix);
-			parseNodeRecurse(model, sceneNode, rootNodeMatrix, newScene);
+			const mat4 rot = mat4::makeRotation(rotator(90, 0, 0));
+			const mat4 rootNodeMatrix = rot * parseMatrix(sceneNode.matrix);
+			parseNodeRecurse(model, sceneNode, rootNodeMatrix, outScene);
 		}
 	}
 
-	const std::string parentPath = std::filesystem::path(sceneFile).parent_path().generic_string();
-	for (size_t i = 0; i < totalImages; ++i)
-	{
-		newScene._images[i]._uri = parentPath + "/" + model.images[i].uri;
-	}
-
-	for (size_t i = 0; i < totalMaterials; ++i)
-	{
-		newScene._materials[i]._doubleSided = model.materials[i].doubleSided;
-		auto index = model.materials[i].pbrMetallicRoughness.baseColorTexture.index;
-		if (index >= 0)
+	{ // parse materials
+		const size_t totalMaterials = model.materials.size();
+		outScene._materials.resize(totalMaterials);
+		for (size_t i = 0; i < totalMaterials; ++i)
 		{
-			newScene._materials[i]._baseColorTexture = index;
-		}
-		else
-		{
-			// should not do this, but not yet supported untextured stuff
-			newScene._materials[i]._baseColorTexture = 0;
+			const auto& modelMat = model.materials[i];
+			auto& sceneMat = outScene._materials[i];
+
+			sceneMat._doubleSided = modelMat.doubleSided;
+			sceneMat._normalTexture._index = static_cast<uint32_t>(modelMat.normalTexture.index);
+			sceneMat._normalTexture._scale = modelMat.normalTexture.scale;
+
+			sceneMat._occlusionTexture._index = static_cast<uint32_t>(modelMat.occlusionTexture.index);
+			sceneMat._occlusionTexture._strength = modelMat.occlusionTexture.strength;
+
+			std::memcpy(sceneMat.pbrMetallicRoughness._baseColorFactor.data(), modelMat.pbrMetallicRoughness.baseColorFactor.data(), sizeof(double) * 4);
+			sceneMat.pbrMetallicRoughness._baseColorTexture._index = static_cast<uint32_t>(modelMat.pbrMetallicRoughness.baseColorTexture.index);
+			sceneMat.pbrMetallicRoughness._metallicFactor = modelMat.pbrMetallicRoughness.metallicFactor;
+			sceneMat.pbrMetallicRoughness._metallicRoughnessTexture._index = static_cast<uint32_t>(modelMat.pbrMetallicRoughness.metallicRoughnessTexture.index);
+			sceneMat.pbrMetallicRoughness._roughnessFactor = modelMat.pbrMetallicRoughness.roughnessFactor;
 		}
 	}
 
-	return newScene;
+	{ // parse images
+		const size_t totalImages = model.images.size();
+		outScene._images.resize(totalImages);
+		for (size_t i = 0; i < totalImages; ++i)
+		{
+			outScene._images[i]._uri = std::move(model.images[i].uri);
+		}
+	}
+
+	return outScene;
 }

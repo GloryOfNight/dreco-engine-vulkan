@@ -1,15 +1,18 @@
 #pragma once
-#include "mesh.hxx"
-#include "material.hxx"
 #include "image.hxx"
+#include "material.hxx"
+#include "mesh.hxx"
 
+#include <string>
 #include <vector>
 
 struct scene
 {
-    std::vector<mesh> _meshes;
+	std::string _sceneRootPath;
 
-    std::vector<material> _materials;
+	std::vector<mesh> _meshes;
 
-    std::vector<image> _images;
+	std::vector<material> _materials;
+
+	std::vector<image> _images;
 };

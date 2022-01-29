@@ -39,7 +39,7 @@ void vk_descriptor_set::rewrite(const std::pair<uint32_t, vk_texture_image*>& te
 
 	for (size_t i = 0; i < num; ++i)
 	{
-		if (textureImage.first == _pipelines[i]->getMaterial()._baseColorTexture && textureImage.second->isValid())
+		if (textureImage.first == _pipelines[i]->getMaterial().pbrMetallicRoughness._baseColorTexture._index && textureImage.second->isValid())
 		{
 			createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i], textureImage.second);
 		}
@@ -113,7 +113,7 @@ vk::DescriptorSet vk_descriptor_set::createDescriptorSet(const vk::Device device
 void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<vk::WriteDescriptorSet>& outWrite,
 	vk::DescriptorBufferInfo& exBufferInfo, vk::DescriptorImageInfo& exImageInfo, const std::vector<vk_texture_image*>& textureImages)
 {
-	const uint32_t texImageIndex = _pipelines[index]->getMaterial()._baseColorTexture;
+	const uint32_t texImageIndex = _pipelines[index]->getMaterial().pbrMetallicRoughness._baseColorTexture._index;
 	const vk_texture_image* texImage = textureImages[texImageIndex];
 	if (!texImage->isValid())
 	{
