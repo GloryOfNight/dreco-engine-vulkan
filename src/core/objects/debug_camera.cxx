@@ -80,15 +80,15 @@ void debug_camera::tick(double deltaTime)
 				}
 				else // on first button press
 				{
-					inputManager.showCursor(false);
+					inputManager.setMouseRelativeMode(true);
 					isMouseRightButtonRepeated = true;
 				}
 				inputManager.warpMouse(halfExtentX, halfExtentY);
 			}
 			else if (isMouseRightButtonRepeated)
 			{
+				inputManager.setMouseRelativeMode(false);
 				isMouseRightButtonRepeated = false;
-				inputManager.showCursor(true);
 			}
 		}
 	}

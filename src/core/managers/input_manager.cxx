@@ -43,6 +43,11 @@ void input_manager::showCursor(const bool state) const
 	SDL_ShowCursor(state ? SDL_ENABLE : SDL_DISABLE);
 }
 
+void input_manager::setMouseRelativeMode(const bool state) const
+{
+	SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state));
+}
+
 bool input_manager::isInMouseFocus() const
 {
 	return _inMouseFocus;
