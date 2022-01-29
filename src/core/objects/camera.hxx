@@ -11,7 +11,7 @@ public:
 	void tick(double deltaTime) override;
 
 protected:
-	float farZ = 1000.F;
+	float farZ = 10000.F;
 
 private:
 	mat4 _view;

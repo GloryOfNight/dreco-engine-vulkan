@@ -28,6 +28,8 @@ public:
 
 	void showCursor(const bool state) const;
 
+	void setMouseRelativeMode(const bool state) const;
+
 	bool isInMouseFocus() const;
 
 protected:

@@ -1,8 +1,16 @@
 #pragma once
 #include <string>
 
-#ifndef DRECO_DECLSPEC
-#define DRECO_DECLSPEC
+#ifndef DRECO_API
+	#if _WIN32
+		#if DRECO_BUILD_SHARED
+			#define DRECO_API __declspec(dllexport)
+		#else
+			#define DRECO_API
+		#endif
+	#else 
+		#define DRECO_API
+	#endif
 #endif
 
 #define DRECO_ASSET(name) (std::string(DRECO_ASSETS_DIR) + "/" + name)

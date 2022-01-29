@@ -1,4 +1,5 @@
 #pragma once
+#include "math/mat4.hxx"
 #include "math/vec2.hxx"
 #include "math/vec3.hxx"
 
@@ -26,4 +27,6 @@ struct mesh
 		uint32_t _material{UINT32_MAX};
 	};
 	std::vector<primitive> _primitives;
+
+	mat4 _matrix{mat4::makeIdentity()};
 };

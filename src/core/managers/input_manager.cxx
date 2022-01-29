@@ -1,5 +1,7 @@
 #include "input_manager.hxx"
 
+#include "core/platform.h"
+#include "core/utils/log.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 
 #include <SDL2/SDL_events.h>
@@ -30,17 +32,24 @@ uint32_t input_manager::getMouseState(uint16_t* const x, uint16_t* const y) cons
 
 void input_manager::warpMouse(const uint16_t x, const uint16_t y)
 {
-	if (_mouseState._x != x || _mouseState._y != y)
-	{
-		SDL_WarpMouseInWindow(vk_renderer::get()->getWindow(), x, y);
-		_mouseState._x = x;
-		_mouseState._y = y;
-	}
+	SDL_WarpMouseInWindow(vk_renderer::get()->getWindow(), x, y);
+	_mouseState._x = x;
+	_mouseState._y = y;
 }
 
 void input_manager::showCursor(const bool state) const
 {
 	SDL_ShowCursor(state ? SDL_ENABLE : SDL_DISABLE);
+}
+
+void input_manager::setMouseRelativeMode(const bool state) const
+{
+	// SDL Relative mode acting wierd on linux, untill figure out, use hack:
+#if PLATFORM_LINUX 
+	showCursor(!state);
+#else
+	SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state));
+#endif
 }
 
 bool input_manager::isInMouseFocus() const

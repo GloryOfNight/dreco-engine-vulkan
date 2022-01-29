@@ -46,6 +46,7 @@ void vk_scene::create(const scene& scn)
 	{
 		_meshes.push_back(new vk_mesh());
 		_meshes.back()->create(mesh, this);
+		_meshes.back()->_mat = mesh._matrix;
 	}
 }
 

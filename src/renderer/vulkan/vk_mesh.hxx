@@ -40,7 +40,7 @@ public:
 
 	vk_descriptor_set& getDescriptorSet();
 
-	transform _transform;
+	mat4 _mat;
 
 protected:
 	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);

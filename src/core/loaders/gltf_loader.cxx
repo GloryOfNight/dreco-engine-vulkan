@@ -5,50 +5,55 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define TINYGLTF_NO_EXTERNAL_IMAGE
 #include "core/utils/log.hxx"
+#include "math/rotator.hxx"
 #include "tinygltf/tiny_gltf.h"
 
 #include <filesystem>
 #include <iostream>
 #include <vector>
 
-scene gltf_loader::loadScene(const std::string_view& sceneFile)
+static mat4 parseMatrix(const std::vector<double>& matrix)
 {
-	using namespace tinygltf;
+	mat4 out = mat4::makeIdentity();
 
-	Model model;
-	TinyGLTF loader;
-	std::string err;
-	std::string warn;
-
-	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
-	if (!result)
+	if (matrix.size() == 16)
 	{
-		DE_LOG(Error, "Failed to load scene: %s; Current work dir: %s", sceneFile.data(), std::filesystem::current_path().generic_string().data());
-		return {};
+		for (uint8_t i = 0; i < 4; ++i)
+		{
+			const uint8_t indx = i * 4;
+			out._mat[i][0] = matrix[indx];
+			out._mat[i][1] = matrix[indx + 1];
+			out._mat[i][2] = matrix[indx + 2];
+			out._mat[i][3] = matrix[indx + 3];
+		}
 	}
-	else if (!warn.empty())
+	return out;
+}
+
+static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node& self, const mat4& rootMat, scene& outScene)
+{
+	mat4 selfMatrix = parseMatrix(self.matrix) * rootMat;
+	for (const int childNodeIndex : self.children)
 	{
-		DE_LOG(Warn, "Load scene warning: %s", warn.data());
+		const auto& childNode = model.nodes[childNodeIndex];
+		parseNodeRecurse(model, model.nodes[childNodeIndex], selfMatrix, outScene);
 	}
 
-	const size_t totalMeshes = model.meshes.size();
-	const size_t totalImages = model.images.size();
-	const size_t totalMaterials = model.materials.size();
-
-	scene newScene{};
-	newScene._meshes.resize(totalMeshes);
-	newScene._images.resize(totalImages);
-	newScene._materials.resize(totalMaterials);
-
-	for (size_t i = 0; i < totalMeshes; ++i)
+	if (self.mesh >= 0)
 	{
-		const size_t totalMeshPrimites = model.meshes[i].primitives.size();
-		newScene._meshes[i]._primitives.resize(totalMeshPrimites);
+		const auto& modelMesh = model.meshes[self.mesh];
+
+		const size_t totalMeshPrimites = modelMesh.primitives.size();
+
+		auto& sceneMesh = outScene._meshes[self.mesh];
+		sceneMesh._matrix = selfMatrix;
+
+		sceneMesh._primitives.resize(totalMeshPrimites);
 
 		for (size_t k = 0; k < totalMeshPrimites; ++k)
 		{
-			auto& sceneMeshPrimitive = newScene._meshes[i]._primitives[k];
-			const auto& primitive = model.meshes[i].primitives[k];
+			auto& sceneMeshPrimitive = sceneMesh._primitives[k];
+			const auto& primitive = modelMesh.primitives[k];
 
 			sceneMeshPrimitive._material = primitive.material;
 
@@ -113,6 +118,49 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 					}
 				}
 			}
+		}
+	}
+}
+
+scene gltf_loader::loadScene(const std::string_view& sceneFile)
+{
+	using namespace tinygltf;
+
+	Model model;
+	TinyGLTF loader;
+	std::string err;
+	std::string warn;
+
+	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
+	if (!result)
+	{
+		DE_LOG(Error, "Failed to load scene: %s; Current work dir: %s", sceneFile.data(), std::filesystem::current_path().generic_string().data());
+		return {};
+	}
+	else if (!warn.empty())
+	{
+		DE_LOG(Warn, "Load scene warning: %s", warn.data());
+	}
+
+	const size_t totalNodes = model.nodes.size();
+	const size_t totalMeshes = model.meshes.size();
+	const size_t totalImages = model.images.size();
+	const size_t totalMaterials = model.materials.size();
+
+	scene newScene{};
+	newScene._meshes.resize(totalMeshes);
+	newScene._images.resize(totalImages);
+	newScene._materials.resize(totalMaterials);
+
+	for (const auto& modelScene : model.scenes)
+	{
+		for (const int sceneNodeIndex : modelScene.nodes)
+		{
+			const auto& sceneNode = model.nodes[sceneNodeIndex];
+
+			mat4 rot = mat4::makeRotation(rotator(90, 0, 0));
+			mat4 rootNodeMatrix = rot * parseMatrix(sceneNode.matrix);
+			parseNodeRecurse(model, sceneNode, rootNodeMatrix, newScene);
 		}
 	}
 

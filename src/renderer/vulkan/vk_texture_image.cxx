@@ -140,9 +140,9 @@ void vk_texture_image::create(const image_data& textureData)
 
 void vk_texture_image::destroy()
 {
-	const vk::Device device = vk_renderer::get()->getDevice();
 	if (_sampler)
 	{
+		const vk::Device device = vk_renderer::get()->getDevice();
 		device.destroySampler(_sampler);
 		_sampler = nullptr;
 	}
