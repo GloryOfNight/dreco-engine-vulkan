@@ -12,7 +12,6 @@
 #include <array>
 
 vk_mesh::vk_mesh()
-	: _transform{}
 {
 }
 
@@ -81,7 +80,7 @@ void vk_mesh::update()
 {
 	const camera* camera{engine::get()->getCamera()};
 
-	_ubo._model = mat4::makeTransform(_transform);
+	_ubo._model = _mat;
 	_ubo._view = camera->getView();
 	_ubo._projection = camera->getProjection();
 
