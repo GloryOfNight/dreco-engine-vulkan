@@ -31,7 +31,7 @@ struct async_task_load_scene : public thread_task
 
 	virtual void doJob() override
 	{
-		_scene = gltf_loader::loadScene(_file);
+		_model = gltf_loader::loadModel(_file);
 	}
 
 	virtual void completed() override
@@ -39,14 +39,14 @@ struct async_task_load_scene : public thread_task
 		if (auto* eng = engine::get())
 		{
 			auto& renderer = eng->getRenderer();
-			renderer.loadScene(_scene);
+			renderer.loadModel(_model);
 		}
 	}
 
 private:
 	std::string _file;
 
-	scene _scene;
+	model _model;
 };
 
 engine::engine()
@@ -165,7 +165,7 @@ bool engine::startRenderer()
 
 void engine::preMainLoop()
 {
-	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("viking_room/scene.gltf")));
+	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("mi-24d/scene.gltf")));
 
 	_camera.setPosition(vec3(0, 10, 50));
 	_camera.setRotation(rotator(0, 180, 0));
@@ -202,7 +202,7 @@ void engine::postMainLoop()
 double engine::calculateNewDeltaTime()
 {
 	const auto frametime_from_fps_lam = [](const double fps) constexpr { return (1.0 / static_cast<double>(fps)); };
-	constexpr double fpsMax = frametime_from_fps_lam(240);
+	constexpr double fpsMax = frametime_from_fps_lam(24000);
 	constexpr double fpsMin = frametime_from_fps_lam(24);
 
 	static std::chrono::time_point past = std::chrono::steady_clock::now();

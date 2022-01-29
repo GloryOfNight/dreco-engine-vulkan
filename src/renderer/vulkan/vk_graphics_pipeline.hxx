@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/material.hxx"
+#include "core/containers/gltf/material.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.hpp>

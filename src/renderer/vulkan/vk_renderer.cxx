@@ -161,7 +161,7 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-void vk_renderer::loadScene(const scene& scn)
+void vk_renderer::loadModel(const model& scn)
 {
 	_scenes.emplace_back(new vk_scene())->create(scn);
 }

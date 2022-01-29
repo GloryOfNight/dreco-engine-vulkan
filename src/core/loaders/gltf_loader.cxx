@@ -4,6 +4,7 @@
 #define TINYGLTF_NO_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define TINYGLTF_NO_EXTERNAL_IMAGE
+#include "core/containers/gltf/model.hxx"
 #include "core/utils/log.hxx"
 #include "math/rotator.hxx"
 #include "tinygltf/tiny_gltf.h"
@@ -11,6 +12,8 @@
 #include <filesystem>
 #include <iostream>
 #include <vector>
+
+// t - for tiny, d - for dreco
 
 static mat4 parseMatrix(const std::vector<double>& matrix)
 {
@@ -30,36 +33,92 @@ static mat4 parseMatrix(const std::vector<double>& matrix)
 	return out;
 }
 
-static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node& self, const mat4& rootMat, scene& outScene)
+static void parseScenes(const tinygltf::Model& tModel, model& dModel)
 {
-	mat4 selfMatrix = parseMatrix(self.matrix) * rootMat;
-	for (const int childNodeIndex : self.children)
+	const size_t totalScenes = tModel.scenes.size();
+	dModel._scenes.resize(totalScenes);
+	for (size_t i = 0; i < totalScenes; ++i)
 	{
-		const auto& childNode = model.nodes[childNodeIndex];
-		parseNodeRecurse(model, model.nodes[childNodeIndex], selfMatrix, outScene);
+		const auto& tScene = tModel.scenes[i];
+		auto& dScene = dModel._scenes[i];
+
+		const size_t sceneTotalNodes = tScene.nodes.size();
+		dScene._nodes.resize(sceneTotalNodes);
+		for (size_t k = 0; k < sceneTotalNodes; ++k)
+		{
+			dScene._nodes[k] = static_cast<uint32_t>(tScene.nodes[k]);
+		}
 	}
+}
 
-	if (self.mesh >= 0)
+static void parseNodes(const tinygltf::Model& tModel, model& dModel)
+{
+	const size_t totalNodes = tModel.nodes.size();
+	dModel._nodes.resize(totalNodes);
+	for (size_t i = 0; i < totalNodes; ++i)
 	{
-		const auto& modelMesh = model.meshes[self.mesh];
-		auto& sceneMesh = outScene._meshes[self.mesh];
-		sceneMesh._matrix = selfMatrix;
+		const auto& tNode = tModel.nodes[i];
+		auto& dNode = dModel._nodes[i];
 
-		const size_t totalMeshPrimites = modelMesh.primitives.size();
-		sceneMesh._primitives.resize(totalMeshPrimites);
+		const size_t totalChildren = tNode.children.size();
+		dNode._children.resize(totalChildren);
+		for (size_t i = 0; i < totalChildren; ++i)
+		{
+			dNode._children[i] = static_cast<uint32_t>(tNode.children[i]);
+		}
 
+		dNode._mesh = static_cast<uint32_t>(tNode.mesh);
+
+		dNode._matrix = mat4::makeIdentity();
+		if (tNode.matrix.empty())
+		{
+			if (tNode.translation.size() == 3)
+			{
+				const vec3 translation = vec3(tNode.translation[0], tNode.translation[1], tNode.translation[2]);
+				dNode._matrix = dNode._matrix * mat4::makeTranslation(translation);
+			}
+			if (tNode.rotation.size() == 4)
+			{
+				const quaternion quat = quaternion{tNode.rotation[0], tNode.rotation[1], tNode.rotation[2], tNode.rotation[3]};
+				dNode._matrix = dNode._matrix * mat4::makeRotation(rotator(90, 0, 0));
+				// TODO: quaternion to mat4
+			}
+			if (tNode.scale.size() == 3)
+			{
+				const vec3 scale = vec3(tNode.scale[0], tNode.scale[1], tNode.scale[2]);
+				dNode._matrix = dNode._matrix * mat4::makeScale(scale);
+			}
+		}
+		else
+		{
+			dNode._matrix = parseMatrix(tNode.matrix);
+		}
+	}
+}
+
+static void parseMeshes(const tinygltf::Model& tModel, model& dModel)
+{
+	const size_t totalMeshes = tModel.meshes.size();
+	dModel._meshes.resize(totalMeshes);
+	for (size_t i = 0; i < totalMeshes; ++i)
+	{
+		const auto& tMesh = tModel.meshes[i];
+		auto& dMesh = dModel._meshes[i];
+
+		const size_t totalMeshPrimites = tMesh.primitives.size();
+		dMesh._primitives.resize(totalMeshPrimites);
 		for (size_t k = 0; k < totalMeshPrimites; ++k)
 		{
-			auto& sceneMeshPrimitive = sceneMesh._primitives[k];
-			const auto& primitive = modelMesh.primitives[k];
+			const auto& tPrimitive = tMesh.primitives[k];
+			auto& dPrimitive = dMesh._primitives[k];
 
-			sceneMeshPrimitive._material = primitive.material;
+			dPrimitive._material = static_cast<uint32_t>(tPrimitive.material);
 
 			uint32_t vertPosAccessor{UINT32_MAX};
 			uint32_t normalAccessor{UINT32_MAX};
 			uint32_t texCoordAccessor{UINT32_MAX};
-			uint32_t indexAccessor{static_cast<uint32_t>(primitive.indices)};
-			for (const auto& attr : primitive.attributes)
+			uint32_t indexAccessor{static_cast<uint32_t>(tPrimitive.indices)};
+			for (const auto& attr : tPrimitive.attributes)
 			{
 				if (attr.first == "POSITION")
 				{
@@ -75,15 +134,15 @@ static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node&
 				}
 			}
 
-			sceneMeshPrimitive._vertexes.resize(model.accessors[vertPosAccessor].count);
-			sceneMeshPrimitive._indexes.resize(model.accessors[indexAccessor].count);
+			dPrimitive._vertexes.resize(tModel.accessors[vertPosAccessor].count);
+			dPrimitive._indexes.resize(tModel.accessors[indexAccessor].count);
 
-			const size_t accessorsSize{model.accessors.size()};
+			const size_t accessorsSize{tModel.accessors.size()};
 			for (size_t j = 0; j < accessorsSize; ++j)
 			{
-				const auto& accessor{model.accessors[j]};
-				const auto& bufferView{model.bufferViews[accessor.bufferView]};
-				const auto& buffer{model.buffers[bufferView.buffer]};
+				const auto& accessor{tModel.accessors[j]};
+				const auto& bufferView{tModel.bufferViews[accessor.bufferView]};
+				const auto& buffer{tModel.buffers[bufferView.buffer]};
 
 				const float* positions = reinterpret_cast<const float*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
 
@@ -91,7 +150,7 @@ static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node&
 				{
 					if (j == vertPosAccessor)
 					{
-						vec3& pos{sceneMeshPrimitive._vertexes[q]._pos};
+						vec3& pos{dPrimitive._vertexes[q]._pos};
 						pos._x = positions[q * 3 + 0];
 						pos._y = positions[q * 3 + 1];
 						pos._z = positions[q * 3 + 2];
@@ -99,17 +158,17 @@ static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node&
 					else if (j == indexAccessor)
 					{
 						const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-						sceneMeshPrimitive._indexes[q] = indexPos[q];
+						dPrimitive._indexes[q] = indexPos[q];
 					}
 					else if (j == texCoordAccessor)
 					{
-						vec2& texCoor{sceneMeshPrimitive._vertexes[q]._texCoord};
+						vec2& texCoor{dPrimitive._vertexes[q]._texCoord};
 						texCoor._x = positions[q * 2 + 0];
 						texCoor._y = positions[q * 2 + 1];
 					}
 					else if (j == normalAccessor)
 					{
-						vec3& normal{sceneMeshPrimitive._vertexes[q]._normal};
+						vec3& normal{dPrimitive._vertexes[q]._normal};
 						normal._x = positions[q * 3 + 0];
 						normal._y = positions[q * 3 + 1];
 						normal._z = positions[q * 3 + 2];
@@ -120,16 +179,48 @@ static void parseNodeRecurse(const tinygltf::Model& model, const tinygltf::Node&
 	}
 }
 
-scene gltf_loader::loadScene(const std::string_view& sceneFile)
+static void parseMaterials(const tinygltf::Model& tModel, model& dModel)
 {
-	using namespace tinygltf;
+	const size_t totalMaterials = tModel.materials.size();
+	dModel._materials.resize(totalMaterials);
+	for (size_t i = 0; i < totalMaterials; ++i)
+	{
+		const auto& tMat = tModel.materials[i];
+		auto& dMat = dModel._materials[i];
 
-	Model model;
-	TinyGLTF loader;
+		dMat._doubleSided = tMat.doubleSided;
+		dMat._normalTexture._index = static_cast<uint32_t>(tMat.normalTexture.index);
+		dMat._normalTexture._scale = tMat.normalTexture.scale;
+
+		dMat._occlusionTexture._index = static_cast<uint32_t>(tMat.occlusionTexture.index);
+		dMat._occlusionTexture._strength = tMat.occlusionTexture.strength;
+
+		std::memcpy(dMat.pbrMetallicRoughness._baseColorFactor.data(), tMat.pbrMetallicRoughness.baseColorFactor.data(), sizeof(double) * 4);
+		dMat.pbrMetallicRoughness._baseColorTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.baseColorTexture.index);
+		dMat.pbrMetallicRoughness._metallicFactor = tMat.pbrMetallicRoughness.metallicFactor;
+		dMat.pbrMetallicRoughness._metallicRoughnessTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.metallicRoughnessTexture.index);
+		dMat.pbrMetallicRoughness._roughnessFactor = tMat.pbrMetallicRoughness.roughnessFactor;
+	}
+}
+
+static void parseImages(const tinygltf::Model& tModel, model& dModel)
+{
+	const size_t totalImages = tModel.images.size();
+	dModel._images.resize(totalImages);
+	for (size_t i = 0; i < totalImages; ++i)
+	{
+		dModel._images[i]._uri = tModel.images[i].uri;
+	}
+}
+
+model gltf_loader::loadModel(const std::string_view& sceneFile)
+{
+	tinygltf::Model tModel;
+	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
 
-	const bool result = loader.LoadASCIIFromFile(&model, &err, &warn, sceneFile.data());
+	const bool result = loader.LoadASCIIFromFile(&tModel, &err, &warn, sceneFile.data());
 	if (!result)
 	{
 		DE_LOG(Error, "Failed to load scene: %s; Current work dir: %s", sceneFile.data(), std::filesystem::current_path().generic_string().data());
@@ -140,55 +231,13 @@ scene gltf_loader::loadScene(const std::string_view& sceneFile)
 		DE_LOG(Warn, "Load scene warning: %s", warn.data());
 	}
 
-	scene outScene{};
-	outScene._sceneRootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
+	model dModel;
+	dModel._rootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
+	parseScenes(tModel, dModel);
+	parseNodes(tModel, dModel);
+	parseMeshes(tModel, dModel);
+	parseMaterials(tModel, dModel);
+	parseImages(tModel, dModel);
 
-	const size_t totalNodes = model.nodes.size();
-	const size_t totalMeshes = model.meshes.size();
-	outScene._meshes.resize(totalMeshes);
-	for (const auto& modelScene : model.scenes)
-	{
-		for (const int sceneNodeIndex : modelScene.nodes)
-		{
-			const auto& sceneNode = model.nodes[sceneNodeIndex];
-
-			const mat4 rot = mat4::makeRotation(rotator(90, 0, 0));
-			const mat4 rootNodeMatrix = rot * parseMatrix(sceneNode.matrix);
-			parseNodeRecurse(model, sceneNode, rootNodeMatrix, outScene);
-		}
-	}
-
-	{ // parse materials
-		const size_t totalMaterials = model.materials.size();
-		outScene._materials.resize(totalMaterials);
-		for (size_t i = 0; i < totalMaterials; ++i)
-		{
-			const auto& modelMat = model.materials[i];
-			auto& sceneMat = outScene._materials[i];
-
-			sceneMat._doubleSided = modelMat.doubleSided;
-			sceneMat._normalTexture._index = static_cast<uint32_t>(modelMat.normalTexture.index);
-			sceneMat._normalTexture._scale = modelMat.normalTexture.scale;
-
-			sceneMat._occlusionTexture._index = static_cast<uint32_t>(modelMat.occlusionTexture.index);
-			sceneMat._occlusionTexture._strength = modelMat.occlusionTexture.strength;
-
-			std::memcpy(sceneMat.pbrMetallicRoughness._baseColorFactor.data(), modelMat.pbrMetallicRoughness.baseColorFactor.data(), sizeof(double) * 4);
-			sceneMat.pbrMetallicRoughness._baseColorTexture._index = static_cast<uint32_t>(modelMat.pbrMetallicRoughness.baseColorTexture.index);
-			sceneMat.pbrMetallicRoughness._metallicFactor = modelMat.pbrMetallicRoughness.metallicFactor;
-			sceneMat.pbrMetallicRoughness._metallicRoughnessTexture._index = static_cast<uint32_t>(modelMat.pbrMetallicRoughness.metallicRoughnessTexture.index);
-			sceneMat.pbrMetallicRoughness._roughnessFactor = modelMat.pbrMetallicRoughness.roughnessFactor;
-		}
-	}
-
-	{ // parse images
-		const size_t totalImages = model.images.size();
-		outScene._images.resize(totalImages);
-		for (size_t i = 0; i < totalImages; ++i)
-		{
-			outScene._images[i]._uri = std::move(model.images[i].uri);
-		}
-	}
-
-	return outScene;
+	return dModel;
 }

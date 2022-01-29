@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/containers/image.hxx"
+#include "core/containers/gltf/image.hxx"
 #include "core/containers/image_data.hxx"
 
 #include "vk_image.hxx"

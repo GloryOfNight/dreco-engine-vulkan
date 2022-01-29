@@ -18,7 +18,7 @@ vk_scene::~vk_scene()
 	}
 }
 
-void vk_scene::create(const scene& scn)
+void vk_scene::create(const model& m)
 {
 	if (!isEmpty())
 	{
@@ -26,27 +26,44 @@ void vk_scene::create(const scene& scn)
 		return;
 	}
 
-	const size_t imagesNum{scn._images.size()};
+	const size_t imagesNum{m._images.size()};
 	_textureImages.resize(imagesNum, nullptr);
 	for (size_t i = 0; i < imagesNum; ++i)
 	{
 		_textureImages[i] = new vk_texture_image();
-		engine::get()->getThreadPool().queueTask(new async_load_texture_task(scn._sceneRootPath + '/' + scn._images[i]._uri, this, i));
+		engine::get()->getThreadPool().queueTask(new async_load_texture_task(m._rootPath + '/' + m._images[i]._uri, this, i));
 	}
 
-	_graphicsPipelines.reserve(scn._materials.size());
-	for (const auto& mat : scn._materials)
+	_graphicsPipelines.reserve(m._materials.size());
+	for (const auto& mat : m._materials)
 	{
 		_graphicsPipelines.push_back(new vk_graphics_pipeline());
 		_graphicsPipelines.back()->create(mat);
 	}
 
-	_meshes.reserve(scn._meshes.size());
-	for (auto& mesh : scn._meshes)
+	_meshes.reserve(m._meshes.size());
+	for (const auto& scene : m._scenes)
 	{
+		for (const auto nodeIndex : scene._nodes)
+		{
+			recurseSceneNodes(m, m._nodes[nodeIndex], mat4::makeIdentity());
+		}
+	}
+}
+
+void vk_scene::recurseSceneNodes(const model& m, const node& selfNode, const mat4& rootMat)
+{
+	const mat4 newRootMat = selfNode._matrix * rootMat;
+	if (selfNode._mesh != UINT32_MAX)
+	{
+		const auto& mesh = m._meshes[selfNode._mesh];
 		_meshes.push_back(new vk_mesh());
 		_meshes.back()->create(mesh, this);
-		_meshes.back()->_mat = mesh._matrix;
+		_meshes.back()->_mat = newRootMat;
+	}
+	for (const auto& childNodeIndex : selfNode._children)
+	{
+		recurseSceneNodes(m, m._nodes[childNodeIndex], newRootMat);
 	}
 }
 

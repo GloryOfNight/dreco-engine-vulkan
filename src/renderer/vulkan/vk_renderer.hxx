@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/scene.hxx"
+#include "core/containers/gltf/model.hxx"
 #include "math/vec3.hxx"
 #include "renderer/containers/uniforms.hxx"
 
@@ -40,7 +40,7 @@ public:
 
 	void tick(double deltaTime);
 
-	void loadScene(const scene& scn);
+	void loadModel(const model& scn);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 

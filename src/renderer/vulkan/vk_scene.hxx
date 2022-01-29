@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/scene.hxx"
+#include "core/containers/gltf/model.hxx"
 #include "vulkan/vulkan.h"
 
 #include <vector>
@@ -14,7 +14,7 @@ public:
 	vk_scene() = default;
 	~vk_scene();
 
-	void create(const scene& scn);
+	void create(const model& m);
 
     void update();
 
@@ -36,6 +36,8 @@ public:
 	const std::vector<vk_mesh*>& getMeshes() const { return _meshes; }
 
 private:
+	void recurseSceneNodes(const model& m, const node& selfNode, const mat4& rootMat);
+
 	std::vector<vk_texture_image*> _textureImages;
 	std::vector<vk_graphics_pipeline*> _graphicsPipelines;
 	std::vector<vk_mesh*> _meshes;

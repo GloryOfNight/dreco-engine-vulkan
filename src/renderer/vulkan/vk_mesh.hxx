@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/mesh.hxx"
+#include "core/containers/gltf/mesh.hxx"
 #include "math/transform.hxx"
 #include "renderer/containers/uniforms.hxx"
 
