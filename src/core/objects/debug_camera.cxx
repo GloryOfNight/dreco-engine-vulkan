@@ -1,5 +1,6 @@
 #include "debug_camera.hxx"
 
+#include "core/utils/log.hxx"
 #include "engine/engine.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 
@@ -58,12 +59,12 @@ void debug_camera::tick(double deltaTime)
 		{
 			uint16_t x, y;
 			const uint32_t mouseState = inputManager.getMouseState(&x, &y);
+
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
 				const auto extent = renderer.getCurrentExtent();
-				const int halfExtentX = extent.width / 2;
-				const int halfExtentY = extent.height / 2;
-
+				const int halfExtentX = extent.width * 0.5;
+				const int halfExtentY = extent.height * 0.5;
 				if (isMouseRightButtonRepeated)
 				{
 					const double cameraRotSpeed = 45.0;
