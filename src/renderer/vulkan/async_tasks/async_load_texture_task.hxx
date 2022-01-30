@@ -39,7 +39,7 @@ struct async_load_texture_task : public thread_task
 		const auto& meshes = _scene->getMeshes();
 		for (auto& mesh : meshes)
 		{
-			mesh->getDescriptorSet().rewrite({_texIndex, texImage});
+			mesh->getDescriptorSet().updateTextureImages(_scene->getTextureImages());
 		}
 	};
 

@@ -87,7 +87,7 @@ void vk_graphics_pipeline::createDescriptorLayouts(const vk::Device device)
 		vk::DescriptorSetLayoutBinding()
 			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
+			.setDescriptorCount(4)
 			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 	const std::array<vk::DescriptorSetLayoutBinding, 2> layoutBindings{uniformBinding, sampledImageBinding};

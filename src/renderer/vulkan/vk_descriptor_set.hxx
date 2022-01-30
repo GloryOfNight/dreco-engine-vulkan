@@ -7,6 +7,13 @@
 class vk_graphics_pipeline;
 class vk_texture_image;
 
+struct vk_descriptor_set_write
+{
+	std::vector<vk::DescriptorBufferInfo> bufferInfos;
+	std::vector<vk::DescriptorImageInfo> imageInfos;
+	std::vector<vk::WriteDescriptorSet> descriptorSets;
+};
+
 class vk_descriptor_set final
 {
 public:
@@ -17,7 +24,7 @@ public:
 
 	void create(const std::vector<vk_graphics_pipeline*>& pipelines, const std::vector<vk_texture_image*>& textureImages);
 
-	void rewrite(const std::pair<uint32_t, vk_texture_image*>& _textureImage);
+	void updateTextureImages(const std::vector<vk_texture_image*>& textureImages);
 
 	void update(const std::vector<vk::WriteDescriptorSet>& writeInfo);
 
@@ -34,12 +41,13 @@ protected:
 
 	vk::DescriptorSet createDescriptorSet(const vk::Device device, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
 
-	// ex's required because we cannot allocate them on stask inside this function
-	void createWriteForDescriptorSet(uint32_t index, std::vector<vk::WriteDescriptorSet>& outWrite,
-		vk::DescriptorBufferInfo& exBufferInfo, vk::DescriptorImageInfo& exImageInfo, const std::vector<vk_texture_image*>& textureImages);
+	vk::DescriptorBufferInfo& addWriteBufferInfo(vk_descriptor_set_write& write, const vk_buffer& buffer);
 
-	void createWriteForDescriptorSet(uint32_t index, std::vector<vk::WriteDescriptorSet>& outWrite,
-		vk::DescriptorBufferInfo& exBufferInfo, vk::DescriptorImageInfo& exImageInfo, const vk_texture_image* texImage);
+	vk::DescriptorImageInfo& addWriteImageInfo(vk_descriptor_set_write& write, const vk_texture_image& image);
+
+	void writeDescriptorSetsBufferInfos(uint32_t index, vk_descriptor_set_write& write);
+
+	void writeDescriptorSetsImageInfos(uint32_t index, vk_descriptor_set_write& write);
 
 	void createUniformBuffer();
 

@@ -14,37 +14,88 @@ void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelin
 	createDescriptorPool(device, descriptorSetsNum);
 	createUniformBuffer();
 
-	std::vector<vk::DescriptorBufferInfo> writeBufferInfos(descriptorSetsNum, vk::DescriptorBufferInfo());
-	std::vector<vk::DescriptorImageInfo> writeImageInfos(descriptorSetsNum, vk::DescriptorImageInfo());
-	std::vector<vk::WriteDescriptorSet> writeDescriptorSetInfo;
-	writeDescriptorSetInfo.reserve(descriptorSetsNum * 2);
-
+	vk_descriptor_set_write write;
 	_descriptorSets.resize(descriptorSetsNum);
 
 	for (size_t i = 0; i < descriptorSetsNum; ++i)
 	{
 		_descriptorSets[i] = createDescriptorSet(device, _pipelines[i]->getDescriptorSetLayouts());
-		createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i], textureImages);
+
+		addWriteBufferInfo(write, _uniformBuffer);
+
+		const auto& pipelineMaterial = _pipelines[i]->getMaterial();
+		const auto& placeholderTexture = vk_renderer::get()->getTextureImagePlaceholder();
+
+		const uint32_t emissiveTextureTextureIndex = pipelineMaterial._emissiveTexture._index;
+		const auto& emissiveTexture = emissiveTextureTextureIndex != UINT32_MAX && textureImages[emissiveTextureTextureIndex]->isValid()
+										  ? *textureImages[emissiveTextureTextureIndex]
+										  : placeholderTexture;
+		writeDescriptorSetsBufferInfos(i, write);
+
+		addWriteImageInfo(write, emissiveTexture);
+
+		const uint32_t baseColorTextureIndex = pipelineMaterial.pbrMetallicRoughness._baseColorTexture._index;
+		const auto& baseColorTexture = baseColorTextureIndex != UINT32_MAX && textureImages[baseColorTextureIndex]->isValid()
+										   ? *textureImages[baseColorTextureIndex]
+										   : placeholderTexture;
+		addWriteImageInfo(write, baseColorTexture);
+
+		const uint32_t metallicRoughnessTextureIndex = pipelineMaterial.pbrMetallicRoughness._metallicRoughnessTexture._index;
+		const auto& metallicRoughnessTexture = metallicRoughnessTextureIndex != UINT32_MAX && textureImages[metallicRoughnessTextureIndex]->isValid()
+												   ? *textureImages[metallicRoughnessTextureIndex]
+												   : placeholderTexture;
+		addWriteImageInfo(write, metallicRoughnessTexture);
+
+		const uint32_t normalTextureIndex = pipelineMaterial._normalTexture._index;
+		const auto& normalTexture = normalTextureIndex != UINT32_MAX && textureImages[normalTextureIndex]->isValid()
+										? *textureImages[normalTextureIndex]
+										: placeholderTexture;
+		addWriteImageInfo(write, normalTexture);
+
+		writeDescriptorSetsImageInfos(i, write);
 	}
-	update(writeDescriptorSetInfo);
+	update(write.descriptorSets);
 }
 
-void vk_descriptor_set::rewrite(const std::pair<uint32_t, vk_texture_image*>& textureImage)
+void vk_descriptor_set::updateTextureImages(const std::vector<vk_texture_image*>& textureImages)
 {
-	const size_t num = _pipelines.size();
-	std::vector<vk::DescriptorBufferInfo> writeBufferInfos(num, vk::DescriptorBufferInfo());
-	std::vector<vk::DescriptorImageInfo> writeImageInfos(num, vk::DescriptorImageInfo());
-	std::vector<vk::WriteDescriptorSet> writeDescriptorSetInfo;
-	writeDescriptorSetInfo.reserve(num * 2);
+	const size_t totalPipelines = _pipelines.size();
 
-	for (size_t i = 0; i < num; ++i)
+	vk_descriptor_set_write write;
+	for (size_t i = 0; i < totalPipelines; ++i)
 	{
-		if (textureImage.first == _pipelines[i]->getMaterial().pbrMetallicRoughness._baseColorTexture._index && textureImage.second->isValid())
-		{
-			createWriteForDescriptorSet(i, writeDescriptorSetInfo, writeBufferInfos[i], writeImageInfos[i], textureImage.second);
-		}
+		const auto& pipelineMaterial = _pipelines[i]->getMaterial();
+		const auto& placeholderTexture = vk_renderer::get()->getTextureImagePlaceholder();
+
+		const uint32_t baseColorTextureIndex = pipelineMaterial.pbrMetallicRoughness._baseColorTexture._index;
+		const auto& baseColorTexture = baseColorTextureIndex != UINT32_MAX && textureImages[baseColorTextureIndex]->isValid()
+										   ? *textureImages[baseColorTextureIndex]
+										   : placeholderTexture;
+		addWriteImageInfo(write, baseColorTexture);
+
+		const uint32_t metallicRoughnessTextureIndex = pipelineMaterial.pbrMetallicRoughness._metallicRoughnessTexture._index;
+		const auto& metallicRoughnessTexture = metallicRoughnessTextureIndex != UINT32_MAX && textureImages[metallicRoughnessTextureIndex]->isValid()
+												   ? *textureImages[metallicRoughnessTextureIndex]
+												   : placeholderTexture;
+		addWriteImageInfo(write, metallicRoughnessTexture);
+
+		const uint32_t normalTextureIndex = pipelineMaterial._normalTexture._index;
+		const auto& normalTexture = normalTextureIndex != UINT32_MAX && textureImages[normalTextureIndex]->isValid()
+										? *textureImages[normalTextureIndex]
+										: placeholderTexture;
+		addWriteImageInfo(write, normalTexture);
+
+		const uint32_t emissiveTextureTextureIndex = pipelineMaterial._emissiveTexture._index;
+		const auto& emissiveTexture = emissiveTextureTextureIndex != UINT32_MAX && textureImages[emissiveTextureTextureIndex]->isValid()
+										  ? *textureImages[emissiveTextureTextureIndex]
+										  : placeholderTexture;
+
+		addWriteImageInfo(write, emissiveTexture);
+
+		writeDescriptorSetsImageInfos(i, write);
 	}
-	update(writeDescriptorSetInfo);
+
+	update(write.descriptorSets);
 }
 
 void vk_descriptor_set::update(const std::vector<vk::WriteDescriptorSet>& writeInfo)
@@ -110,58 +161,42 @@ vk::DescriptorSet vk_descriptor_set::createDescriptorSet(const vk::Device device
 	return device.allocateDescriptorSets(descriptorSetAllocateInfo)[0];
 }
 
-void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<vk::WriteDescriptorSet>& outWrite,
-	vk::DescriptorBufferInfo& exBufferInfo, vk::DescriptorImageInfo& exImageInfo, const std::vector<vk_texture_image*>& textureImages)
+vk::DescriptorBufferInfo& vk_descriptor_set::addWriteBufferInfo(vk_descriptor_set_write& write, const vk_buffer& buffer)
 {
-	uint32_t texImageIndex = 0;
-	if (const auto pbrTexImage = _pipelines[index]->getMaterial().pbrMetallicRoughness._baseColorTexture._index; pbrTexImage != UINT32_MAX)
-	{
-		texImageIndex = pbrTexImage;
-	}
-	else if (const auto emissiveTexture = _pipelines[index]->getMaterial()._emissiveTexture._index; emissiveTexture != UINT32_MAX)
-	{
-		texImageIndex = emissiveTexture;
-	}
-
-	const vk_texture_image* texImage = textureImages[texImageIndex];
-	if (!texImage->isValid())
-	{
-		texImage = &vk_renderer::get()->getTextureImagePlaceholder();
-	}
-
-	createWriteForDescriptorSet(index, outWrite, exBufferInfo, exImageInfo, texImage);
+	auto& bufferInfo = write.bufferInfos.emplace_back(vk::DescriptorBufferInfo());
+	bufferInfo.buffer = _uniformBuffer.get();
+	bufferInfo.offset = 0;
+	bufferInfo.range = sizeof(uniforms);
+	return bufferInfo;
 }
 
-void vk_descriptor_set::createWriteForDescriptorSet(uint32_t index, std::vector<vk::WriteDescriptorSet>& outWrite,
-	vk::DescriptorBufferInfo& exBufferInfo, vk::DescriptorImageInfo& exImageInfo, const vk_texture_image* texImage)
+vk::DescriptorImageInfo& vk_descriptor_set::addWriteImageInfo(vk_descriptor_set_write& write, const vk_texture_image& image)
 {
-	exBufferInfo.buffer = _uniformBuffer.get();
-	exBufferInfo.offset = 0;
-	exBufferInfo.range = sizeof(uniforms);
+	auto& imageInfo = write.imageInfos.emplace_back(vk::DescriptorImageInfo());
+	imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	imageInfo.imageView = image.getImageView();
+	imageInfo.sampler = image.getSampler();
+	return imageInfo;
+}
 
-	size_t lastWriteElem = outWrite.size();
-	outWrite.resize(lastWriteElem + 2);
+void vk_descriptor_set::writeDescriptorSetsBufferInfos(uint32_t index, vk_descriptor_set_write& write)
+{
+	auto& uniformBufferWrite = write.descriptorSets.emplace_back(vk::WriteDescriptorSet());
+	uniformBufferWrite.dstSet = _descriptorSets[index];
+	uniformBufferWrite.dstBinding = 0;
+	uniformBufferWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+	uniformBufferWrite.descriptorCount = write.bufferInfos.size();
+	uniformBufferWrite.pBufferInfo = write.bufferInfos.data();
+}
 
-	outWrite[lastWriteElem].dstSet = _descriptorSets[index];
-	outWrite[lastWriteElem].dstBinding = 0;
-	outWrite[lastWriteElem].dstArrayElement = 0;
-	outWrite[lastWriteElem].descriptorType = vk::DescriptorType::eUniformBuffer;
-	outWrite[lastWriteElem].descriptorCount = 1;
-	outWrite[lastWriteElem].pBufferInfo = &exBufferInfo;
-	outWrite[lastWriteElem].pImageInfo = nullptr;
-	outWrite[lastWriteElem].pTexelBufferView = nullptr;
-
-	exImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	exImageInfo.imageView = texImage->getImageView();
-	exImageInfo.sampler = texImage->getSampler();
-
-	++lastWriteElem;
-	outWrite[lastWriteElem].dstSet = _descriptorSets[index];
-	outWrite[lastWriteElem].dstBinding = 1;
-	outWrite[lastWriteElem].dstArrayElement = 0;
-	outWrite[lastWriteElem].descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	outWrite[lastWriteElem].descriptorCount = 1;
-	outWrite[lastWriteElem].pImageInfo = &exImageInfo;
+void vk_descriptor_set::writeDescriptorSetsImageInfos(uint32_t index, vk_descriptor_set_write& write)
+{
+	auto& imageSamplerWrite = write.descriptorSets.emplace_back(vk::WriteDescriptorSet{});
+	imageSamplerWrite.dstSet = _descriptorSets[index];
+	imageSamplerWrite.dstBinding = 1;
+	imageSamplerWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	imageSamplerWrite.descriptorCount = write.imageInfos.size();
+	imageSamplerWrite.pImageInfo = write.imageInfos.data();
 }
 
 void vk_descriptor_set::createUniformBuffer()
