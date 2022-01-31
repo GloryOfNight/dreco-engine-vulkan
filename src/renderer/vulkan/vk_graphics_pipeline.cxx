@@ -7,7 +7,6 @@
 #include "dreco.hxx"
 #include "vk_descriptor_set.hxx"
 #include "vk_renderer.hxx"
-#include "vk_shader_module.hxx"
 #include "vk_utils.hxx"
 
 #include <array>
@@ -20,7 +19,10 @@ void vk_graphics_pipeline::create(const material& mat)
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	createDescriptorLayouts(device);
+	_shader.Create(device);
+
+	_descriptorSetLayouts.push_back(_shader.getDescriptorSetLayout());
+
 	createPipelineLayout(device);
 	createPipeline(device);
 }
@@ -38,12 +40,9 @@ void vk_graphics_pipeline::recreatePipeline()
 void vk_graphics_pipeline::destroy()
 {
 	const vk::Device device = vk_renderer::get()->getDevice();
+	_shader.Destroy(device);
 	if (_pipeline)
 	{
-		for (auto descriptorLayout : _descriptorSetLayouts)
-		{
-			device.destroyDescriptorSetLayout(descriptorLayout);
-		}
 		device.destroyPipelineLayout(_pipelineLayout);
 		device.destroyPipeline(_pipeline);
 	}
@@ -74,32 +73,6 @@ vk::Pipeline vk_graphics_pipeline::get() const
 	return _pipeline;
 }
 
-void vk_graphics_pipeline::createDescriptorLayouts(const vk::Device device)
-{
-	const vk::DescriptorSetLayoutBinding uniformBinding =
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-	const vk::DescriptorSetLayoutBinding sampledImageBinding =
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(4)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-	const std::array<vk::DescriptorSetLayoutBinding, 2> layoutBindings{uniformBinding, sampledImageBinding};
-
-	const vk::DescriptorSetLayoutCreateInfo layoutCreateInfo =
-		vk::DescriptorSetLayoutCreateInfo()
-			.setFlags({})
-			.setBindings(layoutBindings);
-
-	_descriptorSetLayouts.push_back(device.createDescriptorSetLayout(layoutCreateInfo));
-}
-
 void vk_graphics_pipeline::createPipelineLayout(const vk::Device device)
 {
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
@@ -121,30 +94,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
 
-	std::string vertShaderCode;
-	file_utils::readFile(SHADER_BASIC_VERTEX_BIN_URI, vertShaderCode);
-	std::string fragShaderCode;
-	file_utils::readFile(SHADER_BASIC_FRAGMENT_BIN_URI, fragShaderCode);
-
-	vk_shader_module vertShaderModule;
-	vertShaderModule.create(reinterpret_cast<uint32_t*>(vertShaderCode.data()), vertShaderCode.size());
-
-	vk_shader_module fragShaderModule;
-	fragShaderModule.create(reinterpret_cast<uint32_t*>(fragShaderCode.data()), fragShaderCode.size());
-
-	const vk::PipelineShaderStageCreateInfo vertShaderStageInfo =
-		vk::PipelineShaderStageCreateInfo()
-			.setModule(vertShaderModule.get())
-			.setStage(vk::ShaderStageFlagBits::eVertex)
-			.setPName("main");
-
-	const vk::PipelineShaderStageCreateInfo fragShaderStageInfo =
-		vk::PipelineShaderStageCreateInfo()
-			.setModule(fragShaderModule.get())
-			.setStage(vk::ShaderStageFlagBits::eFragment)
-			.setPName("main");
-
-	const std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStagesInfo{vertShaderStageInfo, fragShaderStageInfo};
+	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesInfo{_shader.getPipelineShaderStageCreateInfos()};
 
 	const auto vertexInputBindingDescription{vk_vertex::getInputBindingDescription()};
 	const auto vertexInputAttributeDescriptions{vk_vertex::getInputAttributeDescription()};

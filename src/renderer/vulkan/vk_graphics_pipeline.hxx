@@ -1,5 +1,6 @@
 #pragma once
 #include "core/containers/gltf/material.hxx"
+#include "shaders/basic.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -31,8 +32,6 @@ public:
 	vk::Pipeline get() const;
 
 protected:
-	void createDescriptorLayouts(const vk::Device device);
-
 	void createPipelineLayout(const vk::Device device);
 
 	void createPipeline(const vk::Device device);
@@ -45,4 +44,6 @@ private:
 	vk::PipelineLayout _pipelineLayout;
 
 	vk::Pipeline _pipeline;
+
+	vk_shader_basic _shader;
 };

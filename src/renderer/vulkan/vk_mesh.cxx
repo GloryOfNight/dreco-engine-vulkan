@@ -6,7 +6,6 @@
 #include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_scene.hxx"
-#include "vk_shader_module.hxx"
 #include "vk_utils.hxx"
 
 #include <array>
