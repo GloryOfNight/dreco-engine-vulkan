@@ -39,7 +39,7 @@ public:
 protected:
 	void createDescriptorPool(const vk::Device device, const size_t count);
 
-	vk::DescriptorSet createDescriptorSet(const vk::Device device, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts);
+	std::vector<vk::DescriptorSet> createDescriptorSets(const vk::Device device, std::vector<vk::DescriptorSetLayout> descriptorSetLayouts);
 
 	vk::DescriptorBufferInfo& addWriteBufferInfo(vk_descriptor_set_write& write, const vk_buffer& buffer);
 

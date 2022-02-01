@@ -1,12 +1,22 @@
 #pragma once
 #include "renderer/vulkan/vk_shader.hxx"
 
-class vk_shader_basic : public vk_shader
+class vk_shader_basic_vert : public vk_shader
 {
 public:
-	vk_shader_basic();
+	vk_shader_basic_vert();
 
-	std::vector<vk::PipelineShaderStageCreateInfo> getPipelineShaderStageCreateInfos() const override;
+	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const override;
 
-	std::vector<vk::DescriptorSetLayoutBinding> getDescriptorSetLayoutBindings() const override;
+	vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const override;
+};
+
+class vk_shader_basic_frag : public vk_shader
+{
+public:
+	vk_shader_basic_frag();
+
+	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const override;
+
+	vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const override;
 };

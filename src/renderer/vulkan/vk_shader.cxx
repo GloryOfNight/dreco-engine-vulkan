@@ -1,34 +1,38 @@
 #include "vk_shader.hxx"
 
 #include "core/utils/file_utils.hxx"
+#include "renderer/vulkan/vk_renderer.hxx"
 
-void vk_shader::Create(vk::Device device)
+#include "dreco.hxx"
+
+vk_shader::~vk_shader()
 {
-	_vertexShaderModule = loadShader(_vertexShaderPath, device);
-	_fragmentShaderModule = loadShader(_fragmentShaderPath, device);
-
-	const auto bindings = getDescriptorSetLayoutBindings();
-	vk::DescriptorSetLayoutCreateInfo layoutCreateInfo = vk::DescriptorSetLayoutCreateInfo()
-															 .setFlags({})
-															 .setBindings(bindings);
-	_descriptorSetLayout = device.createDescriptorSetLayout(layoutCreateInfo);
+	destroy();
 }
 
-void vk_shader::Destroy(vk::Device device)
+void vk_shader::create()
 {
-	device.destroyShaderModule(_vertexShaderModule);
-	device.destroyShaderModule(_fragmentShaderModule);
-	device.destroyDescriptorSetLayout(_descriptorSetLayout);
+	_shaderModule = loadShader(_shaderPath, vk_renderer::get()->getDevice());
+}
+
+void vk_shader::destroy()
+{
+	if (_shaderModule)
+	{
+		vk_renderer::get()->getDevice().destroyShaderModule(_shaderModule);
+		_shaderModule = nullptr;
+	}
+	
 }
 
 bool vk_shader::isValid() const
 {
-	return _descriptorSetLayout;
+	return _shaderModule;
 }
 
-vk::DescriptorSetLayout vk_shader::getDescriptorSetLayout() const
+std::string_view vk_shader::getPath() const
 {
-	return _descriptorSetLayout;
+	return _shaderPath;
 }
 
 vk::ShaderModule vk_shader::loadShader(const std::string_view& path, const vk::Device device)

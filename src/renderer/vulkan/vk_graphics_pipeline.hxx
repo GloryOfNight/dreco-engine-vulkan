@@ -1,6 +1,7 @@
 #pragma once
 #include "core/containers/gltf/material.hxx"
-#include "shaders/basic.hxx"
+
+#include "vk_shader.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -25,7 +26,7 @@ public:
 
 	const material& getMaterial() const;
 
-	const std::vector<vk::DescriptorSetLayout>& getDescriptorSetLayouts() const;
+	vk::DescriptorSetLayout getDescriptorSetLayout() const;
 
 	vk::PipelineLayout getLayout() const;
 
@@ -39,11 +40,13 @@ protected:
 private:
 	material _mat;
 
-	std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts;
+	const vk_shader* vertShader;
+
+	const vk_shader* fragShader;
+
+	vk::DescriptorSetLayout _descriptorSetLayout;
 
 	vk::PipelineLayout _pipelineLayout;
 
 	vk::Pipeline _pipeline;
-
-	vk_shader_basic _shader;
 };

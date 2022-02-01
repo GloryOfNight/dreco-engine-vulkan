@@ -9,29 +9,24 @@ class vk_shader
 {
 public:
 	vk_shader() = default;
+	~vk_shader();
 
-	void Create(vk::Device device);
+	void create();
 
-	void Destroy(vk::Device device);
+	void destroy();
 
 	bool isValid() const;
 
-	vk::DescriptorSetLayout getDescriptorSetLayout() const;
+	std::string_view getPath() const;
 
-	virtual std::vector<vk::PipelineShaderStageCreateInfo> getPipelineShaderStageCreateInfos() const = 0;
+	virtual vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const = 0;
 
-	virtual std::vector<vk::DescriptorSetLayoutBinding> getDescriptorSetLayoutBindings() const = 0;
+	virtual vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const = 0;
 
 protected:
-	std::string _vertexShaderPath{};
+	std::string _shaderPath{};
 
-	std::string _fragmentShaderPath{};
-
-	vk::ShaderModule _vertexShaderModule{};
-
-	vk::ShaderModule _fragmentShaderModule{};
-
-	vk::DescriptorSetLayout _descriptorSetLayout{};
+	vk::ShaderModule _shaderModule{};
 
 private:
 	vk::ShaderModule loadShader(const std::string_view& path, const vk::Device device);

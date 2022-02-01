@@ -29,6 +29,6 @@ void camera::tick(double deltaTime)
 
 	{ // update projection
 		const vk::Extent2D currentExtent = vk_renderer::get()->getCurrentExtent();
-		_projection = mat4::makeProjection(0.1F, farZ, static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), 45.F);
+		_projection = mat4::makeProjection(1.F, 10000.F, static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), 45.F);
 	}
 }

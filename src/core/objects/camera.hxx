@@ -10,9 +10,6 @@ public:
 
 	void tick(double deltaTime) override;
 
-protected:
-	float farZ = 10000.F;
-
 private:
 	mat4 _view;
 	mat4 _projection;

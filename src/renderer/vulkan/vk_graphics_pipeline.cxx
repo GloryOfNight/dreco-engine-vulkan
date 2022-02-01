@@ -3,6 +3,7 @@
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
 #include "renderer/containers/vk_vertex.hxx"
+#include "shaders/basic.hxx"
 
 #include "dreco.hxx"
 #include "vk_descriptor_set.hxx"
@@ -19,9 +20,13 @@ void vk_graphics_pipeline::create(const material& mat)
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	_shader.Create(device);
+	vertShader = renderer->findShader<vk_shader_basic_vert>();
+	fragShader = renderer->findShader<vk_shader_basic_frag>();
 
-	_descriptorSetLayouts.push_back(_shader.getDescriptorSetLayout());
+	const std::vector<vk::DescriptorSetLayoutBinding> bindings{vertShader->getDescriptorSetLayoutBinding(), fragShader->getDescriptorSetLayoutBinding()};
+	_descriptorSetLayout = device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo()
+																.setFlags({})
+																.setBindings(bindings));
 
 	createPipelineLayout(device);
 	createPipeline(device);
@@ -40,9 +45,9 @@ void vk_graphics_pipeline::recreatePipeline()
 void vk_graphics_pipeline::destroy()
 {
 	const vk::Device device = vk_renderer::get()->getDevice();
-	_shader.Destroy(device);
 	if (_pipeline)
 	{
+		device.destroyDescriptorSetLayout(_descriptorSetLayout);
 		device.destroyPipelineLayout(_pipelineLayout);
 		device.destroyPipeline(_pipeline);
 	}
@@ -58,9 +63,9 @@ const material& vk_graphics_pipeline::getMaterial() const
 	return _mat;
 }
 
-const std::vector<vk::DescriptorSetLayout>& vk_graphics_pipeline::getDescriptorSetLayouts() const
+vk::DescriptorSetLayout vk_graphics_pipeline::getDescriptorSetLayout() const
 {
-	return _descriptorSetLayouts;
+	return _descriptorSetLayout;
 }
 
 vk::PipelineLayout vk_graphics_pipeline::getLayout() const
@@ -77,7 +82,7 @@ void vk_graphics_pipeline::createPipelineLayout(const vk::Device device)
 {
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		vk::PipelineLayoutCreateInfo()
-			.setSetLayouts(_descriptorSetLayouts)
+			.setSetLayouts(_descriptorSetLayout)
 			.setPushConstantRanges(nullptr);
 
 	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
@@ -94,7 +99,7 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
 
-	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesInfo{_shader.getPipelineShaderStageCreateInfos()};
+	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesInfo{vertShader->getPipelineShaderStageCreateInfo(), fragShader->getPipelineShaderStageCreateInfo()};
 
 	const auto vertexInputBindingDescription{vk_vertex::getInputBindingDescription()};
 	const auto vertexInputAttributeDescriptions{vk_vertex::getInputAttributeDescription()};

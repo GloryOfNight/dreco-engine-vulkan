@@ -2,43 +2,48 @@
 
 #include "dreco.hxx"
 
-vk_shader_basic::vk_shader_basic()
+vk_shader_basic_vert::vk_shader_basic_vert()
 	: vk_shader()
 {
-	_vertexShaderPath = DRECO_SHADER("basic.vert.spv");
-	_fragmentShaderPath = DRECO_SHADER("basic.frag.spv");
+	_shaderPath = DRECO_SHADER("basic.vert.spv");
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> vk_shader_basic::getPipelineShaderStageCreateInfos() const
+vk::PipelineShaderStageCreateInfo vk_shader_basic_vert::getPipelineShaderStageCreateInfo() const
 {
-	const auto vert = vk::PipelineShaderStageCreateInfo()
-						  .setModule(_vertexShaderModule)
-						  .setStage(vk::ShaderStageFlagBits::eVertex)
-						  .setPName("main");
-
-	const auto frag = vk::PipelineShaderStageCreateInfo()
-						  .setModule(_fragmentShaderModule)
-						  .setStage(vk::ShaderStageFlagBits::eFragment)
-						  .setPName("main");
-
-	return {vert, frag};
+	return vk::PipelineShaderStageCreateInfo()
+		.setModule(_shaderModule)
+		.setStage(vk::ShaderStageFlagBits::eVertex)
+		.setPName("main");
 }
 
-std::vector<vk::DescriptorSetLayoutBinding> vk_shader_basic::getDescriptorSetLayoutBindings() const
+vk::DescriptorSetLayoutBinding vk_shader_basic_vert::getDescriptorSetLayoutBinding() const
 {
-	const vk::DescriptorSetLayoutBinding uniformBinding =
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+	return vk::DescriptorSetLayoutBinding()
+		.setBinding(0)
+		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
+		.setDescriptorCount(1)
+		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+}
 
-	const vk::DescriptorSetLayoutBinding sampledImageBinding =
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(4)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+vk_shader_basic_frag::vk_shader_basic_frag()
+	: vk_shader()
+{
+	_shaderPath = DRECO_SHADER("basic.frag.spv");
+}
 
-	return {uniformBinding, sampledImageBinding};
+vk::PipelineShaderStageCreateInfo vk_shader_basic_frag::getPipelineShaderStageCreateInfo() const
+{
+	return vk::PipelineShaderStageCreateInfo()
+		.setModule(_shaderModule)
+		.setStage(vk::ShaderStageFlagBits::eFragment)
+		.setPName("main");
+}
+
+vk::DescriptorSetLayoutBinding vk_shader_basic_frag::getDescriptorSetLayoutBinding() const
+{
+	return vk::DescriptorSetLayoutBinding()
+		.setBinding(1)
+		.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+		.setDescriptorCount(4)
+		.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 }

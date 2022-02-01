@@ -108,6 +108,9 @@ void vk_renderer::init()
 	createSemaphores();
 
 	_placeholderTextureImage.create();
+
+	registerShader<vk_shader_basic_vert>();
+	registerShader<vk_shader_basic_frag>();
 }
 
 void vk_renderer::exit()
@@ -120,6 +123,12 @@ void vk_renderer::exit()
 	_device.waitIdle();
 
 	clearVectorOfPtr(_scenes);
+	
+	for (auto& pair : _shaders)
+	{
+		delete pair.second;
+	}
+	_shaders.clear();
 
 	for (auto& fence : _submitQueueFences)
 	{
@@ -164,6 +173,11 @@ void vk_renderer::tick(double deltaTime)
 void vk_renderer::loadModel(const model& scn)
 {
 	_scenes.emplace_back(new vk_scene())->create(scn);
+}
+
+const vk_shader* vk_renderer::findShader(const std::string_view& path)
+{
+	return _shaders.at(path);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)

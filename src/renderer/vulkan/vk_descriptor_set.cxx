@@ -7,20 +7,23 @@
 void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelines, const std::vector<vk_texture_image*>& textureImages)
 {
 	_pipelines = pipelines;
-
 	const size_t descriptorSetsNum = _pipelines.size();
+	
 	const vk::Device device = vk_renderer::get()->getDevice();
 
 	createDescriptorPool(device, descriptorSetsNum);
 	createUniformBuffer();
 
-	vk_descriptor_set_write write;
-	_descriptorSets.resize(descriptorSetsNum);
+	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+	for (int i = 0; i < descriptorSetsNum; ++i)
+	{
+		descriptorSetLayouts.push_back(_pipelines[i]->getDescriptorSetLayout());
+	}
+	_descriptorSets = createDescriptorSets(device, descriptorSetLayouts);
 
+	vk_descriptor_set_write write;
 	for (size_t i = 0; i < descriptorSetsNum; ++i)
 	{
-		_descriptorSets[i] = createDescriptorSet(device, _pipelines[i]->getDescriptorSetLayouts());
-
 		addWriteBufferInfo(write, _uniformBuffer);
 
 		const auto& pipelineMaterial = _pipelines[i]->getMaterial();
@@ -112,7 +115,7 @@ void vk_descriptor_set::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 	const size_t num = _descriptorSets.size();
 	for (size_t i = 0; i < num; ++i)
 	{
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipelines[i]->getLayout(), 0, _descriptorSets, nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipelines[i]->getLayout(), 0, _descriptorSets[i], nullptr);
 	}
 }
 
@@ -151,14 +154,14 @@ void vk_descriptor_set::createDescriptorPool(const vk::Device device, const size
 	_descriptorPool = device.createDescriptorPool(poolCreateInfo);
 }
 
-vk::DescriptorSet vk_descriptor_set::createDescriptorSet(const vk::Device device, const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts)
+std::vector<vk::DescriptorSet> vk_descriptor_set::createDescriptorSets(const vk::Device device, std::vector<vk::DescriptorSetLayout> descriptorSetLayouts)
 {
 	const vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo =
 		vk::DescriptorSetAllocateInfo()
 			.setDescriptorPool(_descriptorPool)
 			.setSetLayouts(descriptorSetLayouts);
 
-	return device.allocateDescriptorSets(descriptorSetAllocateInfo)[0];
+	return device.allocateDescriptorSets(descriptorSetAllocateInfo);
 }
 
 vk::DescriptorBufferInfo& vk_descriptor_set::addWriteBufferInfo(vk_descriptor_set_write& write, const vk_buffer& buffer)

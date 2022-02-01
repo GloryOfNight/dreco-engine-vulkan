@@ -2,6 +2,7 @@
 #include "core/containers/gltf/model.hxx"
 #include "math/vec3.hxx"
 #include "renderer/containers/uniforms.hxx"
+#include "shaders/basic.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
@@ -12,6 +13,7 @@
 #include "vk_settings.hxx"
 #include "vk_texture_image.hxx"
 
+#include <map>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -41,6 +43,14 @@ public:
 	void tick(double deltaTime);
 
 	void loadModel(const model& scn);
+
+	template <class T>
+	void registerShader();
+
+	template <class T>
+	const vk_shader* findShader();
+
+	const vk_shader* findShader(const std::string_view& path);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -149,6 +159,8 @@ private:
 
 	vk_depth_image _depthImage;
 
+	std::map<const std::string_view, vk_shader*> _shaders;
+
 	vk::SwapchainKHR _swapchain;
 
 	std::vector<vk::ImageView> _swapchainImageViews;
@@ -166,3 +178,37 @@ private:
 
 	vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };
+
+template <class T>
+inline void vk_renderer::registerShader()
+{
+	static_assert(std::is_base_of<vk_shader, T>::value);
+
+	vk_shader* newShader = new T();
+	const std::string_view filename = newShader->getPath();
+
+	auto pair = _shaders.try_emplace(filename, std::move(newShader));
+	if (!pair.second)
+	{
+		delete newShader;
+	}
+	else
+	{
+		_shaders[filename]->create();
+	}
+}
+
+template <class T>
+inline const vk_shader* vk_renderer::findShader()
+{
+	static_assert(std::is_base_of<vk_shader, T>::value);
+
+	for (const auto& pair : _shaders)
+	{
+		if (dynamic_cast<T*>(pair.second))
+		{
+			return pair.second;
+		}
+	}
+	return nullptr;
+}
