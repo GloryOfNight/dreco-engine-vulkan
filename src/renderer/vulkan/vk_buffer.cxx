@@ -29,6 +29,8 @@ void vk_buffer::create(const create_info& createInfo)
 	_deviceMemory.allocate(memoryRequirements, createInfo.memoryPropertiesFlags);
 
 	device.bindBufferMemory(_buffer, _deviceMemory.get(), 0);
+
+	_size = createInfo.size;
 }
 
 void vk_buffer::destroy()

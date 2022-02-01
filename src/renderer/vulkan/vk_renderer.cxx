@@ -1,6 +1,7 @@
 #include "vk_renderer.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
+#include "renderer/containers/camera_data.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
@@ -107,6 +108,8 @@ void vk_renderer::init()
 	createFences();
 	createSemaphores();
 
+	createCameraBuffer();
+
 	_placeholderTextureImage.create();
 
 	registerShader<vk_shader_basic_vert>();
@@ -123,7 +126,7 @@ void vk_renderer::exit()
 	_device.waitIdle();
 
 	clearVectorOfPtr(_scenes);
-	
+
 	for (auto& pair : _shaders)
 	{
 		delete pair.second;
@@ -138,7 +141,9 @@ void vk_renderer::exit()
 	cleanupSwapchain(_swapchain);
 
 	_scenes.clear();
+
 	_placeholderTextureImage.destroy();
+	_cameraData.destroy();
 
 	_device.destroySemaphore(_semaphoreImageAvaible);
 	_device.destroySemaphore(_semaphoreRenderFinished);
@@ -163,6 +168,7 @@ void vk_renderer::exit()
 
 void vk_renderer::tick(double deltaTime)
 {
+	updateCameraData();
 	if (updateExtent())
 	{
 		recreateSwapchain();
@@ -597,6 +603,15 @@ void vk_renderer::createSemaphores()
 	_semaphoreRenderFinished = _device.createSemaphore(vk::SemaphoreCreateInfo());
 }
 
+void vk_renderer::createCameraBuffer()
+{
+	vk_buffer::create_info bufferCreateInfo{};
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
+	bufferCreateInfo.size = sizeof(camera_data);
+	_cameraData.create(bufferCreateInfo);
+}
+
 void vk_renderer::drawFrame()
 {
 	vk::ResultValue<uint32_t> aquireNextImageResult = vk::ResultValue<uint32_t>(vk::Result{}, UINT32_MAX);
@@ -667,6 +682,16 @@ void vk_renderer::drawFrame()
 
 		DE_LOG(Error, "OutOfDateKHRError");
 	}
+}
+
+void vk_renderer::updateCameraData()
+{
+	const auto camera = engine::get()->getCamera();
+
+	camera_data data;
+	data.viewProj = camera->getView() * camera->getProjection();
+
+	_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
 }
 
 bool vk_renderer::updateExtent()

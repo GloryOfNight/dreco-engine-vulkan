@@ -6,13 +6,14 @@
 
 void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelines, const std::vector<vk_texture_image*>& textureImages)
 {
+	const auto renderer = vk_renderer::get();
+
 	_pipelines = pipelines;
 	const size_t descriptorSetsNum = _pipelines.size();
 	
-	const vk::Device device = vk_renderer::get()->getDevice();
+	const vk::Device device = renderer->getDevice();
 
 	createDescriptorPool(device, descriptorSetsNum);
-	createUniformBuffer();
 
 	std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
 	for (int i = 0; i < descriptorSetsNum; ++i)
@@ -24,7 +25,7 @@ void vk_descriptor_set::create(const std::vector<vk_graphics_pipeline*>& pipelin
 	vk_descriptor_set_write write;
 	for (size_t i = 0; i < descriptorSetsNum; ++i)
 	{
-		addWriteBufferInfo(write, _uniformBuffer);
+		addWriteBufferInfo(write, renderer->getCameraDataBuffer());
 
 		const auto& pipelineMaterial = _pipelines[i]->getMaterial();
 		const auto& placeholderTexture = vk_renderer::get()->getTextureImagePlaceholder();
@@ -126,14 +127,7 @@ void vk_descriptor_set::destroy()
 		const vk::Device device = vk_renderer::get()->getDevice();
 		device.destroyDescriptorPool(_descriptorPool);
 		_descriptorPool = nullptr;
-
-		_uniformBuffer.destroy();
 	}
-}
-
-vk_buffer& vk_descriptor_set::getUniformBuffer()
-{
-	return _uniformBuffer;
 }
 
 void vk_descriptor_set::createDescriptorPool(const vk::Device device, const size_t count)
@@ -167,9 +161,9 @@ std::vector<vk::DescriptorSet> vk_descriptor_set::createDescriptorSets(const vk:
 vk::DescriptorBufferInfo& vk_descriptor_set::addWriteBufferInfo(vk_descriptor_set_write& write, const vk_buffer& buffer)
 {
 	auto& bufferInfo = write.bufferInfos.emplace_back(vk::DescriptorBufferInfo());
-	bufferInfo.buffer = _uniformBuffer.get();
+	bufferInfo.buffer = buffer.get();
 	bufferInfo.offset = 0;
-	bufferInfo.range = sizeof(uniforms);
+	bufferInfo.range = buffer.getSize();
 	return bufferInfo;
 }
 
@@ -200,14 +194,4 @@ void vk_descriptor_set::writeDescriptorSetsImageInfos(uint32_t index, vk_descrip
 	imageSamplerWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	imageSamplerWrite.descriptorCount = write.imageInfos.size();
 	imageSamplerWrite.pImageInfo = write.imageInfos.data();
-}
-
-void vk_descriptor_set::createUniformBuffer()
-{
-	vk_buffer::create_info bufferCreateInfo{};
-	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
-	bufferCreateInfo.size = sizeof(uniforms);
-
-	_uniformBuffer.create(bufferCreateInfo);
 }

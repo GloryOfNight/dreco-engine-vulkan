@@ -23,6 +23,8 @@ public:
 
 	virtual vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const = 0;
 
+	virtual void addPushConstantRange(std::vector<vk::PushConstantRange>& ranges) const {};
+
 protected:
 	std::string _shaderPath{};
 

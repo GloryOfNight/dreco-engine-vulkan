@@ -50,8 +50,6 @@ private:
 	vk::DeviceSize _indxsBufferSize{0};
 	std::vector<uint32_t> _primitiveIndexCounts;
 
-	uniforms _ubo;
-
 	vk_buffer _viBuffer;
 
 	vk_descriptor_set _descriptorSet;

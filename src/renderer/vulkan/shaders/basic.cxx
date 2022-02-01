@@ -1,5 +1,7 @@
 #include "basic.hxx"
 
+#include "renderer/containers/camera_data.hxx"
+
 #include "dreco.hxx"
 
 vk_shader_basic_vert::vk_shader_basic_vert()
@@ -23,6 +25,11 @@ vk::DescriptorSetLayoutBinding vk_shader_basic_vert::getDescriptorSetLayoutBindi
 		.setDescriptorType(vk::DescriptorType::eUniformBuffer)
 		.setDescriptorCount(1)
 		.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+}
+
+void vk_shader_basic_vert::addPushConstantRange(std::vector<vk::PushConstantRange>& ranges) const
+{
+	ranges.push_back(vk::PushConstantRange().setStageFlags(vk::ShaderStageFlagBits::eVertex).setSize(sizeof(camera_data)));
 }
 
 vk_shader_basic_frag::vk_shader_basic_frag()

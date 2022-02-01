@@ -9,6 +9,8 @@ public:
 	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const override;
 
 	vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const override;
+
+	void addPushConstantRange(std::vector<vk::PushConstantRange>& ranges) const override;
 };
 
 class vk_shader_basic_frag : public vk_shader

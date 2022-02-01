@@ -34,7 +34,7 @@ public:
 
 	const std::vector<vk::DescriptorSet>& get() const { return _descriptorSets; };
 
-	vk_buffer& getUniformBuffer();
+	const std::vector<vk_graphics_pipeline*>& getPipelines() const { return _pipelines; };
 
 protected:
 	void createDescriptorPool(const vk::Device device, const size_t count);
@@ -49,11 +49,7 @@ protected:
 
 	void writeDescriptorSetsImageInfos(uint32_t index, vk_descriptor_set_write& write);
 
-	void createUniformBuffer();
-
 private:
-	vk_buffer _uniformBuffer;
-
 	vk::DescriptorPool _descriptorPool;
 
 	std::vector<vk::DescriptorSet> _descriptorSets;

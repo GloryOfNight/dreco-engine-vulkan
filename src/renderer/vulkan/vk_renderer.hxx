@@ -1,7 +1,5 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
-#include "math/vec3.hxx"
-#include "renderer/containers/uniforms.hxx"
 #include "shaders/basic.hxx"
 
 #include "vk_buffer.hxx"
@@ -83,6 +81,8 @@ public:
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
+	const vk_buffer& getCameraDataBuffer() { return _cameraData; };
+
 	vk::CommandBuffer beginSingleTimeTransferCommands();
 
 	void submitSingleTimeTransferCommands(vk::CommandBuffer commandBuffer);
@@ -93,6 +93,8 @@ public:
 
 protected:
 	void drawFrame();
+
+	void updateCameraData();
 
 	bool updateExtent();
 
@@ -121,6 +123,8 @@ protected:
 	void createFences();
 
 	void createSemaphores();
+
+	void createCameraBuffer();
 
 	void cleanupSwapchain(vk::SwapchainKHR swapchain);
 
@@ -158,6 +162,8 @@ private:
 	vk_msaa_image _msaaImage;
 
 	vk_depth_image _depthImage;
+
+	vk_buffer _cameraData;
 
 	std::map<const std::string_view, vk_shader*> _shaders;
 

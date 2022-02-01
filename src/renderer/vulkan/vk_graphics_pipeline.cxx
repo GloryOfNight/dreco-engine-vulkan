@@ -80,10 +80,14 @@ vk::Pipeline vk_graphics_pipeline::get() const
 
 void vk_graphics_pipeline::createPipelineLayout(const vk::Device device)
 {
+	std::vector<vk::PushConstantRange> pushConstantRanges;
+	vertShader->addPushConstantRange(pushConstantRanges);
+	fragShader->addPushConstantRange(pushConstantRanges);
+
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		vk::PipelineLayoutCreateInfo()
 			.setSetLayouts(_descriptorSetLayout)
-			.setPushConstantRanges(nullptr);
+			.setPushConstantRanges(pushConstantRanges);
 
 	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
 }

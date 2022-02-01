@@ -66,6 +66,12 @@ void vk_mesh::destroy()
 void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 {
 	_descriptorSet.bindToCmdBuffer(commandBuffer);
+	const auto& pipelines = _descriptorSet.getPipelines();
+
+	for (auto pipeline : pipelines)
+	{
+		commandBuffer.pushConstants(pipeline->getLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &_mat);
+	}
 
 	const std::array<vk::Buffer, 1> buffers{_viBuffer.get()};
 	const std::array<vk::DeviceSize, 1> offsets{0};
@@ -77,13 +83,6 @@ void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 
 void vk_mesh::update()
 {
-	const camera* camera{engine::get()->getCamera()};
-
-	_ubo._model = _mat;
-	_ubo._view = camera->getView();
-	_ubo._projection = camera->getProjection();
-
-	_descriptorSet.getUniformBuffer().getDeviceMemory().map(&_ubo, sizeof(_ubo));
 }
 
 vk_descriptor_set& vk_mesh::getDescriptorSet()
