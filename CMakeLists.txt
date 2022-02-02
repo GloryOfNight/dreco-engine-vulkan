@@ -50,9 +50,8 @@ endif()
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/install")
 
+add_subdirectory(tools)
 add_subdirectory(launcher)
-
-include(tools/tools.cmake)
 
 if (MSVC)
 file(COPY ${SDL2_PREFIX}/bin/SDL2.dll DESTINATION ${PROJECT_BINARY_DIR})

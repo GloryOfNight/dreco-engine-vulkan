@@ -5,7 +5,7 @@ set(SOURCES_LIST main.cxx)
 
 add_executable(${PROJECT_NAME} ${SOURCES_LIST})
 
-target_link_libraries(${PROJECT_NAME} dreco)
+target_link_libraries(${PROJECT_NAME} dreco shader-compiler-static)
 
 get_target_property(DRECO_BINARY_DIR dreco BINARY_DIR)
 
