@@ -14,7 +14,7 @@
 #include <array>
 #include <vector>
 
-vk_graphics_pipeline::vk_graphics_pipeline(const vk_scene* scene, const material& mat)
+vk_graphics_pipeline::vk_graphics_pipeline(const vk_scene* scene, const gltf::material& mat)
 	: _scene{scene}
 	, _mat{mat}
 {
@@ -64,8 +64,6 @@ void vk_graphics_pipeline::bindToCmdBuffer(const vk::CommandBuffer commandBuffer
 	for (const vk_mesh* mesh : _dependedMeshes)
 	{
 		_vertShader->cmdPushConstants(commandBuffer, getLayout(), mesh);
-
-		commandBuffer.pushConstants(getLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &mesh->_mat);
 		mesh->bindToCmdBuffer(commandBuffer);
 	}
 }
@@ -103,7 +101,7 @@ void vk_graphics_pipeline::updateDescriptiors()
 	vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
 }
 
-const material& vk_graphics_pipeline::getMaterial() const
+const gltf::material& vk_graphics_pipeline::getMaterial() const
 {
 	return _mat;
 }

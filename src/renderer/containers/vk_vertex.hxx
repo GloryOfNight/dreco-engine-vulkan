@@ -6,7 +6,7 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-struct vk_vertex : public mesh::primitive::vertex
+struct vk_vertex : public gltf::mesh::primitive::vertex
 {
 	static std::vector<vk::VertexInputBindingDescription> getInputBindingDescription();
 

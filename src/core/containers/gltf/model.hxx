@@ -8,17 +8,20 @@
 
 #include <vector>
 
-struct model
+namespace gltf
 {
-	std::string _rootPath;
+	struct model
+	{
+		std::string _rootPath;
 
-	std::vector<mesh> _meshes;
+		std::vector<mesh> _meshes;
 
-	std::vector<material> _materials;
+		std::vector<material> _materials;
 
-	std::vector<image> _images;
+		std::vector<image> _images;
 
-	std::vector<scene> _scenes;
+		std::vector<scene> _scenes;
 
-	std::vector<node> _nodes;
-};
+		std::vector<node> _nodes;
+	};
+} // namespace gltf

@@ -6,11 +6,14 @@
 
 #include <cstdint>
 
-struct node
+namespace gltf
 {
-	std::vector<uint32_t> _children;
+	struct node
+	{
+		std::vector<uint32_t> _children;
 
-	uint32_t _mesh{UINT32_MAX};
+		uint32_t _mesh{UINT32_MAX};
 
-	mat4 _matrix;
-};
+		mat4 _matrix;
+	};
+} // namespace gltf

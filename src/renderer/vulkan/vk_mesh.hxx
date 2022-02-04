@@ -30,7 +30,7 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const vk_scene& scene, const mesh& m);
+	void create(const vk_scene& scene, const gltf::mesh& m);
 
 	void destroy();
 
@@ -41,7 +41,7 @@ public:
 	mat4 _mat;
 
 protected:
-	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
+	void createVIBuffer(const gltf::mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
 
 private:
 	vk::DeviceSize _vertsBufferSize{0};

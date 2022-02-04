@@ -46,7 +46,7 @@ struct async_task_load_scene : public thread_task
 private:
 	std::string _file;
 
-	model _model;
+	gltf::model _model;
 };
 
 engine::engine()

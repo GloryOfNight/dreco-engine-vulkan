@@ -176,7 +176,7 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-void vk_renderer::loadModel(const model& scn)
+void vk_renderer::loadModel(const gltf::model& scn)
 {
 	_scenes.emplace_back(new vk_scene())->create(scn);
 }

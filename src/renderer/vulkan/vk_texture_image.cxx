@@ -18,7 +18,7 @@ void vk_texture_image::create()
 	create(imageData);
 }
 
-void vk_texture_image::create(const image& img)
+void vk_texture_image::create(const gltf::image& img)
 {
 	image_data imageData;
 	if (imageData.load(img._uri))

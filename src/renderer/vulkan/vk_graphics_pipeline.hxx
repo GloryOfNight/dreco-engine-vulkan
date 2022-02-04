@@ -12,7 +12,7 @@ class vk_shader;
 class vk_graphics_pipeline final
 {
 public:
-	vk_graphics_pipeline(const vk_scene* scene, const material& mat);
+	vk_graphics_pipeline(const vk_scene* scene, const gltf::material& mat);
 	vk_graphics_pipeline(const vk_graphics_pipeline&) = delete;
 	vk_graphics_pipeline(vk_graphics_pipeline&&) = default;
 	~vk_graphics_pipeline() { destroy(); };
@@ -27,7 +27,7 @@ public:
 
 	void updateDescriptiors();
 
-	const material& getMaterial() const;
+	const gltf::material& getMaterial() const;
 
 	vk::DescriptorSetLayout getDescriptorSetLayout() const;
 
@@ -46,7 +46,7 @@ protected:
 
 private:
 	const vk_scene* _scene;
-	const material _mat;
+	const gltf::material _mat;
 
 	vk_shader* _vertShader;
 

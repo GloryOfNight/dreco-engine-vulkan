@@ -14,7 +14,7 @@ public:
 
 	void addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const override;
 
-	void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const material& mat) const override;
+	void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const override;
 
 	void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh);
 };
@@ -30,5 +30,5 @@ public:
 
 	void addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const override;
 
-	void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const material& mat) const override;
+	void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const override;
 };

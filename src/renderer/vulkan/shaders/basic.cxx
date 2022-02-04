@@ -39,7 +39,7 @@ void vk_shader_basic_vert::addDescriptorPoolSizes(std::vector<vk::DescriptorPool
 	sizes.push_back(vk::DescriptorPoolSize().setType(vk::DescriptorType::eUniformBuffer).setDescriptorCount(1));
 }
 
-void vk_shader_basic_vert::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const material& mat) const
+void vk_shader_basic_vert::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const
 {
 	const auto& buffer = vk_renderer::get()->getCameraDataBuffer();
 
@@ -82,7 +82,7 @@ void vk_shader_basic_frag::addDescriptorPoolSizes(std::vector<vk::DescriptorPool
 	sizes.push_back(vk::DescriptorPoolSize().setType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(1));
 }
 
-void vk_shader_basic_frag::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const material& mat) const
+void vk_shader_basic_frag::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const
 {
 	const auto& baseColor = scene->getTextureImageFromIndex(mat._pbrMetallicRoughness._baseColorTexture._index);
 	const auto& metallicRoughness = scene->getTextureImageFromIndex(mat._pbrMetallicRoughness._metallicRoughnessTexture._index);

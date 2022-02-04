@@ -20,7 +20,7 @@ vk_mesh::~vk_mesh()
 	destroy();
 }
 
-void vk_mesh::create(const vk_scene& scene, const mesh& m)
+void vk_mesh::create(const vk_scene& scene, const gltf::mesh& m)
 {
 	const vk_renderer* renderer = vk_renderer::get();
 	const vk::Device device = renderer->getDevice();
@@ -36,7 +36,7 @@ void vk_mesh::create(const vk_scene& scene, const mesh& m)
 	std::set<uint32_t> usedMaterials{};
 	std::vector<vk_device_memory::map_memory_region> vertRegions(primitivesSize);
 	std::vector<vk_device_memory::map_memory_region> indxRegions(primitivesSize);
-	for (const mesh::primitive& prim : m._primitives)
+	for (const gltf::mesh::primitive& prim : m._primitives)
 	{
 		const size_t vertBufferSize = sizeof(prim._vertexes[0]) * prim._vertexes.size();
 		vertRegions.push_back({prim._vertexes.data(), vertBufferSize, _vertsBufferSize});
@@ -75,7 +75,7 @@ void vk_mesh::update()
 {
 }
 
-void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice,
+void vk_mesh::createVIBuffer(const gltf::mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice,
 	const _memory_regions& vertRegions, const _memory_regions& indxRegions)
 {
 	vk_buffer::create_info buffer_create_info;

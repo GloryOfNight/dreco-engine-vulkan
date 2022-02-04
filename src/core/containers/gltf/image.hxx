@@ -1,7 +1,10 @@
 #pragma once
 #include <string>
 
-struct image
+namespace gltf
 {
-    std::string _uri;
-};
+	struct image
+	{
+		std::string _uri;
+	};
+} // namespace gltf

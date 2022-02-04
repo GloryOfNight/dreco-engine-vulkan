@@ -40,7 +40,7 @@ public:
 
 	void tick(double deltaTime);
 
-	void loadModel(const model& scn);
+	void loadModel(const gltf::model& scn);
 
 	template <class T>
 	void registerShader();

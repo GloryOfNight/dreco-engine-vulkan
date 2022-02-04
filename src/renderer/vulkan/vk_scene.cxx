@@ -18,7 +18,7 @@ vk_scene::~vk_scene()
 	}
 }
 
-void vk_scene::create(const model& m)
+void vk_scene::create(const gltf::model& m)
 {
 	if (!isEmpty())
 	{
@@ -52,7 +52,7 @@ void vk_scene::create(const model& m)
 	}
 }
 
-void vk_scene::recurseSceneNodes(const model& m, const node& selfNode, const mat4& rootMat)
+void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat)
 {
 	const mat4 newRootMat = selfNode._matrix * rootMat;
 	if (selfNode._mesh != UINT32_MAX)

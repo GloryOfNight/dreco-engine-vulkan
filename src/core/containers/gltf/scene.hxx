@@ -1,7 +1,10 @@
 #pragma once
 #include <vector>
 
-struct scene
+namespace gltf
 {
-	std::vector<uint32_t> _nodes;
-};
+	struct scene
+	{
+		std::vector<uint32_t> _nodes;
+	};
+} // namespace gltf

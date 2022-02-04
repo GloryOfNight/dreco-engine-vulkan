@@ -33,7 +33,7 @@ static mat4 parseMatrix(const std::vector<double>& matrix)
 	return out;
 }
 
-static void parseScenes(const tinygltf::Model& tModel, model& dModel)
+static void parseScenes(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalScenes = tModel.scenes.size();
 	dModel._scenes.resize(totalScenes);
@@ -51,7 +51,7 @@ static void parseScenes(const tinygltf::Model& tModel, model& dModel)
 	}
 }
 
-static void parseNodes(const tinygltf::Model& tModel, model& dModel)
+static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalNodes = tModel.nodes.size();
 	dModel._nodes.resize(totalNodes);
@@ -96,7 +96,7 @@ static void parseNodes(const tinygltf::Model& tModel, model& dModel)
 	}
 }
 
-static void parseMeshes(const tinygltf::Model& tModel, model& dModel)
+static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalMeshes = tModel.meshes.size();
 	dModel._meshes.resize(totalMeshes);
@@ -179,7 +179,7 @@ static void parseMeshes(const tinygltf::Model& tModel, model& dModel)
 	}
 }
 
-static void parseMaterials(const tinygltf::Model& tModel, model& dModel)
+static void parseMaterials(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalMaterials = tModel.materials.size();
 	dModel._materials.resize(totalMaterials);
@@ -205,7 +205,7 @@ static void parseMaterials(const tinygltf::Model& tModel, model& dModel)
 	}
 }
 
-static void parseImages(const tinygltf::Model& tModel, model& dModel)
+static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalImages = tModel.images.size();
 	dModel._images.resize(totalImages);
@@ -215,7 +215,7 @@ static void parseImages(const tinygltf::Model& tModel, model& dModel)
 	}
 }
 
-model gltf_loader::loadModel(const std::string_view& sceneFile)
+gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
 {
 	tinygltf::Model tModel;
 	tinygltf::TinyGLTF loader;
@@ -233,7 +233,7 @@ model gltf_loader::loadModel(const std::string_view& sceneFile)
 		DE_LOG(Warn, "Load scene warning: %s", warn.data());
 	}
 
-	model dModel;
+	gltf::model dModel;
 	dModel._rootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
 	parseScenes(tModel, dModel);
 	parseNodes(tModel, dModel);

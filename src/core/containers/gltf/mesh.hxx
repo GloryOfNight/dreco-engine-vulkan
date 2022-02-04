@@ -6,25 +6,27 @@
 #include <cstdint>
 #include <vector>
 
-struct material;
-
-struct mesh
+namespace gltf
 {
-	struct primitive
+	struct material;
+	struct mesh
 	{
-		struct vertex
+		struct primitive
 		{
-			vec3 _pos;
+			struct vertex
+			{
+				vec3 _pos;
 
-			vec3 _normal;
+				vec3 _normal;
 
-			vec2 _texCoord;
+				vec2 _texCoord;
+			};
+
+			std::vector<vertex> _vertexes;
+			std::vector<uint32_t> _indexes;
+
+			uint32_t _material{UINT32_MAX};
 		};
-
-		std::vector<vertex> _vertexes;
-		std::vector<uint32_t> _indexes;
-
-		uint32_t _material{UINT32_MAX};
+		std::vector<primitive> _primitives;
 	};
-	std::vector<primitive> _primitives;
-};
+} // namespace gltf
