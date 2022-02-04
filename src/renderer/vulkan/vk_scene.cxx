@@ -22,7 +22,12 @@ void vk_scene::create(const gltf::model& m)
 {
 	if (!isEmpty())
 	{
-		std::cerr << __FUNCTION__ << ": Scene already created! Destroy it before use again." << std::endl;
+		DE_LOG(Error, "Scene already created! Destroy it before use again.");
+		return;
+	}
+	else if (m._sceneIndex == UINT32_MAX)
+	{
+		DE_LOG(Error, "Cannot create scene without valid _sceneIndex.");
 		return;
 	}
 
@@ -43,12 +48,10 @@ void vk_scene::create(const gltf::model& m)
 	}
 
 	_meshes.reserve(m._meshes.size());
-	for (const auto& scene : m._scenes)
+	const auto& scene = m._scenes[m._sceneIndex];
+	for (const auto nodeIndex : scene._nodes)
 	{
-		for (const auto nodeIndex : scene._nodes)
-		{
-			recurseSceneNodes(m, m._nodes[nodeIndex], mat4::makeIdentity());
-		}
+		recurseSceneNodes(m, m._nodes[nodeIndex], mat4::makeIdentity());
 	}
 }
 

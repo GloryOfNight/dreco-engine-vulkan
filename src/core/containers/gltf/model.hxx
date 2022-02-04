@@ -20,6 +20,7 @@ namespace gltf
 
 		std::vector<image> _images;
 
+		uint32_t _sceneIndex{UINT32_MAX};
 		std::vector<scene> _scenes;
 
 		std::vector<node> _nodes;

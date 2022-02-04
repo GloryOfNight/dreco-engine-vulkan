@@ -1,5 +1,6 @@
 #include "mat4.hxx"
 
+#include "quaternion.hxx"
 #include "rotator.hxx"
 #include "transform.hxx"
 #include "vec3.hxx"
@@ -84,6 +85,26 @@ mat4 mat4::makeRotation(const rotator& rot)
 	// clang-format on
 
 	return matZ * matY * matX;
+}
+
+mat4 mat4::makeRotationQ(const quaternion& q)
+{
+	mat4 ret{};
+
+	ret._mat[0][0] = 2 * (q.w * q.w + q.x * q.x) - 1;
+	ret._mat[0][1] = 2 * (q.x * q.y + q.w * q.z);
+	ret._mat[0][2] = 2 * (q.x * q.z + q.w * q.y);
+
+	ret._mat[1][0] = 2 * (q.x * q.y + q.w * q.z);
+	ret._mat[1][1] = 2 * (q.w * q.w + q.y * q.y) - 1;
+	ret._mat[1][2] = 2 * (q.y * q.z + q.w * q.x);
+
+	ret._mat[2][0] = 2 * (q.x * q.z + q.w * q.y);
+	ret._mat[2][1] = 2 * (q.y * q.z + q.w * q.x);
+	ret._mat[2][2] = 2 * (q.w * q.w + q.z * q.z) - 1;
+
+	ret._mat[3][3] = 1;
+	return ret;
 }
 
 mat4 mat4::makeScale(const vec3& vec)

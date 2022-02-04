@@ -5,6 +5,7 @@
 struct vec3;
 struct rotator;
 struct transform;
+struct quaternion;
 
 struct mat4
 {
@@ -21,6 +22,8 @@ struct mat4
 	static mat4 makeTranslation(const vec3& vec);
 
 	static mat4 makeRotation(const rotator& rot);
+
+	static mat4 makeRotationQ(const quaternion& q);
 
 	static mat4 makeScale(const vec3& vec);
 

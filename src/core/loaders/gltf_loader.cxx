@@ -35,6 +35,8 @@ static mat4 parseMatrix(const std::vector<double>& matrix)
 
 static void parseScenes(const tinygltf::Model& tModel, gltf::model& dModel)
 {
+	dModel._sceneIndex = static_cast<uint32_t>(tModel.defaultScene);
+
 	const size_t totalScenes = tModel.scenes.size();
 	dModel._scenes.resize(totalScenes);
 	for (size_t i = 0; i < totalScenes; ++i)
@@ -80,8 +82,7 @@ static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 			if (tNode.rotation.size() == 4)
 			{
 				const quaternion quat = quaternion{tNode.rotation[0], tNode.rotation[1], tNode.rotation[2], tNode.rotation[3]};
-				dNode._matrix = dNode._matrix * mat4::makeRotation(rotator(90, 0, 0));
-				// TODO: quaternion to mat4
+				dNode._matrix = dNode._matrix * mat4::makeRotationQ(quat);
 			}
 			if (tNode.scale.size() == 3)
 			{
@@ -137,36 +138,43 @@ static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 			dPrimitive._vertexes.resize(tModel.accessors[vertPosAccessor].count);
 			dPrimitive._indexes.resize(tModel.accessors[indexAccessor].count);
 
-			const size_t accessorsSize{tModel.accessors.size()};
-			for (size_t j = 0; j < accessorsSize; ++j)
+			const std::array<uint32_t, 4> usedAccessors{vertPosAccessor, normalAccessor, texCoordAccessor, indexAccessor};
+			for (const uint32_t accessorIndex : usedAccessors)
 			{
-				const auto& accessor{tModel.accessors[j]};
+				const auto& accessor{tModel.accessors[accessorIndex]};
 				const auto& bufferView{tModel.bufferViews[accessor.bufferView]};
 				const auto& buffer{tModel.buffers[bufferView.buffer]};
-
 				const float* positions = reinterpret_cast<const float*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
 
 				for (size_t q = 0; q < accessor.count; ++q)
 				{
-					if (j == vertPosAccessor)
+					if (accessorIndex == vertPosAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
 					{
 						vec3& pos{dPrimitive._vertexes[q]._pos};
 						pos._x = positions[q * 3 + 0];
 						pos._y = positions[q * 3 + 1];
 						pos._z = positions[q * 3 + 2];
 					}
-					else if (j == indexAccessor)
+					else if (accessorIndex == indexAccessor)
 					{
-						const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
-						dPrimitive._indexes[q] = indexPos[q];
+						if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+						{
+							const uint16_t* indexPos = reinterpret_cast<const uint16_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+							dPrimitive._indexes[q] = indexPos[q];
+						}
+						else
+						{
+							const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+							dPrimitive._indexes[q] = indexPos[q];
+						}
 					}
-					else if (j == texCoordAccessor)
+					else if (accessorIndex == texCoordAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
 					{
 						vec2& texCoor{dPrimitive._vertexes[q]._texCoord};
 						texCoor._x = positions[q * 2 + 0];
 						texCoor._y = positions[q * 2 + 1];
 					}
-					else if (j == normalAccessor)
+					else if (accessorIndex == normalAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
 					{
 						vec3& normal{dPrimitive._vertexes[q]._normal};
 						normal._x = positions[q * 3 + 0];
