@@ -13,7 +13,7 @@ struct pbr_metallic_roughness
     double roughnessFactor;
 };
 
-layout(binding = 1) uniform sampler2D texSampler[4]; // 0 - baseColor, 1 - metallicRoughness, 2 - normal, 3 - emissive, 
+layout(binding = 1) uniform sampler2D texSampler[4]; // 0 - baseColor, 1 - metallicRoughness, 2 - normal, 3 - emissive
 layout(binding = 2) uniform MaterialUniformObject {
     uint normalTextureIndex;
 

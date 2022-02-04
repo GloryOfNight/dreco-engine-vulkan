@@ -9,6 +9,7 @@
 #include "vk_utils.hxx"
 
 #include <array>
+#include <set>
 
 vk_mesh::vk_mesh()
 {
@@ -19,7 +20,7 @@ vk_mesh::~vk_mesh()
 	destroy();
 }
 
-void vk_mesh::create(const mesh& m, const vk_scene* scene)
+void vk_mesh::create(const vk_scene& scene, const mesh& m)
 {
 	const vk_renderer* renderer = vk_renderer::get();
 	const vk::Device device = renderer->getDevice();
@@ -27,16 +28,12 @@ void vk_mesh::create(const mesh& m, const vk_scene* scene)
 
 	const vk_queue_family* queueFamily{&renderer->getQueueFamily()};
 
-	const auto& pipelines = scene->getGraphicPipelines();
-
 	const size_t primitivesSize = m._primitives.size();
 
 	_vertsBufferSize = 0;
 	_indxsBufferSize = 0;
 
-	std::vector<vk_graphics_pipeline*> usedPipelines;
-	usedPipelines.reserve(primitivesSize);
-
+	std::set<uint32_t> usedMaterials{};
 	std::vector<vk_device_memory::map_memory_region> vertRegions(primitivesSize);
 	std::vector<vk_device_memory::map_memory_region> indxRegions(primitivesSize);
 	for (const mesh::primitive& prim : m._primitives)
@@ -49,45 +46,33 @@ void vk_mesh::create(const mesh& m, const vk_scene* scene)
 		indxRegions.push_back({prim._indexes.data(), indxBufferSize, _indxsBufferSize});
 		_indxsBufferSize += indxBufferSize;
 
-		usedPipelines.push_back(pipelines[prim._material]);
+		usedMaterials.emplace(prim._material);
+	}
+
+	for (uint32_t mat : usedMaterials)
+	{
+		scene.getGraphicPipelines()[mat]->addDependentMesh(this);
 	}
 
 	createVIBuffer(m, queueFamily, physicalDevice, vertRegions, indxRegions);
-
-	_descriptorSet.create(usedPipelines, scene->getTextureImages());
 }
 
 void vk_mesh::destroy()
 {
-	_descriptorSet.destroy();
 	_viBuffer.destroy();
 }
 
-void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
+void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const
 {
-	_descriptorSet.bindToCmdBuffer(commandBuffer);
-	const auto& pipelines = _descriptorSet.getPipelines();
-
-	for (auto pipeline : pipelines)
-	{
-		commandBuffer.pushConstants(pipeline->getLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &_mat);
-	}
-
 	const std::array<vk::Buffer, 1> buffers{_viBuffer.get()};
 	const std::array<vk::DeviceSize, 1> offsets{0};
 	commandBuffer.bindVertexBuffers(0, buffers, offsets);
 	commandBuffer.bindIndexBuffer(_viBuffer.get(), _vertsBufferSize, vk::IndexType::eUint32);
-
 	commandBuffer.drawIndexed(static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
 }
 
 void vk_mesh::update()
 {
-}
-
-vk_descriptor_set& vk_mesh::getDescriptorSet()
-{
-	return _descriptorSet;
 }
 
 void vk_mesh::createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice,

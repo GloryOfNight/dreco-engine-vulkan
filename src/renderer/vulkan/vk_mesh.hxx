@@ -4,8 +4,8 @@
 #include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
-#include "vk_descriptor_set.hxx"
 #include "vk_graphics_pipeline.hxx"
+#include "vk_scene.hxx"
 #include "vk_texture_image.hxx"
 
 #include <vector>
@@ -30,15 +30,13 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const mesh& m, const vk_scene* scene);
+	void create(const vk_scene& scene, const mesh& m);
 
 	void destroy();
 
-	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer);
+	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const;
 
 	void update();
-
-	vk_descriptor_set& getDescriptorSet();
 
 	mat4 _mat;
 
@@ -51,6 +49,4 @@ private:
 	std::vector<uint32_t> _primitiveIndexCounts;
 
 	vk_buffer _viBuffer;
-
-	vk_descriptor_set _descriptorSet;
 };

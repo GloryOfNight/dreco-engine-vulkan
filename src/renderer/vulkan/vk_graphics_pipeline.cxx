@@ -6,27 +6,29 @@
 #include "shaders/basic.hxx"
 
 #include "dreco.hxx"
-#include "vk_descriptor_set.hxx"
+#include "vk_mesh.hxx"
 #include "vk_renderer.hxx"
+#include "vk_shader.hxx"
 #include "vk_utils.hxx"
 
 #include <array>
 #include <vector>
 
-void vk_graphics_pipeline::create(const material& mat)
+vk_graphics_pipeline::vk_graphics_pipeline(const vk_scene* scene, const material& mat)
+	: _scene{scene}
+	, _mat{mat}
 {
-	_mat = mat;
+}
 
+void vk_graphics_pipeline::create()
+{
 	vk_renderer* renderer{vk_renderer::get()};
-	const vk::Device device = renderer->getDevice();
+	vk::Device device = renderer->getDevice();
 
-	vertShader = renderer->findShader<vk_shader_basic_vert>();
-	fragShader = renderer->findShader<vk_shader_basic_frag>();
+	_vertShader = renderer->findShader<vk_shader_basic_vert>();
+	_fragShader = renderer->findShader<vk_shader_basic_frag>();
 
-	const std::vector<vk::DescriptorSetLayoutBinding> bindings{vertShader->getDescriptorSetLayoutBinding(), fragShader->getDescriptorSetLayoutBinding()};
-	_descriptorSetLayout = device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo()
-																.setFlags({})
-																.setBindings(bindings));
+	createDescriptorSets(device);
 
 	createPipelineLayout(device);
 	createPipeline(device);
@@ -48,6 +50,7 @@ void vk_graphics_pipeline::destroy()
 	if (_pipeline)
 	{
 		device.destroyDescriptorSetLayout(_descriptorSetLayout);
+		device.destroyDescriptorPool(_descriptorPool);
 		device.destroyPipelineLayout(_pipelineLayout);
 		device.destroyPipeline(_pipeline);
 	}
@@ -56,6 +59,48 @@ void vk_graphics_pipeline::destroy()
 void vk_graphics_pipeline::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
+
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, getLayout(), 0, _descriptorSets, nullptr);
+	for (const vk_mesh* mesh : _dependedMeshes)
+	{
+		_vertShader->cmdPushConstants(commandBuffer, getLayout(), mesh);
+
+		commandBuffer.pushConstants(getLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &mesh->_mat);
+		mesh->bindToCmdBuffer(commandBuffer);
+	}
+}
+
+void vk_graphics_pipeline::updateDescriptiors()
+{
+	vk_descriptor_write_infos infos;
+	_vertShader->addDescriptorWriteInfos(infos, _scene, _mat);
+	_fragShader->addDescriptorWriteInfos(infos, _scene, _mat);
+
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	_vertShader->addDescriptorPoolSizes(poolSizes);
+	_fragShader->addDescriptorPoolSizes(poolSizes);
+
+	const size_t writeSize = poolSizes.size();
+	std::vector<vk::WriteDescriptorSet> writes(writeSize, vk::WriteDescriptorSet());
+	for (size_t i = 0; i < writeSize; ++i)
+	{
+		writes[i] = vk::WriteDescriptorSet()
+						.setDstSet(_descriptorSets[0])
+						.setDstBinding(i)
+						.setDescriptorType(poolSizes[i].type);
+		switch (poolSizes[i].type)
+		{
+		case vk::DescriptorType::eUniformBuffer:
+			writes[i].setBufferInfo(infos.bufferInfos);
+			break;
+		case vk::DescriptorType::eCombinedImageSampler:
+			writes[i].setImageInfo(infos.imageInfos);
+			break;
+		default:
+			break;
+		}
+	}
+	vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
 }
 
 const material& vk_graphics_pipeline::getMaterial() const
@@ -78,11 +123,42 @@ vk::Pipeline vk_graphics_pipeline::get() const
 	return _pipeline;
 }
 
-void vk_graphics_pipeline::createPipelineLayout(const vk::Device device)
+void vk_graphics_pipeline::addDependentMesh(const vk_mesh* mesh)
+{
+	_dependedMeshes.push_back(mesh);
+}
+
+void vk_graphics_pipeline::createDescriptorSets(vk::Device device)
+{
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	_vertShader->addDescriptorSetLayoutBindings(bindings);
+	_fragShader->addDescriptorSetLayoutBindings(bindings);
+
+	_descriptorSetLayout = device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo()
+																.setFlags({})
+																.setBindings(bindings));
+
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	_vertShader->addDescriptorPoolSizes(poolSizes);
+	_fragShader->addDescriptorPoolSizes(poolSizes);
+
+	_descriptorPool = device.createDescriptorPool(vk::DescriptorPoolCreateInfo()
+													  .setFlags({})
+													  .setPoolSizes(poolSizes)
+													  .setMaxSets(1));
+
+	_descriptorSets = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo()
+														.setDescriptorPool(_descriptorPool)
+														.setSetLayouts(_descriptorSetLayout));
+
+	updateDescriptiors();
+}
+
+void vk_graphics_pipeline::createPipelineLayout(vk::Device device)
 {
 	std::vector<vk::PushConstantRange> pushConstantRanges;
-	vertShader->addPushConstantRange(pushConstantRanges);
-	fragShader->addPushConstantRange(pushConstantRanges);
+	_vertShader->addPushConstantRange(pushConstantRanges);
+	_fragShader->addPushConstantRange(pushConstantRanges);
 
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		vk::PipelineLayoutCreateInfo()
@@ -92,7 +168,7 @@ void vk_graphics_pipeline::createPipelineLayout(const vk::Device device)
 	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
 }
 
-void vk_graphics_pipeline::createPipeline(const vk::Device device)
+void vk_graphics_pipeline::createPipeline(vk::Device device)
 {
 	const vk_renderer* renderer{vk_renderer::get()};
 	const vk::RenderPass renderPass{renderer->getRenderPass()};
@@ -103,7 +179,9 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
 
-	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesInfo{vertShader->getPipelineShaderStageCreateInfo(), fragShader->getPipelineShaderStageCreateInfo()};
+	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesInfo;
+	_vertShader->addPipelineShaderStageCreateInfo(shaderStagesInfo);
+	_fragShader->addPipelineShaderStageCreateInfo(shaderStagesInfo);
 
 	const auto vertexInputBindingDescription{vk_vertex::getInputBindingDescription()};
 	const auto vertexInputAttributeDescriptions{vk_vertex::getInputAttributeDescription()};

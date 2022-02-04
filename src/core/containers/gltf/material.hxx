@@ -40,5 +40,5 @@ struct material
 
 	occlusion_texture _occlusionTexture;
 
-	pbr_metallic_roughness pbrMetallicRoughness;
+	pbr_metallic_roughness _pbrMetallicRoughness;
 };

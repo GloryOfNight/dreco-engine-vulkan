@@ -28,6 +28,7 @@ public:
 
 	std::vector<vk_texture_image*>& getTextureImages() { return _textureImages; };
 	const std::vector<vk_texture_image*>& getTextureImages() const { return _textureImages; }
+	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
 
 	std::vector<vk_graphics_pipeline*>& getGraphicPipelines() { return _graphicsPipelines; };
 	const std::vector<vk_graphics_pipeline*>& getGraphicPipelines() const { return _graphicsPipelines; }

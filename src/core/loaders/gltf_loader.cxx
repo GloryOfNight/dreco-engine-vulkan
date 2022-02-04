@@ -197,11 +197,11 @@ static void parseMaterials(const tinygltf::Model& tModel, model& dModel)
 		dMat._occlusionTexture._index = static_cast<uint32_t>(tMat.occlusionTexture.index);
 		dMat._occlusionTexture._strength = tMat.occlusionTexture.strength;
 
-		std::memcpy(dMat.pbrMetallicRoughness._baseColorFactor.data(), tMat.pbrMetallicRoughness.baseColorFactor.data(), sizeof(double) * 4);
-		dMat.pbrMetallicRoughness._baseColorTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.baseColorTexture.index);
-		dMat.pbrMetallicRoughness._metallicFactor = tMat.pbrMetallicRoughness.metallicFactor;
-		dMat.pbrMetallicRoughness._metallicRoughnessTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.metallicRoughnessTexture.index);
-		dMat.pbrMetallicRoughness._roughnessFactor = tMat.pbrMetallicRoughness.roughnessFactor;
+		std::memcpy(dMat._pbrMetallicRoughness._baseColorFactor.data(), tMat.pbrMetallicRoughness.baseColorFactor.data(), sizeof(double) * 4);
+		dMat._pbrMetallicRoughness._baseColorTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.baseColorTexture.index);
+		dMat._pbrMetallicRoughness._metallicFactor = tMat.pbrMetallicRoughness.metallicFactor;
+		dMat._pbrMetallicRoughness._metallicRoughnessTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.metallicRoughnessTexture.index);
+		dMat._pbrMetallicRoughness._roughnessFactor = tMat.pbrMetallicRoughness.roughnessFactor;
 	}
 }
 

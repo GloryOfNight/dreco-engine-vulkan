@@ -6,11 +6,17 @@ class vk_shader_basic_vert : public vk_shader
 public:
 	vk_shader_basic_vert();
 
-	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const override;
+	void addPipelineShaderStageCreateInfo(std::vector<vk::PipelineShaderStageCreateInfo>& shaderStages) const override;
 
-	vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const override;
+	void addDescriptorSetLayoutBindings(std::vector<vk::DescriptorSetLayoutBinding>& bindings) const override;
 
 	void addPushConstantRange(std::vector<vk::PushConstantRange>& ranges) const override;
+
+	void addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const override;
+
+	void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const material& mat) const override;
+
+	void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh);
 };
 
 class vk_shader_basic_frag : public vk_shader
@@ -18,7 +24,11 @@ class vk_shader_basic_frag : public vk_shader
 public:
 	vk_shader_basic_frag();
 
-	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const override;
+	void addPipelineShaderStageCreateInfo(std::vector<vk::PipelineShaderStageCreateInfo>& shaderStages) const override;
 
-	vk::DescriptorSetLayoutBinding getDescriptorSetLayoutBinding() const override;
+	void addDescriptorSetLayoutBindings(std::vector<vk::DescriptorSetLayoutBinding>& bindings) const override;
+
+	void addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const override;
+
+	void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const material& mat) const override;
 };

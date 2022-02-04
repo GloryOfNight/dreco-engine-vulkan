@@ -36,10 +36,11 @@ struct async_load_texture_task : public thread_task
 		}
 		texImage->create(_texData);
 
-		const auto& meshes = _scene->getMeshes();
-		for (auto& mesh : meshes)
+		const auto& pipelines = _scene->getGraphicPipelines();
+		for (auto& pipeline : pipelines)
 		{
-			mesh->getDescriptorSet().updateTextureImages(_scene->getTextureImages());
+			pipeline->updateDescriptiors();
+			//mesh->getDescriptorSet().updateTextureImages(_scene->getTextureImages());
 		}
 	};
 

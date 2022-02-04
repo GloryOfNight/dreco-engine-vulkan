@@ -46,7 +46,7 @@ public:
 	void registerShader();
 
 	template <class T>
-	const vk_shader* findShader();
+	vk_shader* findShader();
 
 	const vk_shader* findShader(const std::string_view& path);
 
@@ -205,7 +205,7 @@ inline void vk_renderer::registerShader()
 }
 
 template <class T>
-inline const vk_shader* vk_renderer::findShader()
+inline vk_shader* vk_renderer::findShader()
 {
 	static_assert(std::is_base_of<vk_shader, T>::value);
 

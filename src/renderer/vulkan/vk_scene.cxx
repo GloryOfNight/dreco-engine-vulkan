@@ -34,11 +34,12 @@ void vk_scene::create(const model& m)
 		engine::get()->getThreadPool().queueTask(new async_load_texture_task(m._rootPath + '/' + m._images[i]._uri, this, i));
 	}
 
-	_graphicsPipelines.reserve(m._materials.size());
-	for (const auto& mat : m._materials)
+	const size_t totalPipelines = m._materials.size();
+	_graphicsPipelines.reserve(totalPipelines);
+	for (size_t i = 0; i < totalPipelines; ++i)
 	{
-		_graphicsPipelines.push_back(new vk_graphics_pipeline());
-		_graphicsPipelines.back()->create(mat);
+		_graphicsPipelines.push_back(new vk_graphics_pipeline(this, m._materials[i]));
+		_graphicsPipelines.back()->create();
 	}
 
 	_meshes.reserve(m._meshes.size());
@@ -58,7 +59,7 @@ void vk_scene::recurseSceneNodes(const model& m, const node& selfNode, const mat
 	{
 		const auto& mesh = m._meshes[selfNode._mesh];
 		_meshes.push_back(new vk_mesh());
-		_meshes.back()->create(mesh, this);
+		_meshes.back()->create(*this, mesh);
 		_meshes.back()->_mat = newRootMat;
 	}
 	for (const auto& childNodeIndex : selfNode._children)
@@ -89,10 +90,6 @@ void vk_scene::bindToCmdBuffer(VkCommandBuffer commandBuffer)
 	{
 		pipeline->bindToCmdBuffer(commandBuffer);
 	}
-	for (auto* mesh : _meshes)
-	{
-		mesh->bindToCmdBuffer(commandBuffer);
-	}
 }
 
 bool vk_scene::isEmpty() const
@@ -105,4 +102,14 @@ void vk_scene::destroy()
 	clearVectorOfPtr(_textureImages);
 	clearVectorOfPtr(_graphicsPipelines);
 	clearVectorOfPtr(_meshes);
+}
+
+const vk_texture_image& vk_scene::getTextureImageFromIndex(uint32_t index) const
+{
+	const auto& placeholder = vk_renderer::get()->getTextureImagePlaceholder();
+	if (index < _textureImages.size() && _textureImages[index]->isValid())
+	{
+		return *_textureImages[index];
+	}
+	return placeholder;
 }
