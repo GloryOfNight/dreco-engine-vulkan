@@ -1,9 +1,16 @@
 # Dreco Engine - Vulkan
-Project for personal fun of writing vulkan renderer and an game engine (probably).
+Project for personal fun of writing vulkan renderer and an game engine.
 
-Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) with some core changes:
-- Full support for 3rd space, new matrixes
-- Vulkan as primary rendering API (really fun thing to try)
+## Targets
+* Development environment 
+  * Std::Cpp17 (with ability to upgrade std::Cpp20+)
+  * CMake
+  * Crossplatform
+* Engine designed to perfrom in realtime
+* Highly integrated Vulkan renderer 
+  * No different renderer backends, Vulkan as one and only
+* Utilize glTF2.0 assets
+
 
 ## Build
 [![Ubuntu](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml)
@@ -12,5 +19,5 @@ Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) wi
  ## Required Dependencies
 - CMake at least 3.19.0 ([link](https://cmake.org/))
 - Vulkan SDK ([link](https://vulkan.lunarg.com/))
-- SDL2 at least 2.0.16 ([link](https://github.com/libsdl-org/SDL))
-- GLM at least 0.9.8 ([link](https://github.com/g-truc/glm))
+- SDL2 ([link](https://github.com/libsdl-org/SDL))
+- GLM ([link](https://github.com/g-truc/glm))
