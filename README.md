@@ -20,4 +20,3 @@ Project for personal fun of writing vulkan renderer and an game engine.
 - CMake at least 3.19.0 ([link](https://cmake.org/))
 - Vulkan SDK ([link](https://vulkan.lunarg.com/))
 - SDL2 ([link](https://github.com/libsdl-org/SDL))
-- GLM ([link](https://github.com/g-truc/glm))

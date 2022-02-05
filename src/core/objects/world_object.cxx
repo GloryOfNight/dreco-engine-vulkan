@@ -10,7 +10,7 @@ void world_object::setPosition(const vec3& pos)
 	_transform._translation = pos;
 }
 
-void world_object::setRotation(const rotator& rot)
+void world_object::setRotation(const rotatorDeg& rot)
 {
 	_transform._rotation = rot;
 }

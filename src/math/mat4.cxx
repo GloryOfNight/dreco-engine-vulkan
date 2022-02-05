@@ -18,6 +18,11 @@ mat4::mat4(const mat4d& mat)
 {
 }
 
+mat4::mat4(mat4d&& mat)
+	: _mat{std::move(mat)}
+{
+}
+
 constexpr float mat4::size() noexcept
 {
 	return 16;
@@ -25,7 +30,7 @@ constexpr float mat4::size() noexcept
 
 mat4 mat4::makeTransform(const transform& t)
 {
-	return makeScale(t._scale) * makeTranslation(t._translation) * makeRotation(t._rotation);
+	return makeScale(t._scale) * makeTranslation(t._translation) * makeRotation(t._rotation.toRadians());
 }
 
 mat4 mat4::makeTranslation(const vec3& vec)
@@ -42,46 +47,54 @@ mat4 mat4::makeTranslation(const vec3& vec)
 	return mat4(mat);
 }
 
-mat4 mat4::makeRotation(const rotator& rot)
+mat4 mat4::makeRotation(const rotatorRad& rot)
 {
-	const rotator radians = rot.toRadians();
+	float cos_x = std::cos(rot._pitch);
+	float sin_x = std::sin(rot._pitch);
 
-	float cos_x = std::cos(radians._pitch);
-	float sin_x = std::sin(radians._pitch);
+	float cos_y = std::cos(rot._yaw);
+	float sin_y = std::sin(rot._yaw);
 
-	float cos_y = std::cos(radians._yaw);
-	float sin_y = std::sin(radians._yaw);
+	float cos_z = std::cos(rot._roll);
+	float sin_z = std::sin(rot._roll);
 
-	float cos_z = std::cos(radians._roll);
-	float sin_z = std::sin(radians._roll);
+	mat4 matX;
+	mat4 matY;
+	mat4 matZ;
 
 	// clang-format off
-	const mat4d matXraw =
-		{{
-			{1, 0, 0, 0},
-			{0, cos_x, -sin_x, 0},
-			{0, sin_x, cos_x, 0},
-			{0, 0, 0, 1}
-		}};
-	mat4 matX(matXraw);
-
-	const mat4d matYraw =
-		{{
-			{cos_y, 0, sin_y, 0},
-			{0, 1, 0, 0},
-			{-sin_y, 0, cos_y, 0},
-			{0, 0, 0, 1}
-		}};
-	mat4 matY(matYraw);
-
-	const mat4d matZraw =
-		{{
-			{cos_z, -sin_z, 0, 0},
-			{sin_z, cos_z, 0, 0},
-			{0, 0, 1, 0},
-			{0, 0, 0, 1}
-		}};
-	mat4 matZ(matZraw);
+	{
+		{
+			mat4d matXraw =
+				{{
+					{1, 0, 0, 0},
+					{0, cos_x, -sin_x, 0},
+					{0, sin_x, cos_x, 0},
+					{0, 0, 0, 1}
+				}};
+			matX = mat4(std::move(matXraw));
+		}
+		{
+			mat4d matYraw =
+				{{
+					{cos_y, 0, sin_y, 0},
+					{0, 1, 0, 0},
+					{-sin_y, 0, cos_y, 0},
+					{0, 0, 0, 1}
+				}};
+			matY = mat4(std::move(matYraw));
+		}
+		{
+			mat4d matZraw =
+				{{
+					{cos_z, -sin_z, 0, 0},
+					{sin_z, cos_z, 0, 0},
+					{0, 0, 1, 0},
+					{0, 0, 0, 1}
+				}};
+			matZ = mat4(std::move(matZraw));
+		}
+	}
 	// clang-format on
 
 	return matZ * matY * matX;
@@ -91,19 +104,19 @@ mat4 mat4::makeRotationQ(const quaternion& q)
 {
 	mat4 ret{};
 
-	ret._mat[0][0] = 2 * (q.w * q.w + q.x * q.x) - 1;
-	ret._mat[0][1] = 2 * (q.x * q.y + q.w * q.z);
-	ret._mat[0][2] = 2 * (q.x * q.z + q.w * q.y);
+	ret[0][0] = 2 * (q.w * q.w + q.x * q.x) - 1;
+	ret[0][1] = 2 * (q.x * q.y + q.w * q.z);
+	ret[0][2] = 2 * (q.x * q.z + q.w * q.y);
 
-	ret._mat[1][0] = 2 * (q.x * q.y + q.w * q.z);
-	ret._mat[1][1] = 2 * (q.w * q.w + q.y * q.y) - 1;
-	ret._mat[1][2] = 2 * (q.y * q.z + q.w * q.x);
+	ret[1][0] = 2 * (q.x * q.y + q.w * q.z);
+	ret[1][1] = 2 * (q.w * q.w + q.y * q.y) - 1;
+	ret[1][2] = 2 * (q.y * q.z + q.w * q.x);
 
-	ret._mat[2][0] = 2 * (q.x * q.z + q.w * q.y);
-	ret._mat[2][1] = 2 * (q.y * q.z + q.w * q.x);
-	ret._mat[2][2] = 2 * (q.w * q.w + q.z * q.z) - 1;
+	ret[2][0] = 2 * (q.x * q.z + q.w * q.y);
+	ret[2][1] = 2 * (q.y * q.z + q.w * q.x);
+	ret[2][2] = 2 * (q.w * q.w + q.z * q.z) - 1;
 
-	ret._mat[3][3] = 1;
+	ret[3][3] = 1;
 	return ret;
 }
 
@@ -137,23 +150,24 @@ mat4 mat4::makeIdentity()
 
 mat4 mat4::makeProjection(const float near, const float far, const float aspect, const float fov)
 {
-	float tanHalfFov = std::tan(fov / 2.F);
+	const float tanHalfFov = std::tan(fov / 2.F);
 
-	mat4d mat{};
-	mat[0][0] = 1.F / (aspect * tanHalfFov);
-	mat[1][1] = mat[0][0] * -aspect;
-	mat[2][2] = (far + near) / (far - near);
-	mat[2][3] = 1;
-	mat[3][2] = -(far * near) / (far - near);
+	mat4 ret;
+	ret[0][0] = 1.F / (aspect * tanHalfFov);
+	ret[1][1] = ret[0][0] * -aspect;
+	ret[2][2] = (far + near) / (far - near);
+	ret[2][3] = 1;
+	ret[3][2] = -(far * near) / (far - near);
+	ret[3][3] = 1;
 
-	return mat4(mat);
+	return ret;
 }
 
 mat4 operator*(const mat4& a, const mat4& b)
 {
 	constexpr size_t N = 4;
 
-	mat4::mat4d c;
+	mat4 ret;
 	for (size_t i = 0; i < N; i++)
 	{
 		for (size_t j = 0; j < N; j++)
@@ -161,40 +175,39 @@ mat4 operator*(const mat4& a, const mat4& b)
 			float num = 0;
 			for (size_t k = 0; k < N; k++)
 			{
-				num += a._mat[i][k] * b._mat[k][j];
+				num += a[i][k] * b[k][j];
 			}
-			c[i][j] = num;
+			ret[i][j] = num;
 		}
 	}
 
-	return mat4(c);
+	return ret;
 }
 
-mat4 operator*(const mat4& mat, const float val)
+mat4 operator*(const mat4& o, const float val)
 {
-	const auto& m = mat._mat;
-	mat4::mat4d newMat;
-	newMat[0][0] = m[0][0] * val;
-	newMat[0][1] = m[0][1] * val;
-	newMat[0][2] = m[0][2] * val;
-	newMat[0][3] = m[0][3] * val;
+	mat4 ret;
+	ret[0][0] = o[0][0] * val;
+	ret[0][1] = o[0][1] * val;
+	ret[0][2] = o[0][2] * val;
+	ret[0][3] = o[0][3] * val;
 
-	newMat[1][0] = m[1][0] * val;
-	newMat[1][1] = m[1][1] * val;
-	newMat[1][2] = m[1][2] * val;
-	newMat[1][3] = m[1][3] * val;
+	ret[1][0] = o[1][0] * val;
+	ret[1][1] = o[1][1] * val;
+	ret[1][2] = o[1][2] * val;
+	ret[1][3] = o[1][3] * val;
 
-	newMat[2][0] = m[2][0] * val;
-	newMat[2][1] = m[2][1] * val;
-	newMat[2][2] = m[2][2] * val;
-	newMat[2][3] = m[2][3] * val;
+	ret[2][0] = o[2][0] * val;
+	ret[2][1] = o[2][1] * val;
+	ret[2][2] = o[2][2] * val;
+	ret[2][3] = o[2][3] * val;
 
-	newMat[3][0] = m[3][0] * val;
-	newMat[3][1] = m[3][1] * val;
-	newMat[3][2] = m[3][2] * val;
-	newMat[3][3] = m[3][3] * val;
+	ret[3][0] = o[3][0] * val;
+	ret[3][1] = o[3][1] * val;
+	ret[3][2] = o[3][2] * val;
+	ret[3][3] = o[3][3] * val;
 
-	return mat4(newMat);
+	return ret;
 }
 
 mat4 mat4::makeInverse(const mat4& mat)

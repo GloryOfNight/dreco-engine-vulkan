@@ -171,8 +171,8 @@ static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 					else if (accessorIndex == texCoordAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
 					{
 						vec2& texCoor{dPrimitive._vertexes[q]._texCoord};
-						texCoor._x = positions[q * 2 + 0];
-						texCoor._y = positions[q * 2 + 1];
+						texCoor._u = positions[q * 2 + 0];
+						texCoor._v = positions[q * 2 + 1];
 					}
 					else if (accessorIndex == normalAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
 					{

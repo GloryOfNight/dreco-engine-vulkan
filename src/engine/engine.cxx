@@ -168,7 +168,7 @@ void engine::preMainLoop()
 	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("mi-24d/scene.gltf")));
 
 	_camera.setPosition(vec3(0, 10, 50));
-	_camera.setRotation(rotator(0, 180, 0));
+	_camera.setRotation(rotatorDeg(0, 180, 0));
 }
 
 void engine::startMainLoop()
