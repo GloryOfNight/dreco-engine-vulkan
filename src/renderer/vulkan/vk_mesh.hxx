@@ -1,7 +1,6 @@
 #pragma once
 #include "core/containers/gltf/mesh.hxx"
 #include "math/transform.hxx"
-#include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_graphics_pipeline.hxx"

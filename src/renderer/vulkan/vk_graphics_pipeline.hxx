@@ -1,5 +1,8 @@
 #pragma once
 #include "core/containers/gltf/material.hxx"
+#include "renderer/containers/shader_material.hxx"
+
+#include "vk_buffer.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -8,16 +11,17 @@ class vk_descriptor_set;
 class vk_mesh;
 class vk_scene;
 class vk_shader;
+class vk_texture_image;
 
 class vk_graphics_pipeline final
 {
 public:
-	vk_graphics_pipeline(const vk_scene* scene, const gltf::material& mat);
+	vk_graphics_pipeline() = default;
 	vk_graphics_pipeline(const vk_graphics_pipeline&) = delete;
 	vk_graphics_pipeline(vk_graphics_pipeline&&) = default;
 	~vk_graphics_pipeline() { destroy(); };
 
-	void create();
+	void create(const vk_scene* scene, const gltf::material& mat);
 
 	void recreatePipeline();
 
@@ -27,7 +31,11 @@ public:
 
 	void updateDescriptiors();
 
-	const gltf::material& getMaterial() const;
+	const shader_material& getMaterial() const;
+
+	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
+
+	const vk_buffer& getMaterialBuffer() const;
 
 	vk::DescriptorSetLayout getDescriptorSetLayout() const;
 
@@ -38,6 +46,8 @@ public:
 	void addDependentMesh(const vk_mesh* mesh);
 
 protected:
+	void loadGltfMaterial(const vk_scene* scene, const gltf::material& mat);
+
 	void createDescriptorSets(vk::Device device);
 
 	void createPipelineLayout(vk::Device device);
@@ -45,8 +55,12 @@ protected:
 	void createPipeline(vk::Device device);
 
 private:
-	const vk_scene* _scene;
-	const gltf::material _mat;
+	bool _doubleSided;
+
+	shader_material _material;
+	vk_buffer _materialBuffer;
+
+	std::vector<const vk_texture_image*> _textures;
 
 	vk_shader* _vertShader;
 

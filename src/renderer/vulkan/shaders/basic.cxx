@@ -39,14 +39,14 @@ void vk_shader_basic_vert::addDescriptorPoolSizes(std::vector<vk::DescriptorPool
 	sizes.push_back(vk::DescriptorPoolSize().setType(vk::DescriptorType::eUniformBuffer).setDescriptorCount(1));
 }
 
-void vk_shader_basic_vert::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const
+void vk_shader_basic_vert::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const
 {
 	const auto& buffer = vk_renderer::get()->getCameraDataBuffer();
 
-	auto& bufferInfo = infos.bufferInfos.emplace_back(vk::DescriptorBufferInfo());
-	bufferInfo.buffer = buffer.get();
-	bufferInfo.offset = 0;
-	bufferInfo.range = buffer.getSize();
+	infos.bufferInfos.push_back(vk::DescriptorBufferInfo()
+									.setBuffer(buffer.get())
+									.setOffset(0)
+									.setRange(buffer.getSize()));
 }
 
 void vk_shader_basic_vert::cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh)
@@ -75,19 +75,33 @@ void vk_shader_basic_frag::addDescriptorSetLayoutBindings(std::vector<vk::Descri
 						   .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 						   .setDescriptorCount(4)
 						   .setStageFlags(vk::ShaderStageFlagBits::eFragment));
+	bindings.push_back(vk::DescriptorSetLayoutBinding()
+						   .setBinding(2)
+						   .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+						   .setDescriptorCount(1)
+						   .setStageFlags(vk::ShaderStageFlagBits::eFragment));
 }
 
 void vk_shader_basic_frag::addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const
 {
-	sizes.push_back(vk::DescriptorPoolSize().setType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(1));
+	sizes.push_back(vk::DescriptorPoolSize().setType(vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(4));
+	sizes.push_back(vk::DescriptorPoolSize().setType(vk::DescriptorType::eUniformBuffer).setDescriptorCount(1));
 }
 
-void vk_shader_basic_frag::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const
+void vk_shader_basic_frag::addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const
 {
-	const auto& baseColor = scene->getTextureImageFromIndex(mat._pbrMetallicRoughness._baseColorTexture._index);
-	const auto& metallicRoughness = scene->getTextureImageFromIndex(mat._pbrMetallicRoughness._metallicRoughnessTexture._index);
-	const auto& normal = scene->getTextureImageFromIndex(mat._normalTexture._index);
-	const auto& emmisive = scene->getTextureImageFromIndex(mat._emissiveTexture._index);
+	const auto& material = pipeline.getMaterial();
+	const auto& materialBuffer = pipeline.getMaterialBuffer();
+
+	const auto& baseColor = pipeline.getTextureImageFromIndex(material._baseColorIndex);
+	const auto& metallicRoughness = pipeline.getTextureImageFromIndex(material._metallicRoughnessIndex);
+	const auto& normal = pipeline.getTextureImageFromIndex(material._normalIndex);
+	const auto& emissive = pipeline.getTextureImageFromIndex(material._emissiveIndex);
+
+	infos.bufferInfos.push_back(vk::DescriptorBufferInfo()
+									.setBuffer(materialBuffer.get())
+									.setOffset(0)
+									.setRange(materialBuffer.getSize()));
 
 	infos.imageInfos.reserve(4);
 	infos.imageInfos.push_back(vk::DescriptorImageInfo()
@@ -107,6 +121,6 @@ void vk_shader_basic_frag::addDescriptorWriteInfos(vk_descriptor_write_infos& in
 
 	infos.imageInfos.push_back(vk::DescriptorImageInfo()
 								   .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-								   .setImageView(emmisive.getImageView())
-								   .setSampler(emmisive.getSampler()));
+								   .setImageView(emissive.getImageView())
+								   .setSampler(emissive.getSampler()));
 }

@@ -43,8 +43,8 @@ void vk_scene::create(const gltf::model& m)
 	_graphicsPipelines.reserve(totalPipelines);
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
-		_graphicsPipelines.push_back(new vk_graphics_pipeline(this, m._materials[i]));
-		_graphicsPipelines.back()->create();
+		_graphicsPipelines.push_back(new vk_graphics_pipeline());
+		_graphicsPipelines.back()->create(this, m._materials[i]);
 	}
 
 	_meshes.reserve(m._meshes.size());

@@ -4,24 +4,32 @@ layout(location = 1) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
 
-struct pbr_metallic_roughness
+layout(binding = 1) uniform sampler2D texSampler[4];
+layout(binding = 2) uniform materialUniform
 {
+    uint baseColorIndex;
+    uint metallicRoughnessIndex;
+    uint normalIndex;
+    uint emissiveIndex;
+    // 16 ^ group all by 16
     vec4 baseColorFactor;
-
-    double metallicFactor;
-
-    double roughnessFactor;
-};
-
-layout(binding = 1) uniform sampler2D texSampler[4]; // 0 - baseColor, 1 - metallicRoughness, 2 - normal, 3 - emissive
-layout(binding = 2) uniform MaterialUniformObject {
-    uint normalTextureIndex;
-
-    uint emissiveTextureIndex;
-
-    pbr_metallic_roughness pbrMetallicRoughness;
-} material;
+    // 16 ^
+    vec3 emissiveFactor;
+    float normalScale;
+    // 16 ^
+    float metallicFactor;
+    float roughnessFactor;
+    // 8 ^
+} mat;
 
 void main() {
-    outColor = texture(texSampler[0], inUV);
+    outColor = mat.baseColorFactor;
+    if (mat.baseColorIndex != -1)
+    {
+        outColor = texture(texSampler[mat.baseColorIndex], inUV) * mat.baseColorFactor;
+    }
+    if (mat.emissiveIndex != -1)
+    {
+        outColor += texture(texSampler[mat.emissiveIndex], inUV) * vec4(mat.emissiveFactor, 1);
+    }
 }

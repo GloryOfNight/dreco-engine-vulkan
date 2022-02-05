@@ -34,17 +34,25 @@ void vk_mesh::create(const vk_scene& scene, const gltf::mesh& m)
 	_indxsBufferSize = 0;
 
 	std::set<uint32_t> usedMaterials{};
-	std::vector<vk_device_memory::map_memory_region> vertRegions(primitivesSize);
-	std::vector<vk_device_memory::map_memory_region> indxRegions(primitivesSize);
+
+	std::vector<vk_device_memory::map_memory_region> vertRegions;
+	vertRegions.reserve(primitivesSize);
+
+	std::vector<vk_device_memory::map_memory_region> indxRegions;
+	indxRegions.reserve(primitivesSize);
+
 	for (const gltf::mesh::primitive& prim : m._primitives)
 	{
 		const size_t vertBufferSize = sizeof(prim._vertexes[0]) * prim._vertexes.size();
 		vertRegions.push_back({prim._vertexes.data(), vertBufferSize, _vertsBufferSize});
 		_vertsBufferSize += vertBufferSize;
 
-		const size_t indxBufferSize = sizeof(prim._indexes[0]) * prim._indexes.size();
-		indxRegions.push_back({prim._indexes.data(), indxBufferSize, _indxsBufferSize});
-		_indxsBufferSize += indxBufferSize;
+		const size_t indxBufferSize = sizeof(uint32_t) * prim._indexes.size();
+		if (indxBufferSize)
+		{
+			indxRegions.push_back({prim._indexes.data(), indxBufferSize, _indxsBufferSize});
+			_indxsBufferSize += indxBufferSize;
+		}
 
 		usedMaterials.emplace(prim._material);
 	}
@@ -67,8 +75,17 @@ void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const
 	const std::array<vk::Buffer, 1> buffers{_viBuffer.get()};
 	const std::array<vk::DeviceSize, 1> offsets{0};
 	commandBuffer.bindVertexBuffers(0, buffers, offsets);
-	commandBuffer.bindIndexBuffer(_viBuffer.get(), _vertsBufferSize, vk::IndexType::eUint32);
-	commandBuffer.drawIndexed(static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
+
+	// draw indexed or draw just verts
+	if (_indxsBufferSize)
+	{
+		commandBuffer.bindIndexBuffer(_viBuffer.get(), _vertsBufferSize, vk::IndexType::eUint32);
+		commandBuffer.drawIndexed(static_cast<uint32_t>(_indxsBufferSize / sizeof(uint32_t)), 1, 0, 0, 0);
+	}
+	else
+	{
+		commandBuffer.draw(_vertsBufferSize, 1, 0, 0);
+	}
 }
 
 void vk_mesh::update()

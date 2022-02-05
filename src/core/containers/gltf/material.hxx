@@ -9,14 +9,19 @@ namespace gltf
 		uint32_t _index{UINT32_MAX};
 	};
 
-	struct normal_texture : public base_texture
+	struct normal : public base_texture
 	{
 		double _scale{1.0};
 	};
 
-	struct occlusion_texture : public base_texture
+	struct occlusion : public base_texture
 	{
 		double _strength{1.0};
+	};
+
+	struct emissive : public base_texture
+	{
+		std::array<double, 3> _factor;
 	};
 
 	struct pbr_metallic_roughness
@@ -36,11 +41,11 @@ namespace gltf
 	{
 		bool _doubleSided{true};
 
-		normal_texture _normalTexture;
+		normal _normal;
 
-		base_texture _emissiveTexture;
+		emissive _emissive;
 
-		occlusion_texture _occlusionTexture;
+		occlusion _occlusion;
 
 		pbr_metallic_roughness _pbrMetallicRoughness;
 	};

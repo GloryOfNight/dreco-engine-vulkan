@@ -14,16 +14,19 @@
 #include <array>
 #include <vector>
 
-vk_graphics_pipeline::vk_graphics_pipeline(const vk_scene* scene, const gltf::material& mat)
-	: _scene{scene}
-	, _mat{mat}
+void vk_graphics_pipeline::create(const vk_scene* scene, const gltf::material& mat)
 {
-}
-
-void vk_graphics_pipeline::create()
-{
+	loadGltfMaterial(scene, mat);
 	vk_renderer* renderer{vk_renderer::get()};
 	vk::Device device = renderer->getDevice();
+
+	vk_buffer::create_info bufferCreateInfo{};
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
+	bufferCreateInfo.size = sizeof(shader_material);
+
+	_materialBuffer.create(bufferCreateInfo);
+	_materialBuffer.getDeviceMemory().map(&_material, sizeof(shader_material));
 
 	_vertShader = renderer->findShader<vk_shader_basic_vert>();
 	_fragShader = renderer->findShader<vk_shader_basic_frag>();
@@ -71,8 +74,8 @@ void vk_graphics_pipeline::bindToCmdBuffer(const vk::CommandBuffer commandBuffer
 void vk_graphics_pipeline::updateDescriptiors()
 {
 	vk_descriptor_write_infos infos;
-	_vertShader->addDescriptorWriteInfos(infos, _scene, _mat);
-	_fragShader->addDescriptorWriteInfos(infos, _scene, _mat);
+	_vertShader->addDescriptorWriteInfos(infos, *this);
+	_fragShader->addDescriptorWriteInfos(infos, *this);
 
 	std::vector<vk::DescriptorPoolSize> poolSizes;
 	_vertShader->addDescriptorPoolSizes(poolSizes);
@@ -80,6 +83,9 @@ void vk_graphics_pipeline::updateDescriptiors()
 
 	const size_t writeSize = poolSizes.size();
 	std::vector<vk::WriteDescriptorSet> writes(writeSize, vk::WriteDescriptorSet());
+
+	uint32_t bufferOffset{0};
+	uint32_t imageOffset{0};
 	for (size_t i = 0; i < writeSize; ++i)
 	{
 		writes[i] = vk::WriteDescriptorSet()
@@ -89,10 +95,14 @@ void vk_graphics_pipeline::updateDescriptiors()
 		switch (poolSizes[i].type)
 		{
 		case vk::DescriptorType::eUniformBuffer:
-			writes[i].setBufferInfo(infos.bufferInfos);
+			writes[i].setDescriptorCount(poolSizes[i].descriptorCount);
+			writes[i].setPBufferInfo(&infos.bufferInfos[bufferOffset]);
+			bufferOffset += poolSizes[i].descriptorCount;
 			break;
 		case vk::DescriptorType::eCombinedImageSampler:
-			writes[i].setImageInfo(infos.imageInfos);
+			writes[i].setDescriptorCount(poolSizes[i].descriptorCount);
+			writes[i].setPImageInfo(&infos.imageInfos[imageOffset]);
+			imageOffset += poolSizes[i].descriptorCount;
 			break;
 		default:
 			break;
@@ -101,9 +111,23 @@ void vk_graphics_pipeline::updateDescriptiors()
 	vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
 }
 
-const gltf::material& vk_graphics_pipeline::getMaterial() const
+const shader_material& vk_graphics_pipeline::getMaterial() const
 {
-	return _mat;
+	return _material;
+}
+
+const vk_texture_image& vk_graphics_pipeline::getTextureImageFromIndex(uint32_t index) const
+{
+	if (index < _textures.size() && _textures[index]->isValid())
+	{
+		return *_textures[index];
+	}
+	return vk_renderer::get()->getTextureImagePlaceholder();
+}
+
+const vk_buffer& vk_graphics_pipeline::getMaterialBuffer() const
+{
+	return _materialBuffer;
 }
 
 vk::DescriptorSetLayout vk_graphics_pipeline::getDescriptorSetLayout() const
@@ -124,6 +148,49 @@ vk::Pipeline vk_graphics_pipeline::get() const
 void vk_graphics_pipeline::addDependentMesh(const vk_mesh* mesh)
 {
 	_dependedMeshes.push_back(mesh);
+}
+
+void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::material& mat)
+{
+	_material = shader_material();
+	_textures.reserve(4);
+
+	_doubleSided = mat._doubleSided;
+
+	_material._baseColorFactor[0] = mat._pbrMetallicRoughness._baseColorFactor[0];
+	_material._baseColorFactor[1] = mat._pbrMetallicRoughness._baseColorFactor[1];
+	_material._baseColorFactor[2] = mat._pbrMetallicRoughness._baseColorFactor[2];
+	_material._baseColorFactor[3] = mat._pbrMetallicRoughness._baseColorFactor[3];
+
+	_material._emissiveFactor[0] = mat._emissive._factor[0];
+	_material._emissiveFactor[1] = mat._emissive._factor[1];
+	_material._emissiveFactor[2] = mat._emissive._factor[2];
+
+	_material._metallicFactor = mat._pbrMetallicRoughness._metallicFactor;
+	_material._roughnessFactor = mat._pbrMetallicRoughness._roughnessFactor;
+
+	_material._normalScale = mat._normal._scale;
+
+	if (mat._pbrMetallicRoughness._baseColorTexture._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._baseColorTexture._index]);
+		_material._baseColorIndex = _textures.size() - 1;
+	}
+	if (mat._pbrMetallicRoughness._metallicRoughnessTexture._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._metallicRoughnessTexture._index]);
+		_material._metallicRoughnessIndex = _textures.size() - 1;
+	}
+	if (mat._normal._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._normal._index]);
+		_material._normalIndex = _textures.size() - 1;
+	}
+	if (mat._emissive._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._emissive._index]);
+		_material._emissiveIndex = _textures.size() - 1;
+	}
 }
 
 void vk_graphics_pipeline::createDescriptorSets(vk::Device device)
@@ -218,7 +285,7 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 			.setRasterizerDiscardEnable(VK_FALSE)
 			.setPolygonMode(renderer->getSettings().getDefaultPolygonMode())
 			.setLineWidth(1.0F)
-			.setCullMode(_mat._doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack)
+			.setCullMode(_doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack)
 			.setFrontFace(vk::FrontFace::eCounterClockwise)
 			.setDepthClampEnable(VK_FALSE)
 			.setDepthBiasEnable(VK_FALSE)

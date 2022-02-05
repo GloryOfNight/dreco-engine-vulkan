@@ -34,7 +34,7 @@ public:
 
 	virtual void addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const {};
 
-	virtual void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_scene* scene, const gltf::material& mat) const {};
+	virtual void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const {};
 
 	virtual void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh){};
 

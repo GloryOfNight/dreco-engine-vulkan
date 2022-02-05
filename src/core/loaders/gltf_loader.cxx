@@ -136,11 +136,15 @@ static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 			}
 
 			dPrimitive._vertexes.resize(tModel.accessors[vertPosAccessor].count);
-			dPrimitive._indexes.resize(tModel.accessors[indexAccessor].count);
+			
+			if (indexAccessor != UINT32_MAX)
+				dPrimitive._indexes.resize(tModel.accessors[indexAccessor].count);
 
 			const std::array<uint32_t, 4> usedAccessors{vertPosAccessor, normalAccessor, texCoordAccessor, indexAccessor};
 			for (const uint32_t accessorIndex : usedAccessors)
 			{
+				if (accessorIndex == UINT32_MAX)
+					continue;
 				const auto& accessor{tModel.accessors[accessorIndex]};
 				const auto& bufferView{tModel.bufferViews[accessor.bufferView]};
 				const auto& buffer{tModel.buffers[bufferView.buffer]};
@@ -197,13 +201,14 @@ static void parseMaterials(const tinygltf::Model& tModel, gltf::model& dModel)
 		auto& dMat = dModel._materials[i];
 
 		dMat._doubleSided = tMat.doubleSided;
-		dMat._normalTexture._index = static_cast<uint32_t>(tMat.normalTexture.index);
-		dMat._normalTexture._scale = tMat.normalTexture.scale;
+		dMat._normal._index = static_cast<uint32_t>(tMat.normalTexture.index);
+		dMat._normal._scale = tMat.normalTexture.scale;
 
-		dMat._emissiveTexture._index = static_cast<uint32_t>(tMat.emissiveTexture.index);
+		dMat._emissive._index = static_cast<uint32_t>(tMat.emissiveTexture.index);
+		dMat._emissive._factor = std::array<double, 3>{tMat.emissiveFactor[0], tMat.emissiveFactor[1], tMat.emissiveFactor[2]};
 
-		dMat._occlusionTexture._index = static_cast<uint32_t>(tMat.occlusionTexture.index);
-		dMat._occlusionTexture._strength = tMat.occlusionTexture.strength;
+		dMat._occlusion._index = static_cast<uint32_t>(tMat.occlusionTexture.index);
+		dMat._occlusion._strength = tMat.occlusionTexture.strength;
 
 		std::memcpy(dMat._pbrMetallicRoughness._baseColorFactor.data(), tMat.pbrMetallicRoughness.baseColorFactor.data(), sizeof(double) * 4);
 		dMat._pbrMetallicRoughness._baseColorTexture._index = static_cast<uint32_t>(tMat.pbrMetallicRoughness.baseColorTexture.index);
