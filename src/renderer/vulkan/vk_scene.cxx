@@ -47,15 +47,19 @@ void vk_scene::create(const gltf::model& m)
 		_graphicsPipelines.back()->create(this, m._materials[i]);
 	}
 
+	scene_meshes_info info;
+
 	_meshes.reserve(m._meshes.size());
 	const auto& scene = m._scenes[m._sceneIndex];
 	for (const auto nodeIndex : scene._nodes)
 	{
-		recurseSceneNodes(m, m._nodes[nodeIndex], mat4::makeIdentity());
+		recurseSceneNodes(m, m._nodes[nodeIndex], mat4::makeIdentity(), info);
 	}
+
+	createMeshesBuffer(info);
 }
 
-void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat)
+void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat, scene_meshes_info& info)
 {
 	const mat4 newRootMat = selfNode._matrix * rootMat;
 	if (selfNode._mesh != UINT32_MAX)
@@ -63,23 +67,47 @@ void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNod
 		const auto& mesh = m._meshes[selfNode._mesh];
 		for (const auto& primitive : mesh._primitives)
 		{
-			_meshes.push_back(new vk_mesh());
-			_meshes.back()->create(*this, primitive);
-			_meshes.back()->_mat = newRootMat;
+			auto* newMesh = _meshes.emplace_back(new vk_mesh());
+
+			newMesh->create(*this, primitive, info._totalVertexSize / sizeof(gltf::mesh::primitive::vertex), info._totalIndexSize / sizeof(uint32_t));
+			newMesh->_mat = newRootMat;
+
+			const uint32_t vertexSize = newMesh->getVertexesSize();
+			info._vertexMemRegions.push_back({primitive._vertexes.data(), vertexSize, info._totalVertexSize});
+			info._totalVertexSize += vertexSize;
+
+			const uint32_t indexSize = newMesh->getIndexesSize();
+			info._indexMemRegions.push_back({primitive._indexes.data(), indexSize, info._totalIndexSize});
+			info._totalIndexSize += indexSize;
 		}
 	}
 	for (const auto& childNodeIndex : selfNode._children)
 	{
-		recurseSceneNodes(m, m._nodes[childNodeIndex], newRootMat);
+		recurseSceneNodes(m, m._nodes[childNodeIndex], newRootMat, info);
 	}
 }
 
-void vk_scene::update()
+void vk_scene::createMeshesBuffer(scene_meshes_info& info)
 {
-	for (auto* mesh : _meshes)
-	{
-		mesh->update();
-	}
+	_indexVIBufferOffset = info._totalVertexSize;
+
+	vk_buffer::create_info createInfo;
+	createInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
+	createInfo.size = info._totalVertexSize + info._totalIndexSize;
+	createInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
+
+	vk_buffer tempBuffer;
+	tempBuffer.create(createInfo);
+
+	createInfo.memoryPropertiesFlags = vk_buffer::create_info::deviceMemoryPropertiesFlags;
+	createInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+	_meshesVIBuffer.create(createInfo);
+
+	tempBuffer.getDeviceMemory().map(info._vertexMemRegions);
+	tempBuffer.getDeviceMemory().map(info._indexMemRegions, _indexVIBufferOffset);
+
+	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, createInfo.size);
+	vk_buffer::copyBuffer(tempBuffer.get(), _meshesVIBuffer.get(), {copyRegion});
 }
 
 void vk_scene::recreatePipelines()
@@ -90,11 +118,18 @@ void vk_scene::recreatePipelines()
 	}
 }
 
-void vk_scene::bindToCmdBuffer(VkCommandBuffer commandBuffer)
+void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 {
+	vk::Device device = vk_renderer::get()->getDevice();
+
+	std::array<vk::DeviceSize, 1> offsets{0};
+	commandBuffer.bindVertexBuffers(0, _meshesVIBuffer.get(), offsets);
+	commandBuffer.bindIndexBuffer(_meshesVIBuffer.get(), _indexVIBufferOffset, vk::IndexType::eUint32);
+
 	for (auto* pipeline : _graphicsPipelines)
 	{
-		pipeline->bindToCmdBuffer(commandBuffer);
+		pipeline->bindCmd(commandBuffer);
+		pipeline->drawCmd(commandBuffer);
 	}
 }
 
@@ -108,6 +143,7 @@ void vk_scene::destroy()
 	clearVectorOfPtr(_textureImages);
 	clearVectorOfPtr(_graphicsPipelines);
 	clearVectorOfPtr(_meshes);
+	_meshesVIBuffer.destroy();
 }
 
 const vk_texture_image& vk_scene::getTextureImageFromIndex(uint32_t index) const

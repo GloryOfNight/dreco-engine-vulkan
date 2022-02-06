@@ -2,6 +2,8 @@
 #include "core/containers/gltf/model.hxx"
 #include "vulkan/vulkan.h"
 
+#include "vk_buffer.hxx"
+
 #include <vector>
 
 class vk_texture_image;
@@ -16,11 +18,9 @@ public:
 
 	void create(const gltf::model& m);
 
-    void update();
-
 	void recreatePipelines();
 
-	void bindToCmdBuffer(VkCommandBuffer commandBuffer);
+	void bindToCmdBuffer(vk::CommandBuffer commandBuffer);
 
 	bool isEmpty() const;
 
@@ -33,13 +33,26 @@ public:
 	std::vector<vk_graphics_pipeline*>& getGraphicPipelines() { return _graphicsPipelines; };
 	const std::vector<vk_graphics_pipeline*>& getGraphicPipelines() const { return _graphicsPipelines; }
 
-    std::vector<vk_mesh*>& getMeshes() { return _meshes; };
+	std::vector<vk_mesh*>& getMeshes() { return _meshes; };
 	const std::vector<vk_mesh*>& getMeshes() const { return _meshes; }
 
 private:
-	void recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat);
+	struct scene_meshes_info
+	{
+		uint32_t _totalVertexSize{0};
+		uint32_t _totalIndexSize{0};
+		std::vector<vk_device_memory::map_memory_region> _vertexMemRegions;
+		std::vector<vk_device_memory::map_memory_region> _indexMemRegions;
+	};
+
+	void recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat, scene_meshes_info& info);
+
+	void createMeshesBuffer(scene_meshes_info& info);
 
 	std::vector<vk_texture_image*> _textureImages;
 	std::vector<vk_graphics_pipeline*> _graphicsPipelines;
 	std::vector<vk_mesh*> _meshes;
+
+	uint32_t _indexVIBufferOffset;
+	vk_buffer _meshesVIBuffer;
 };

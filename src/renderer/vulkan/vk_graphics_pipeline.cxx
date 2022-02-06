@@ -59,10 +59,14 @@ void vk_graphics_pipeline::destroy()
 	}
 }
 
-void vk_graphics_pipeline::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
+void vk_graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer)
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, getLayout(), 0, _descriptorSets, nullptr);
+}
+
+void vk_graphics_pipeline::drawCmd(vk::CommandBuffer commandBuffer)
+{
 	for (const vk_mesh* mesh : _dependedMeshes)
 	{
 		_vertShader->cmdPushConstants(commandBuffer, getLayout(), mesh);

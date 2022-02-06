@@ -761,7 +761,6 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 	for (auto& scene : _scenes)
 	{
-		scene->update();
 		scene->bindToCmdBuffer(commandBuffer);
 	}
 	commandBuffer.endRenderPass();

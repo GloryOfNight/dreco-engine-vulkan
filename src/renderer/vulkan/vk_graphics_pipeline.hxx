@@ -27,7 +27,8 @@ public:
 
 	void destroy();
 
-	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer);
+	void bindCmd(vk::CommandBuffer commandBuffer);
+	void drawCmd(vk::CommandBuffer commandBuffer);
 
 	void updateDescriptiors();
 

@@ -24,28 +24,26 @@ public:
 	vk_mesh() = default;
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
-	~vk_mesh();
+	~vk_mesh() = default;
 
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const vk_scene& scene, const gltf::mesh::primitive& prim);
-
-	void destroy();
+	void create(const vk_scene& scene, const gltf::mesh::primitive& prim, uint32_t vertexOffset, uint32_t indexOffset);
 
 	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const;
 
-	void update();
+	uint32_t getVertexesSize() const { return _vertexSize; };
+	uint32_t getIndexesSize() const { return _indexSize; };
 
 	mat4 _mat;
 
-protected:
-	void createVIBuffer(const _memory_region& vertRegion, const _memory_region& indxRegion);
-
 private:
-	vk::DeviceSize _vertsBufferSize{0};
-	vk::DeviceSize _indxsBufferSize{0};
-	std::vector<uint32_t> _primitiveIndexCounts;
+	uint32_t _vertexOffset{0};
+	vk::DeviceSize _vertexSize{0};
+	vk::DeviceSize _vertexCount{0};
 
-	vk_buffer _viBuffer;
+	uint32_t _indexOffset{0};
+	vk::DeviceSize _indexSize{0};
+	vk::DeviceSize _indexCount{0};
 };
