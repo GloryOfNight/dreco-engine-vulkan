@@ -61,9 +61,12 @@ void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNod
 	if (selfNode._mesh != UINT32_MAX)
 	{
 		const auto& mesh = m._meshes[selfNode._mesh];
-		_meshes.push_back(new vk_mesh());
-		_meshes.back()->create(*this, mesh);
-		_meshes.back()->_mat = newRootMat;
+		for (const auto& primitive : mesh._primitives)
+		{
+			_meshes.push_back(new vk_mesh());
+			_meshes.back()->create(*this, primitive);
+			_meshes.back()->_mat = newRootMat;
+		}
 	}
 	for (const auto& childNodeIndex : selfNode._children)
 	{

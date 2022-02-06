@@ -13,3 +13,9 @@ struct DRECO_API vec3t;
 using vec3d = vec3t<double>;
 using vec3f = vec3t<float>;
 using vec3 = vec3f;
+
+template <typename T>
+struct DRECO_API vec4t;
+using vec4d = vec4t<double>;
+using vec4f = vec4t<float>;
+using vec4 = vec4f;

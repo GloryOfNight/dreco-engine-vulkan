@@ -3,5 +3,6 @@
 
 struct camera_data
 {
+	mat4 view;
 	mat4 viewProj;
 };

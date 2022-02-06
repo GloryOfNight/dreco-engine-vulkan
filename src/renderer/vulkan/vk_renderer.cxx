@@ -22,7 +22,9 @@
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
 //disabled due to unstabilities on linux
-//#define VK_ENABLE_LUNAR_MONITOR
+#if PLATFORM_WINDOWS
+#define VK_ENABLE_LUNAR_MONITOR
+#endif
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
@@ -689,7 +691,8 @@ void vk_renderer::updateCameraData()
 	const auto camera = engine::get()->getCamera();
 
 	camera_data data;
-	data.viewProj = camera->getView() * camera->getProjection();
+	data.view = camera->getView();
+	data.viewProj = data.view * camera->getProjection();
 
 	_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
 }

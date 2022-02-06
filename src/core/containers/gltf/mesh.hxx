@@ -1,14 +1,13 @@
 #pragma once
-#include "math/mat4.hxx"
 #include "math/vec2.hxx"
 #include "math/vec3.hxx"
+#include "math/vec4.hxx"
 
 #include <cstdint>
 #include <vector>
 
 namespace gltf
 {
-	struct material;
 	struct mesh
 	{
 		struct primitive
@@ -20,6 +19,8 @@ namespace gltf
 				vec3 _normal;
 
 				vec2 _texCoord;
+
+				vec4 _color;
 			};
 
 			std::vector<vertex> _vertexes;

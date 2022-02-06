@@ -118,7 +118,9 @@ static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 			uint32_t vertPosAccessor{UINT32_MAX};
 			uint32_t normalAccessor{UINT32_MAX};
 			uint32_t texCoordAccessor{UINT32_MAX};
-			uint32_t indexAccessor{static_cast<uint32_t>(tPrimitive.indices)};
+			uint32_t colorAccessor{UINT32_MAX};
+			const uint32_t indexAccessor{static_cast<uint32_t>(tPrimitive.indices)};
+
 			for (const auto& attr : tPrimitive.attributes)
 			{
 				if (attr.first == "POSITION")
@@ -133,14 +135,18 @@ static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 				{
 					texCoordAccessor = attr.second;
 				}
+				else if (attr.first == "COLOR_0")
+				{
+					colorAccessor = attr.second;
+				}
 			}
 
 			dPrimitive._vertexes.resize(tModel.accessors[vertPosAccessor].count);
-			
+
 			if (indexAccessor != UINT32_MAX)
 				dPrimitive._indexes.resize(tModel.accessors[indexAccessor].count);
 
-			const std::array<uint32_t, 4> usedAccessors{vertPosAccessor, normalAccessor, texCoordAccessor, indexAccessor};
+			const std::array<uint32_t, 5> usedAccessors{vertPosAccessor, indexAccessor, texCoordAccessor, normalAccessor, colorAccessor};
 			for (const uint32_t accessorIndex : usedAccessors)
 			{
 				if (accessorIndex == UINT32_MAX)
@@ -163,27 +169,42 @@ static void parseMeshes(const tinygltf::Model& tModel, gltf::model& dModel)
 					{
 						if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
 						{
-							const uint16_t* indexPos = reinterpret_cast<const uint16_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+							const uint16_t* indexPos = reinterpret_cast<const uint16_t*>(positions);
 							dPrimitive._indexes[q] = indexPos[q];
 						}
-						else
+						else if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
 						{
-							const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+							const uint32_t* indexPos = reinterpret_cast<const uint32_t*>(positions);
 							dPrimitive._indexes[q] = indexPos[q];
 						}
 					}
-					else if (accessorIndex == texCoordAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+					else if (accessorIndex == texCoordAccessor)
 					{
 						vec2& texCoor{dPrimitive._vertexes[q]._texCoord};
 						texCoor._u = positions[q * 2 + 0];
 						texCoor._v = positions[q * 2 + 1];
 					}
-					else if (accessorIndex == normalAccessor && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+					else if (accessorIndex == normalAccessor)
 					{
 						vec3& normal{dPrimitive._vertexes[q]._normal};
 						normal._x = positions[q * 3 + 0];
 						normal._y = positions[q * 3 + 1];
 						normal._z = positions[q * 3 + 2];
+					}
+					else if (accessorIndex == colorAccessor)
+					{
+						vec4& color{dPrimitive._vertexes[q]._color};
+						const uint8_t size = accessor.type == TINYGLTF_PARAMETER_TYPE_FLOAT_VEC3 ? 3 : 4;
+						if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+						{
+							color._r = positions[q * size + 0];
+							color._g = positions[q * size + 1];
+							color._b = positions[q * size + 2];
+							if (size == 4)
+							{
+								color._a = positions[q * size + 3];
+							}
+						}
 					}
 				}
 			}
@@ -250,8 +271,8 @@ gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
 	dModel._rootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
 	parseScenes(tModel, dModel);
 	parseNodes(tModel, dModel);
-	parseMeshes(tModel, dModel);
 	parseMaterials(tModel, dModel);
+	parseMeshes(tModel, dModel);
 	parseImages(tModel, dModel);
 
 	return dModel;

@@ -18,10 +18,10 @@ class vk_physical_device;
 
 class vk_mesh final
 {
-	typedef std::vector<vk_device_memory::map_memory_region> _memory_regions;
+	using _memory_region = vk_device_memory::map_memory_region;
 
 public:
-	vk_mesh();
+	vk_mesh() = default;
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
 	~vk_mesh();
@@ -29,7 +29,7 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const vk_scene& scene, const gltf::mesh& m);
+	void create(const vk_scene& scene, const gltf::mesh::primitive& prim);
 
 	void destroy();
 
@@ -40,7 +40,7 @@ public:
 	mat4 _mat;
 
 protected:
-	void createVIBuffer(const gltf::mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
+	void createVIBuffer(const _memory_region& vertRegion, const _memory_region& indxRegion);
 
 private:
 	vk::DeviceSize _vertsBufferSize{0};

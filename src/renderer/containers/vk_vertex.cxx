@@ -15,7 +15,7 @@ std::vector<vk::VertexInputBindingDescription> vk_vertex::getInputBindingDescrip
 
 std::vector<vk::VertexInputAttributeDescription> vk_vertex::getInputAttributeDescription()
 {
-	std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(3, VkVertexInputAttributeDescription());
+	std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(4, VkVertexInputAttributeDescription());
 
 	attributeDescriptions[0] =
 		vk::VertexInputAttributeDescription()
@@ -37,6 +37,13 @@ std::vector<vk::VertexInputAttributeDescription> vk_vertex::getInputAttributeDes
 			.setLocation(2)
 			.setFormat(vk::Format::eR32G32Sfloat)
 			.setOffset(offsetof(vertex, _texCoord));
+
+		attributeDescriptions[3] =
+		vk::VertexInputAttributeDescription()
+			.setBinding(0)
+			.setLocation(3)
+			.setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(offsetof(vertex, _color));
 
 	return attributeDescriptions;
 }
