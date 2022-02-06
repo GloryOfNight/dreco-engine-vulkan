@@ -1,12 +1,12 @@
 #include "vk_renderer.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
-#include "renderer/containers/camera_data.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
 #include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
+#include "renderer/containers/camera_data.hxx"
 
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
@@ -448,55 +448,43 @@ void vk_renderer::createRenderPass()
 	const bool isSamplingSupported = _settings.getIsSamplingSupported();
 
 	std::vector<vk::AttachmentDescription> attachmentsDescriptions;
-	attachmentsDescriptions.reserve(3);
 
-	[[maybe_unused]] const vk::AttachmentDescription colorAttachment =
-		attachmentsDescriptions.emplace_back()
+	std::vector<vk::AttachmentReference> attachmentReferences;
+	std::vector<vk::AttachmentReference> resolveAttachmentReferences;
+
+	attachmentsDescriptions.emplace_back() // color
+		.setFormat(_settings.getSurfaceFormat().format)
+		.setSamples(sampleCount)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(isSamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
+	attachmentReferences.push_back(vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal));
+
+	attachmentsDescriptions.emplace_back() // depth
+		.setFormat(_depthImage.getFormat())
+		.setSamples(sampleCount)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	attachmentReferences.push_back(vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal));
+
+	if (isSamplingSupported)
+	{
+		attachmentsDescriptions.emplace_back() // color msaa
 			.setFormat(_settings.getSurfaceFormat().format)
-			.setSamples(sampleCount)
-			.setLoadOp(vk::AttachmentLoadOp::eClear)
-			.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
-			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(isSamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
-
-	[[maybe_unused]] const vk::AttachmentDescription depthAttachment =
-		attachmentsDescriptions.emplace_back()
-			.setFormat(_depthImage.getFormat())
-			.setSamples(sampleCount)
-			.setLoadOp(vk::AttachmentLoadOp::eClear)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-	if (isSamplingSupported)
-	{
-		[[maybe_unused]] const vk::AttachmentDescription colorAttachmentResolve =
-			attachmentsDescriptions.emplace_back()
-				.setFormat(_settings.getSurfaceFormat().format)
-				.setSamples(vk::SampleCountFlagBits::e1)
-				.setLoadOp(vk::AttachmentLoadOp::eDontCare)
-				.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-				.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-				.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-				.setInitialLayout(vk::ImageLayout::eUndefined)
-				.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-	}
-
-	// clang-format off
-	const std::array<vk::AttachmentReference, 2> attachmentReferences
-	{
-		vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal),
-		vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal)
-	};
-	// clang-format on
-
-	std::vector<vk::AttachmentReference> resolveAttachmentReferences;
-	if (isSamplingSupported)
-	{
+			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 		resolveAttachmentReferences.push_back(vk::AttachmentReference(2, vk::ImageLayout::eColorAttachmentOptimal));
 	}
 

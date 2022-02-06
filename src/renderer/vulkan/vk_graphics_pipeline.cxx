@@ -23,10 +23,10 @@ void vk_graphics_pipeline::create(const vk_scene* scene, const gltf::material& m
 	vk_buffer::create_info bufferCreateInfo{};
 	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
 	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
-	bufferCreateInfo.size = sizeof(shader_material);
+	bufferCreateInfo.size = sizeof(material_data);
 
 	_materialBuffer.create(bufferCreateInfo);
-	_materialBuffer.getDeviceMemory().map(&_material, sizeof(shader_material));
+	_materialBuffer.getDeviceMemory().map(&_material, sizeof(material_data));
 
 	_vertShader = renderer->findShader<vk_shader_basic_vert>();
 	_fragShader = renderer->findShader<vk_shader_basic_frag>();
@@ -62,7 +62,6 @@ void vk_graphics_pipeline::destroy()
 void vk_graphics_pipeline::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
-
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, getLayout(), 0, _descriptorSets, nullptr);
 	for (const vk_mesh* mesh : _dependedMeshes)
 	{
@@ -111,7 +110,7 @@ void vk_graphics_pipeline::updateDescriptiors()
 	vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
 }
 
-const shader_material& vk_graphics_pipeline::getMaterial() const
+const material_data& vk_graphics_pipeline::getMaterial() const
 {
 	return _material;
 }
@@ -152,7 +151,7 @@ void vk_graphics_pipeline::addDependentMesh(const vk_mesh* mesh)
 
 void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::material& mat)
 {
-	_material = shader_material();
+	_material = material_data();
 	_textures.reserve(4);
 
 	_doubleSided = mat._doubleSided;

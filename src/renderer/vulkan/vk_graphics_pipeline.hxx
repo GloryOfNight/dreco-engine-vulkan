@@ -1,6 +1,6 @@
 #pragma once
 #include "core/containers/gltf/material.hxx"
-#include "renderer/containers/shader_material.hxx"
+#include "renderer/containers/material_data.hxx"
 
 #include "vk_buffer.hxx"
 
@@ -31,7 +31,7 @@ public:
 
 	void updateDescriptiors();
 
-	const shader_material& getMaterial() const;
+	const material_data& getMaterial() const;
 
 	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
 
@@ -57,7 +57,7 @@ protected:
 private:
 	bool _doubleSided;
 
-	shader_material _material;
+	material_data _material;
 	vk_buffer _materialBuffer;
 
 	std::vector<const vk_texture_image*> _textures;
