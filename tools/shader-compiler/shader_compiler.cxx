@@ -8,6 +8,12 @@
 #include <string>
 #include <vector>
 
+#ifdef _WINDOWS
+#define PLATFORM_WINDOWS 1
+#else 
+#define PLATFORM_WINDOWS 0
+#endif
+
 static bool isStemShaderSource(const std::string_view& stem)
 {
 	if (".vert" == stem)
@@ -55,30 +61,6 @@ int shader_compiler::attemptCompileShaders(const std::string_view& srcShaderDir,
 		}
 	}
 
-	const fs::path VulkanSDKDir = std::getenv("VULKAN_SDK");
-	std::cout << "VulkanSDKDir: " << VulkanSDKDir.generic_string() << std::endl;
-
-	const std::string exeStem = _WINDOWS ? ".exe" : "";
-	const fs::path VulkanGLSLCexec = VulkanSDKDir.generic_string() + "/bin/glslc" + exeStem;
-
-	if (!VulkanSDKDir.empty() && fs::exists(VulkanSDKDir))
-	{
-		if (fs::exists(VulkanGLSLCexec))
-		{
-			std::cout << "VulkanGLSLCexec: " << VulkanGLSLCexec.generic_string() << std::endl;
-		}
-		else
-		{
-			std::cerr << "failed to locate Vulkan GLSLC executable" << std::endl;
-			return 1;
-		}
-	}
-	else
-	{
-		std::cerr << "failed to locate Vulkan SDK" << std::endl;
-		return 1;
-	}
-
 	std::vector<std::string> totalShaderFiles;
 	std::vector<fs::path> needToCompileShaderFiles;
 
@@ -119,11 +101,12 @@ int shader_compiler::attemptCompileShaders(const std::string_view& srcShaderDir,
 	}
 
 	{
+		const std::string exeStem = PLATFORM_WINDOWS ? ".exe" : "";
 		for (auto& path : needToCompileShaderFiles)
 		{
 			const std::string sourceShaderPath = path.generic_string();
 			const std::string outputShaderPath = shaderBinDirPath.generic_string() + '/' + path.filename().generic_string() + ".spv";
-			const std::string command = VulkanGLSLCexec.generic_string() + ' ' + sourceShaderPath + " -o " + outputShaderPath;
+			const std::string command = "glslc" + exeStem + ' ' + sourceShaderPath + " -o " + outputShaderPath + " --target-env=vulkan";
 			const int result = std::system(command.data());
 			if (result == 0)
 			{
