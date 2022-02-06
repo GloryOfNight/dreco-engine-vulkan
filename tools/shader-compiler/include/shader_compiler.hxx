@@ -8,6 +8,8 @@
 #else
 #if _WIN32
 #define DRECO_SHADER_COMPILER_API __declspec(dllexport)
+#else 
+#define DRECO_SHADER_COMPILER_API
 #endif
 #endif
 #endif
