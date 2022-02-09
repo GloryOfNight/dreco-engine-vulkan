@@ -7,9 +7,11 @@
 #include "renderer/vulkan/vk_renderer.hxx"
 
 #include "engine.hxx"
+#include "signal_handler.hxx"
 
 #include <SDL.h>
 #include <chrono>
+#include <csignal>
 
 static inline engine* gEngine{nullptr};
 
@@ -99,6 +101,7 @@ bool engine::init()
 		return false;
 	}
 
+	signal_handler::registerSignalsHandle();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
