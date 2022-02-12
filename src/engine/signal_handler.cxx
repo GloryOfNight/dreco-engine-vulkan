@@ -17,15 +17,12 @@ void signal_handler::registerSignalsHandle()
 	std::signal(SIGFPE, signal_handler::onSignal);
 	std::signal(SIGSEGV, signal_handler::onSignal);
 	std::signal(SIGTERM, signal_handler::onSignal);
-	std::signal(SIGBREAK, signal_handler::onSignal);
 	std::signal(SIGABRT, signal_handler::onSignal);
 }
 
 void signal_handler::onSignal(int sig)
 {
-	if (sig == SIGBREAK)
-		DE_LOG(Info, "Engine recieved break. . . Stopping engine.");
-	else if (sig == SIGFPE)
+	if (sig == SIGFPE)
 		DE_LOG(Info, "Engine recieved floating point excetion. . . Stopping engine.");
 	else if (sig == SIGSEGV)
 		DE_LOG(Info, "Engine recieved segment violation. . . Stopping engine.");
