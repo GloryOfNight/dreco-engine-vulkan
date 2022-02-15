@@ -49,7 +49,7 @@ image_data image_data::createPlaceholderTexture()
 	for (uint32_t i = 0; i < texSizeX2; ++i)
 	{
 		const auto* src = i % 3 || i == 1 ? &pink[0] : &black[0];
-		std::memcpy(&outData._pixels[i * texChannels], src, texChannels);
+		memcpy(&outData._pixels[i * texChannels], src, texChannels);
 	}
 
 	return outData;

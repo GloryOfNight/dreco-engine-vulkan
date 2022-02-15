@@ -111,7 +111,7 @@ bool engine::init()
 
 	if (!platform_paths::init())
 	{
-		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir());
+		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir().c_str());
 		return false;
 	}
 
