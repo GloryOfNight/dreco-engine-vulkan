@@ -8,13 +8,7 @@
 
 void vk_texture_image::create()
 {
-	image_data imageData;
-	if (!imageData.load(TEXTURE_PLACEHOLDER_URI))
-	{
-		DE_LOG(Critical, "Failed to load placeholder texture! Cannot proceed. . .");
-		std::abort();
-		return;
-	}
+	image_data imageData = image_data::createPlaceholderTexture();
 	create(imageData);
 }
 

@@ -8,6 +8,7 @@
 
 #include "engine.hxx"
 #include "signal_handler.hxx"
+#include "core/platform_paths.hxx"
 
 #include <SDL.h>
 #include <chrono>
@@ -108,10 +109,9 @@ bool engine::init()
 		return false;
 	}
 
-	if (!file_utils::isFileExists(TEXTURE_PLACEHOLDER_URI))
+	if (!platform_paths::init())
 	{
-		DE_LOG(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI.c_str());
-		DE_LOG(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
+		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir());
 		return false;
 	}
 
