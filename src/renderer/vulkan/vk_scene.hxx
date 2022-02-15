@@ -26,15 +26,15 @@ public:
 
 	void destroy();
 
-	std::vector<vk_texture_image*>& getTextureImages() { return _textureImages; };
-	const std::vector<vk_texture_image*>& getTextureImages() const { return _textureImages; }
+	std::vector<std::unique_ptr<vk_texture_image>>& getTextureImages() { return _textureImages; };
+	const std::vector<std::unique_ptr<vk_texture_image>>& getTextureImages() const { return _textureImages; }
 	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
 
-	std::vector<vk_graphics_pipeline*>& getGraphicPipelines() { return _graphicsPipelines; };
-	const std::vector<vk_graphics_pipeline*>& getGraphicPipelines() const { return _graphicsPipelines; }
+	std::vector<std::unique_ptr<vk_graphics_pipeline>>& getGraphicPipelines() { return _graphicsPipelines; };
+	const std::vector<std::unique_ptr<vk_graphics_pipeline>>& getGraphicPipelines() const { return _graphicsPipelines; }
 
-	std::vector<vk_mesh*>& getMeshes() { return _meshes; };
-	const std::vector<vk_mesh*>& getMeshes() const { return _meshes; }
+	std::vector<std::unique_ptr<vk_mesh>>& getMeshes() { return _meshes; };
+	const std::vector<std::unique_ptr<vk_mesh>>& getMeshes() const { return _meshes; }
 
 private:
 	struct scene_meshes_info
@@ -49,9 +49,9 @@ private:
 
 	void createMeshesBuffer(scene_meshes_info& info);
 
-	std::vector<vk_texture_image*> _textureImages;
-	std::vector<vk_graphics_pipeline*> _graphicsPipelines;
-	std::vector<vk_mesh*> _meshes;
+	std::vector<std::unique_ptr<vk_texture_image>> _textureImages;
+	std::vector<std::unique_ptr<vk_graphics_pipeline>> _graphicsPipelines;
+	std::vector<std::unique_ptr<vk_mesh>> _meshes;
 
 	uint32_t _indexVIBufferOffset;
 	vk_buffer _meshesVIBuffer;

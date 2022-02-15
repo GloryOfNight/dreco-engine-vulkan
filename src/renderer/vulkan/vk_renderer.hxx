@@ -12,6 +12,7 @@
 #include "vk_texture_image.hxx"
 
 #include <map>
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -48,7 +49,7 @@ public:
 	template <class T>
 	vk_shader* findShader();
 
-	const vk_shader* findShader(const std::string_view& path);
+	const std::unique_ptr<vk_shader>& findShader(const std::string_view& path);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -76,8 +77,8 @@ public:
 	const vk_settings& getSettings() const { return _settings; }
 	vk_settings& getSettings() { return _settings; }
 
-	const std::vector<vk_scene*>& getScenes() const { return _scenes; };
-	std::vector<vk_scene*>& getScenes() { return _scenes; };
+	const std::vector<std::unique_ptr<vk_scene>>& getScenes() const { return _scenes; };
+	std::vector<std::unique_ptr<vk_scene>>& getScenes() { return _scenes; };
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
@@ -137,7 +138,7 @@ private:
 
 	vk_texture_image _placeholderTextureImage;
 
-	std::vector<vk_scene*> _scenes;
+	std::vector<std::unique_ptr<vk_scene>> _scenes;
 
 	SDL_Window* _window;
 
@@ -165,7 +166,7 @@ private:
 
 	vk_buffer _cameraData;
 
-	std::map<const std::string_view, vk_shader*> _shaders;
+	std::map < const std::string_view, std::unique_ptr<vk_shader>> _shaders;
 
 	vk::SwapchainKHR _swapchain;
 
@@ -190,15 +191,11 @@ inline void vk_renderer::registerShader()
 {
 	static_assert(std::is_base_of<vk_shader, T>::value);
 
-	vk_shader* newShader = new T();
-	const std::string_view filename = newShader->getPath();
+	std::unique_ptr<vk_shader> newShader(new T());
 
+	const std::string_view filename = newShader->getPath();
 	auto pair = _shaders.try_emplace(filename, std::move(newShader));
-	if (!pair.second)
-	{
-		delete newShader;
-	}
-	else
+	if (pair.second)
 	{
 		_shaders[filename]->create();
 	}
@@ -211,9 +208,9 @@ inline vk_shader* vk_renderer::findShader()
 
 	for (const auto& pair : _shaders)
 	{
-		if (dynamic_cast<T*>(pair.second))
+		if (dynamic_cast<T*>(pair.second.get()))
 		{
-			return pair.second;
+			return pair.second.get();
 		}
 	}
 	return nullptr;

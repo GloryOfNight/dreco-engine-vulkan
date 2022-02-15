@@ -1,7 +1,6 @@
 #include "vk_scene.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
-#include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
 
 #include "vk_graphics_pipeline.hxx"
@@ -32,10 +31,10 @@ void vk_scene::create(const gltf::model& m)
 	}
 
 	const size_t imagesNum{m._images.size()};
-	_textureImages.resize(imagesNum, nullptr);
+	_textureImages.reserve(imagesNum);
 	for (size_t i = 0; i < imagesNum; ++i)
 	{
-		_textureImages[i] = new vk_texture_image();
+		_textureImages.emplace_back(new vk_texture_image());
 		engine::get()->getThreadPool().queueTask(new async_load_texture_task(m._rootPath + '/' + m._images[i]._uri, this, i));
 	}
 
@@ -43,8 +42,8 @@ void vk_scene::create(const gltf::model& m)
 	_graphicsPipelines.reserve(totalPipelines);
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
-		_graphicsPipelines.push_back(new vk_graphics_pipeline());
-		_graphicsPipelines.back()->create(this, m._materials[i]);
+		auto& pipeline = _graphicsPipelines.emplace_back(new vk_graphics_pipeline());
+		pipeline->create(this, m._materials[i]);
 	}
 
 	scene_meshes_info info;
@@ -67,7 +66,7 @@ void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNod
 		const auto& mesh = m._meshes[selfNode._mesh];
 		for (const auto& primitive : mesh._primitives)
 		{
-			auto* newMesh = _meshes.emplace_back(new vk_mesh());
+			auto& newMesh = _meshes.emplace_back(new vk_mesh());
 
 			newMesh->create(*this, primitive, info._totalVertexSize / sizeof(gltf::mesh::primitive::vertex), info._totalIndexSize / sizeof(uint32_t));
 			newMesh->_mat = newRootMat;
@@ -112,7 +111,7 @@ void vk_scene::createMeshesBuffer(scene_meshes_info& info)
 
 void vk_scene::recreatePipelines()
 {
-	for (auto* pipeline : _graphicsPipelines)
+	for (auto& pipeline : _graphicsPipelines)
 	{
 		pipeline->recreatePipeline();
 	}
@@ -126,7 +125,7 @@ void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 	commandBuffer.bindVertexBuffers(0, _meshesVIBuffer.get(), offsets);
 	commandBuffer.bindIndexBuffer(_meshesVIBuffer.get(), _indexVIBufferOffset, vk::IndexType::eUint32);
 
-	for (auto* pipeline : _graphicsPipelines)
+	for (auto& pipeline : _graphicsPipelines)
 	{
 		pipeline->bindCmd(commandBuffer);
 		pipeline->drawCmd(commandBuffer);
@@ -140,9 +139,9 @@ bool vk_scene::isEmpty() const
 
 void vk_scene::destroy()
 {
-	clearVectorOfPtr(_textureImages);
-	clearVectorOfPtr(_graphicsPipelines);
-	clearVectorOfPtr(_meshes);
+	_textureImages.clear();
+	_graphicsPipelines.clear();
+	_meshes.clear();
 	_meshesVIBuffer.destroy();
 }
 

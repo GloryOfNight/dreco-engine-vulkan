@@ -1,7 +1,6 @@
 #include "event_manager.hxx"
 
 #include "core/utils/log.hxx"
-#include "core/utils/utils.hxx"
 
 void event_manager::tick()
 {

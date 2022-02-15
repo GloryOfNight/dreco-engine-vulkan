@@ -4,7 +4,6 @@
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
-#include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
 #include "renderer/containers/camera_data.hxx"
 
@@ -127,12 +126,7 @@ void vk_renderer::exit()
 
 	_device.waitIdle();
 
-	clearVectorOfPtr(_scenes);
-
-	for (auto& pair : _shaders)
-	{
-		delete pair.second;
-	}
+	_scenes.clear();
 	_shaders.clear();
 
 	for (auto& fence : _submitQueueFences)
@@ -141,8 +135,6 @@ void vk_renderer::exit()
 	}
 
 	cleanupSwapchain(_swapchain);
-
-	_scenes.clear();
 
 	_placeholderTextureImage.destroy();
 	_cameraData.destroy();
@@ -183,7 +175,7 @@ void vk_renderer::loadModel(const gltf::model& scn)
 	_scenes.emplace_back(new vk_scene())->create(scn);
 }
 
-const vk_shader* vk_renderer::findShader(const std::string_view& path)
+const std::unique_ptr<vk_shader>& vk_renderer::findShader(const std::string_view& path)
 {
 	return _shaders.at(path);
 }

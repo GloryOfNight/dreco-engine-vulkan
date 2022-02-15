@@ -27,8 +27,8 @@ struct async_load_texture_task : public thread_task
 
 	virtual void completed() override
 	{
-		vk_texture_image* texImage = _scene->getTextureImages()[_texIndex];
-		new (texImage) vk_texture_image();
+		auto& texImage = _scene->getTextureImages()[_texIndex];
+		new (texImage.get()) vk_texture_image();
 
 		if (!_texData.isLoaded())
 		{
@@ -40,7 +40,6 @@ struct async_load_texture_task : public thread_task
 		for (auto& pipeline : pipelines)
 		{
 			pipeline->updateDescriptiors();
-			//mesh->getDescriptorSet().updateTextureImages(_scene->getTextureImages());
 		}
 	};
 

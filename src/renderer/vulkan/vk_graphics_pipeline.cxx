@@ -176,22 +176,22 @@ void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::m
 
 	if (mat._pbrMetallicRoughness._baseColorTexture._index != UINT32_MAX)
 	{
-		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._baseColorTexture._index]);
+		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._baseColorTexture._index].get());
 		_material._baseColorIndex = _textures.size() - 1;
 	}
 	if (mat._pbrMetallicRoughness._metallicRoughnessTexture._index != UINT32_MAX)
 	{
-		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._metallicRoughnessTexture._index]);
+		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._metallicRoughnessTexture._index].get());
 		_material._metallicRoughnessIndex = _textures.size() - 1;
 	}
 	if (mat._normal._index != UINT32_MAX)
 	{
-		_textures.push_back(scene->getTextureImages()[mat._normal._index]);
+		_textures.push_back(scene->getTextureImages()[mat._normal._index].get());
 		_material._normalIndex = _textures.size() - 1;
 	}
 	if (mat._emissive._index != UINT32_MAX)
 	{
-		_textures.push_back(scene->getTextureImages()[mat._emissive._index]);
+		_textures.push_back(scene->getTextureImages()[mat._emissive._index].get());
 		_material._emissiveIndex = _textures.size() - 1;
 	}
 }
