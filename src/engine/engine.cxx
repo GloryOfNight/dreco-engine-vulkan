@@ -78,7 +78,7 @@ engine* engine::get()
 
 const camera* engine::getCamera() const
 {
-	return &_camera;
+	return _gameInstance->getActiveCamera();
 }
 
 bool engine::init()
@@ -171,9 +171,7 @@ bool engine::startRenderer()
 void engine::preMainLoop()
 {
 	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("mi-24d/scene.gltf")));
-
-	_camera.setPosition(vec3(0, 10, 50));
-	_camera.setRotation(rotatorDeg(0, 180, 0));
+	_gameInstance->init();
 }
 
 void engine::startMainLoop()
@@ -191,7 +189,8 @@ void engine::startMainLoop()
 		_eventManager.tick();
 		_threadPool.tick();
 
-		_camera.tick(deltaTime);
+		_gameInstance->tick(deltaTime);
+
 		_renderer.tick(deltaTime);
 	}
 
@@ -201,6 +200,7 @@ void engine::startMainLoop()
 void engine::postMainLoop()
 {
 	_renderer.exit();
+	_gameInstance.reset();
 	SDL_Quit();
 }
 

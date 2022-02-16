@@ -1,6 +1,7 @@
 #include "vk_renderer.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
+#include "core/objects/camera.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
@@ -669,12 +670,13 @@ void vk_renderer::drawFrame()
 void vk_renderer::updateCameraData()
 {
 	const auto camera = engine::get()->getCamera();
-
-	camera_data data;
-	data.view = camera->getView();
-	data.viewProj = data.view * camera->getProjection();
-
-	_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
+	if (camera)
+	{
+		camera_data data;
+		data.view = camera->getView();
+		data.viewProj = data.view * camera->getProjection();
+		_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
+	}
 }
 
 bool vk_renderer::updateExtent()

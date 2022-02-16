@@ -11,7 +11,7 @@ void debug_camera::tick(double deltaTime)
 	auto* engine = engine::get();
 	input_manager& inputManager = engine->getInputManager();
 
-	auto transform = getTransform();
+	auto& transform = _transform;
 	const vec3 camFowVec = transform._rotation.toForwardVector();
 	const vec3 camRightVec = transform._rotation.toRightDirection();
 
@@ -99,6 +99,5 @@ void debug_camera::tick(double deltaTime)
 		rotation.min(-90.F, -360.F, -360.F);
 	}
 
-	setTransform(transform);
 	camera::tick(deltaTime);
 }

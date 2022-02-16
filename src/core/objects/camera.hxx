@@ -1,9 +1,16 @@
 #pragma once
-#include "world_object.hxx"
+#include "math/mat4.hxx"
 
-class camera : public world_object
+#include "entity.hxx"
+
+class camera : public entity
 {
 public:
+	camera(world& w, entity* owner = nullptr)
+		: entity(w, owner)
+	{
+	}
+
 	mat4 getView() const;
 
 	mat4 getProjection() const;
