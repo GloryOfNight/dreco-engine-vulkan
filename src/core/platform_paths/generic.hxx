@@ -10,7 +10,9 @@ struct generic_paths
 
 	static std::string assetsDir();
 
-	static std::string shadersDir();
+	static std::string shadersBinDir();
+
+	static std::string shadersSrcDir();
 
 private:
 	static bool checkCorePaths();

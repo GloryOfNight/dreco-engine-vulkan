@@ -1,6 +1,7 @@
 #include "engine.hxx"
 
 #include "core/loaders/gltf_loader.hxx"
+#include "core/platform_paths.hxx"
 #include "core/utils/file_utils.hxx"
 #include "core/utils/log.hxx"
 #include "renderer/vulkan/vk_mesh.hxx"
@@ -8,11 +9,11 @@
 
 #include "engine.hxx"
 #include "signal_handler.hxx"
-#include "core/platform_paths.hxx"
 
 #include <SDL.h>
 #include <chrono>
 #include <csignal>
+#include <shader_compiler.hxx>
 
 static inline engine* gEngine{nullptr};
 
@@ -127,6 +128,7 @@ void engine::run()
 		DE_LOG(Error, "Init engine first. Cannot run.");
 		return;
 	}
+	shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR);
 
 	if (true == startRenderer())
 	{

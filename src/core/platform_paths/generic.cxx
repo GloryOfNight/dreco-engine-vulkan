@@ -39,12 +39,17 @@ std::string generic_paths::assetsDir()
 	return (current_path() / DRECO_ASSETS_DIR).generic_string();
 }
 
-std::string generic_paths::shadersDir()
+std::string generic_paths::shadersBinDir()
 {
 	return (current_path() / DRECO_SHADERS_BINARY_DIR).generic_string();
 }
 
+std::string generic_paths::shadersSrcDir()
+{
+	return (current_path() / DRECO_SHADERS_SOURCE_DIR).generic_string();
+}
+
 bool generic_paths::checkCorePaths()
 {
-	return is_directory(assetsDir()) && is_directory(shadersDir());
+	return is_directory(assetsDir()) && (is_directory(shadersBinDir()) || is_directory(shadersSrcDir()));
 }
