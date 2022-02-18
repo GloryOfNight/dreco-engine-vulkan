@@ -1,6 +1,7 @@
 #include "vk_settings.hxx"
 
 #include "vk_renderer.hxx"
+#include <map>
 
 static vk::SampleCountFlagBits findMaxSampleCount(const vk::PhysicalDevice physicalDevice)
 {
@@ -39,15 +40,22 @@ static vk::SurfaceFormatKHR findSurfaceFormat(const vk::PhysicalDevice physicalD
 
 static vk::PresentModeKHR findPresentMode(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
 {
+	vk::PresentModeKHR outMode = vk::PresentModeKHR::eImmediate;
+
 	const auto presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
 	for (const auto& mode : presentModes)
 	{
-		if (vk::PresentModeKHR::eMailbox == mode)
+		if (mode == vk::PresentModeKHR::eMailbox)
 		{
-			return mode;
+			outMode = mode;
+			break;
+		}
+		else if(mode == vk::PresentModeKHR::eFifo) 
+		{
+			outMode = mode;
 		}
 	}
-	return vk::PresentModeKHR::eImmediate;
+	return outMode;
 }
 
 vk_settings::vk_settings()
