@@ -49,7 +49,7 @@ void vk_shader_basic_vert::addDescriptorWriteInfos(vk_descriptor_write_infos& in
 									.setRange(buffer.getSize()));
 }
 
-void vk_shader_basic_vert::cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh)
+void vk_shader_basic_vert::cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh) const
 {
 	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &mesh->_mat);
 }

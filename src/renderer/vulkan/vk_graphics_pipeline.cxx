@@ -28,8 +28,12 @@ void vk_graphics_pipeline::create(const vk_scene* scene, const gltf::material& m
 	_materialBuffer.create(bufferCreateInfo);
 	_materialBuffer.getDeviceMemory().map(&_material, sizeof(material_data));
 
-	_vertShader = renderer->findShader<vk_shader_basic_vert>();
-	_fragShader = renderer->findShader<vk_shader_basic_frag>();
+	_shaders.emplace(vk::ShaderStageFlagBits::eVertex, renderer->findShader<vk_shader_basic_vert>());
+	_shaders.emplace(vk::ShaderStageFlagBits::eFragment, renderer->findShader<vk_shader_basic_frag>());
+
+	_settings.default();
+	_settings._rasterizationState.setCullMode(mat._doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack);
+	_settings._multisamplingState.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount());
 
 	createDescriptorSets(device);
 
@@ -69,7 +73,10 @@ void vk_graphics_pipeline::drawCmd(vk::CommandBuffer commandBuffer)
 {
 	for (const vk_mesh* mesh : _dependedMeshes)
 	{
-		_vertShader->cmdPushConstants(commandBuffer, getLayout(), mesh);
+		for (auto& shader : _shaders)
+		{
+			shader.second->cmdPushConstants(commandBuffer, getLayout(), mesh);
+		}
 		mesh->bindToCmdBuffer(commandBuffer);
 	}
 }
@@ -77,12 +84,12 @@ void vk_graphics_pipeline::drawCmd(vk::CommandBuffer commandBuffer)
 void vk_graphics_pipeline::updateDescriptiors()
 {
 	vk_descriptor_write_infos infos;
-	_vertShader->addDescriptorWriteInfos(infos, *this);
-	_fragShader->addDescriptorWriteInfos(infos, *this);
-
 	std::vector<vk::DescriptorPoolSize> poolSizes;
-	_vertShader->addDescriptorPoolSizes(poolSizes);
-	_fragShader->addDescriptorPoolSizes(poolSizes);
+	for (auto& shader : _shaders)
+	{
+		shader.second->addDescriptorWriteInfos(infos, *this);
+		shader.second->addDescriptorPoolSizes(poolSizes);
+	}
 
 	const size_t writeSize = poolSizes.size();
 	std::vector<vk::WriteDescriptorSet> writes(writeSize, vk::WriteDescriptorSet());
@@ -158,8 +165,6 @@ void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::m
 	_material = material_data();
 	_textures.reserve(4);
 
-	_doubleSided = mat._doubleSided;
-
 	_material._baseColorFactor[0] = mat._pbrMetallicRoughness._baseColorFactor[0];
 	_material._baseColorFactor[1] = mat._pbrMetallicRoughness._baseColorFactor[1];
 	_material._baseColorFactor[2] = mat._pbrMetallicRoughness._baseColorFactor[2];
@@ -199,16 +204,16 @@ void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::m
 void vk_graphics_pipeline::createDescriptorSets(vk::Device device)
 {
 	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	_vertShader->addDescriptorSetLayoutBindings(bindings);
-	_fragShader->addDescriptorSetLayoutBindings(bindings);
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	for (auto& shader : _shaders)
+	{
+		shader.second->addDescriptorSetLayoutBindings(bindings);
+		shader.second->addDescriptorPoolSizes(poolSizes);
+	}
 
 	_descriptorSetLayout = device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo()
 																.setFlags({})
 																.setBindings(bindings));
-
-	std::vector<vk::DescriptorPoolSize> poolSizes;
-	_vertShader->addDescriptorPoolSizes(poolSizes);
-	_fragShader->addDescriptorPoolSizes(poolSizes);
 
 	_descriptorPool = device.createDescriptorPool(vk::DescriptorPoolCreateInfo()
 													  .setFlags({})
@@ -225,8 +230,10 @@ void vk_graphics_pipeline::createDescriptorSets(vk::Device device)
 void vk_graphics_pipeline::createPipelineLayout(vk::Device device)
 {
 	std::vector<vk::PushConstantRange> pushConstantRanges;
-	_vertShader->addPushConstantRange(pushConstantRanges);
-	_fragShader->addPushConstantRange(pushConstantRanges);
+	for (auto& shader : _shaders)
+	{
+		shader.second->addPushConstantRange(pushConstantRanges);
+	}
 
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		vk::PipelineLayoutCreateInfo()
@@ -239,31 +246,15 @@ void vk_graphics_pipeline::createPipelineLayout(vk::Device device)
 void vk_graphics_pipeline::createPipeline(vk::Device device)
 {
 	const vk_renderer* renderer{vk_renderer::get()};
-	const vk::RenderPass renderPass{renderer->getRenderPass()};
-	const vk::SurfaceKHR surface = renderer->getSurface();
-	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
-	const auto physicaDeviceFeatures = physicalDevice.getFeatures();
+
+	std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+	shaderStages.reserve(_shaders.size());
+	for (const auto& shader : _shaders)
+	{
+		shader.second->addPipelineShaderStageCreateInfo(shaderStages);
+	}
 
 	const vk::Extent2D extent = renderer->getCurrentExtent();
-	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
-
-	std::vector<vk::PipelineShaderStageCreateInfo> shaderStagesInfo;
-	_vertShader->addPipelineShaderStageCreateInfo(shaderStagesInfo);
-	_fragShader->addPipelineShaderStageCreateInfo(shaderStagesInfo);
-
-	const auto vertexInputBindingDescription{vk_vertex::getInputBindingDescription()};
-	const auto vertexInputAttributeDescriptions{vk_vertex::getInputAttributeDescription()};
-
-	const vk::PipelineVertexInputStateCreateInfo vertexInputState =
-		vk::PipelineVertexInputStateCreateInfo()
-			.setVertexBindingDescriptions(vertexInputBindingDescription)
-			.setVertexAttributeDescriptions(vertexInputAttributeDescriptions);
-
-	const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState =
-		vk::PipelineInputAssemblyStateCreateInfo()
-			.setTopology(vk::PrimitiveTopology::eTriangleList)
-			.setPrimitiveRestartEnable(VK_FALSE);
-
 	const vk::Viewport viewport =
 		vk::Viewport()
 			.setX(0)
@@ -283,72 +274,18 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 			.setViewports({1, &viewport})
 			.setScissors({1, &scissors});
 
-	const vk::PipelineRasterizationStateCreateInfo rasterizationState =
-		vk::PipelineRasterizationStateCreateInfo()
-			.setRasterizerDiscardEnable(VK_FALSE)
-			.setPolygonMode(renderer->getSettings().getDefaultPolygonMode())
-			.setLineWidth(1.0F)
-			.setCullMode(_doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack)
-			.setFrontFace(vk::FrontFace::eCounterClockwise)
-			.setDepthClampEnable(VK_FALSE)
-			.setDepthBiasEnable(VK_FALSE)
-			.setDepthBiasConstantFactor(0.0F)
-			.setDepthBiasSlopeFactor(0.0F)
-			.setDepthBiasClamp(0.0F);
-
-	const vk::PipelineMultisampleStateCreateInfo multisampleState =
-		vk::PipelineMultisampleStateCreateInfo()
-			.setSampleShadingEnable(VK_FALSE)
-			.setRasterizationSamples(sampleCount)
-			.setMinSampleShading(1.0F)
-			.setPSampleMask(nullptr)
-			.setAlphaToCoverageEnable(VK_TRUE)
-			.setAlphaToOneEnable(physicaDeviceFeatures.alphaToOne);
-
-	const vk::PipelineColorBlendAttachmentState colorBlendAttachment =
-		vk::PipelineColorBlendAttachmentState()
-			.setBlendEnable(VK_TRUE)
-			.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR |
-				vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA)
-			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setColorBlendOp(vk::BlendOp::eAdd)
-			.setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setAlphaBlendOp(vk::BlendOp::eSubtract);
-
-	const vk::PipelineColorBlendStateCreateInfo colorBlendingState =
-		vk::PipelineColorBlendStateCreateInfo()
-			.setLogicOpEnable(VK_FALSE)
-			.setLogicOp(vk::LogicOp::eCopy)
-			.setAttachments({1, &colorBlendAttachment})
-			.setBlendConstants({0.0F, 0.0F, 0.0F, 0.0F});
-
-	const vk::PipelineDepthStencilStateCreateInfo depthStencil =
-		vk::PipelineDepthStencilStateCreateInfo()
-			.setDepthTestEnable(VK_TRUE)
-			.setDepthWriteEnable(VK_TRUE)
-			.setDepthCompareOp(vk::CompareOp::eLess)
-			.setDepthBoundsTestEnable(VK_FALSE)
-			.setMinDepthBounds(0.0F)
-			.setMaxDepthBounds(1.0F)
-			.setStencilTestEnable(VK_FALSE);
-
 	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
 		vk::GraphicsPipelineCreateInfo()
-			.setStages(shaderStagesInfo)
-			.setPVertexInputState(&vertexInputState)
-			.setPInputAssemblyState(&inputAssemblyState)
+			.setStages(shaderStages)
+			.setPVertexInputState(&_settings._vertexInputState)
+			.setPInputAssemblyState(&_settings._inputAssemblyState)
 			.setPViewportState(&viewportState)
-			.setPRasterizationState(&rasterizationState)
-			.setPColorBlendState(&colorBlendingState)
-			.setPMultisampleState(&multisampleState)
-			.setPDepthStencilState(&depthStencil)
+			.setPRasterizationState(&_settings._rasterizationState)
+			.setPColorBlendState(&_settings._colorBlendingState)
+			.setPMultisampleState(&_settings._multisamplingState)
+			.setPDepthStencilState(&_settings._depthStencilState)
 			.setLayout(_pipelineLayout)
-			.setRenderPass(renderPass)
+			.setRenderPass(renderer->getRenderPass())
 			.setSubpass(0);
 
 	const auto createPipelineResult = device.createGraphicsPipeline(nullptr, pipelineCreateInfo);

@@ -3,6 +3,7 @@
 #include "renderer/containers/material_data.hxx"
 
 #include "vk_buffer.hxx"
+#include "vk_graphics_pipeline_settings.hxx"
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -44,6 +45,9 @@ public:
 
 	vk::Pipeline get() const;
 
+	const vk_graphics_pipeline_settings& getSetings() const { return _settings; };
+	vk_graphics_pipeline_settings& getSetings() { return _settings; };
+
 	void addDependentMesh(const vk_mesh* mesh);
 
 protected:
@@ -56,16 +60,13 @@ protected:
 	void createPipeline(vk::Device device);
 
 private:
-	bool _doubleSided;
+	vk_graphics_pipeline_settings _settings;
+	std::map<vk::ShaderStageFlagBits, vk_shader const*> _shaders;
 
 	material_data _material;
 	vk_buffer _materialBuffer;
 
 	std::vector<const vk_texture_image*> _textures;
-
-	vk_shader* _vertShader;
-
-	vk_shader* _fragShader;
 
 	std::vector<const vk_mesh*> _dependedMeshes;
 
