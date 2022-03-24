@@ -31,7 +31,7 @@ void vk_graphics_pipeline::create(const vk_scene* scene, const gltf::material& m
 	_shaders.emplace(vk::ShaderStageFlagBits::eVertex, renderer->findShader<vk_shader_basic_vert>());
 	_shaders.emplace(vk::ShaderStageFlagBits::eFragment, renderer->findShader<vk_shader_basic_frag>());
 
-	_settings.default();
+	_settings.setup();
 	_settings._rasterizationState.setCullMode(mat._doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack);
 	_settings._multisamplingState.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount());
 

@@ -9,7 +9,7 @@ class vk_shader;
 
 struct vk_graphics_pipeline_settings
 {
-	void default();
+	void setup();
 
 	void update();
 

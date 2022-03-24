@@ -5,7 +5,7 @@
 #include "vk_renderer.hxx"
 #include "vk_shader.hxx"
 
-void vk_graphics_pipeline_settings::default()
+void vk_graphics_pipeline_settings::setup()
 {
 	auto renderer = vk_renderer::get();
 	_vertexInputBindingDesc = vk_vertex::getInputBindingDescription();
