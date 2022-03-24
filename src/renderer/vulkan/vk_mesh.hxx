@@ -1,11 +1,10 @@
 #pragma once
-#include "core/containers/mesh.hxx"
+#include "core/containers/gltf/mesh.hxx"
 #include "math/transform.hxx"
-#include "renderer/containers/uniforms.hxx"
 
 #include "vk_buffer.hxx"
-#include "vk_descriptor_set.hxx"
 #include "vk_graphics_pipeline.hxx"
+#include "vk_scene.hxx"
 #include "vk_texture_image.hxx"
 
 #include <vector>
@@ -19,40 +18,32 @@ class vk_physical_device;
 
 class vk_mesh final
 {
-	typedef std::vector<vk_device_memory::map_memory_region> _memory_regions;
+	using _memory_region = vk_device_memory::map_memory_region;
 
 public:
-	vk_mesh();
+	vk_mesh() = default;
 	vk_mesh(const vk_mesh&) = delete;
 	vk_mesh(vk_mesh&&) = delete;
-	~vk_mesh();
+	~vk_mesh() = default;
 
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const mesh& m, const vk_scene* scene);
+	void create(const vk_scene& scene, const gltf::mesh::primitive& prim, uint32_t vertexOffset, uint32_t indexOffset);
 
-	void destroy();
+	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const;
 
-	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer);
-
-	void update();
-
-	vk_descriptor_set& getDescriptorSet();
+	uint32_t getVertexesSize() const { return _vertexSize; };
+	uint32_t getIndexesSize() const { return _indexSize; };
 
 	mat4 _mat;
 
-protected:
-	void createVIBuffer(const mesh& m, const vk_queue_family* queueFamily, const vk::PhysicalDevice physicalDevice, const _memory_regions& vertRegions, const _memory_regions& indxRegions);
-
 private:
-	vk::DeviceSize _vertsBufferSize{0};
-	vk::DeviceSize _indxsBufferSize{0};
-	std::vector<uint32_t> _primitiveIndexCounts;
+	uint32_t _vertexOffset{0};
+	vk::DeviceSize _vertexSize{0};
+	vk::DeviceSize _vertexCount{0};
 
-	uniforms _ubo;
-
-	vk_buffer _viBuffer;
-
-	vk_descriptor_set _descriptorSet;
+	uint32_t _indexOffset{0};
+	vk::DeviceSize _indexSize{0};
+	vk::DeviceSize _indexCount{0};
 };

@@ -10,7 +10,7 @@ void vk_depth_image::create()
 	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
 	const vk::SurfaceKHR surface = renderer->getSurface();
 
-	const VkExtent2D extent = renderer->getCurrentExtent();
+	const vk::Extent2D extent = renderer->getCurrentExtent();
 
 	_format = findSupportedDepthFormat();
 

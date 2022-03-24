@@ -1,7 +1,7 @@
 #pragma once
 #include "core/managers/event_manager.hxx"
 #include "core/managers/input_manager.hxx"
-#include "core/objects/debug_camera.hxx"
+#include "core/objects/game_instance.hxx"
 #include "core/threads/thread_pool.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 
@@ -38,11 +38,14 @@ public:
 
 	[[nodiscard]] bool init();
 
-	void run();
+	template<class T>
+	void runGI();
 
 	void stop();
 
 private:
+	void run();
+
 	bool startRenderer();
 
 	void startMainLoop();
@@ -61,7 +64,18 @@ private:
 
 	vk_renderer _renderer;
 
-	debug_camera _camera;
-
 	bool _isRunning;
+
+	std::unique_ptr<game_instance> _gameInstance;
 };
+
+template <class T>
+inline void engine::runGI()
+{
+	static_assert(std::is_base_of<game_instance, T>(), "T should be direved from game instance");
+	if (this)
+	{
+		_gameInstance.reset(new T(*this));
+		run();
+	}
+}

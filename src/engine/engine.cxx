@@ -1,15 +1,19 @@
 #include "engine.hxx"
 
 #include "core/loaders/gltf_loader.hxx"
+#include "core/platform_paths.hxx"
 #include "core/utils/file_utils.hxx"
 #include "core/utils/log.hxx"
 #include "renderer/vulkan/vk_mesh.hxx"
 #include "renderer/vulkan/vk_renderer.hxx"
 
 #include "engine.hxx"
+#include "signal_handler.hxx"
 
 #include <SDL.h>
 #include <chrono>
+#include <csignal>
+#include <shader_compiler.hxx>
 
 static inline engine* gEngine{nullptr};
 
@@ -31,7 +35,7 @@ struct async_task_load_scene : public thread_task
 
 	virtual void doJob() override
 	{
-		_scene = gltf_loader::loadScene(_file);
+		_model = gltf_loader::loadModel(_file);
 	}
 
 	virtual void completed() override
@@ -39,14 +43,14 @@ struct async_task_load_scene : public thread_task
 		if (auto* eng = engine::get())
 		{
 			auto& renderer = eng->getRenderer();
-			renderer.loadScene(_scene);
+			renderer.loadModel(_model);
 		}
 	}
 
 private:
 	std::string _file;
 
-	scene _scene;
+	gltf::model _model;
 };
 
 engine::engine()
@@ -74,7 +78,7 @@ engine* engine::get()
 
 const camera* engine::getCamera() const
 {
-	return &_camera;
+	return _gameInstance->getActiveCamera();
 }
 
 bool engine::init()
@@ -99,16 +103,16 @@ bool engine::init()
 		return false;
 	}
 
+	signal_handler::registerSignalsHandle();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
 		return false;
 	}
 
-	if (!file_utils::isFileExists(TEXTURE_PLACEHOLDER_URI))
+	if (!platform_paths::init())
 	{
-		DE_LOG(Error, "Failed to find default texture: %s", TEXTURE_PLACEHOLDER_URI.c_str());
-		DE_LOG(Error, "Current working directory: %s", file_utils::currentWorkingDir().data());
+		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir().c_str());
 		return false;
 	}
 
@@ -124,6 +128,7 @@ void engine::run()
 		DE_LOG(Error, "Init engine first. Cannot run.");
 		return;
 	}
+	shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR);
 
 	if (true == startRenderer())
 	{
@@ -165,10 +170,8 @@ bool engine::startRenderer()
 
 void engine::preMainLoop()
 {
-	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("viking_room/scene.gltf")));
-
-	_camera.setPosition(vec3(0, 10, 50));
-	_camera.setRotation(rotator(0, 180, 0));
+	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("mi-24d/scene.gltf")));
+	_gameInstance->init();
 }
 
 void engine::startMainLoop()
@@ -186,7 +189,8 @@ void engine::startMainLoop()
 		_eventManager.tick();
 		_threadPool.tick();
 
-		_camera.tick(deltaTime);
+		_gameInstance->tick(deltaTime);
+
 		_renderer.tick(deltaTime);
 	}
 
@@ -196,13 +200,14 @@ void engine::startMainLoop()
 void engine::postMainLoop()
 {
 	_renderer.exit();
+	_gameInstance.reset();
 	SDL_Quit();
 }
 
 double engine::calculateNewDeltaTime()
 {
 	const auto frametime_from_fps_lam = [](const double fps) constexpr { return (1.0 / static_cast<double>(fps)); };
-	constexpr double fpsMax = frametime_from_fps_lam(240);
+	constexpr double fpsMax = frametime_from_fps_lam(5000);
 	constexpr double fpsMin = frametime_from_fps_lam(24);
 
 	static std::chrono::time_point past = std::chrono::steady_clock::now();

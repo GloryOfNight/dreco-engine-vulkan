@@ -1,23 +1,13 @@
 #pragma once
+#include "log.hxx"
+
 #include <filesystem>
 #include <fstream>
 #include <string>
 
-#include "log.hxx"
-
 class file_utils
 {
 public:
-	static bool isFileExists(const std::string_view& path)
-	{
-		return std::filesystem::exists(path) && std::filesystem::is_regular_file(path);
-	};
-
-	static std::string currentWorkingDir() 
-	{
-		return std::filesystem::current_path().string();
-	}
-
 	static bool readFile(const std::string_view& path, std::string& data)
 	{
 		data.clear();

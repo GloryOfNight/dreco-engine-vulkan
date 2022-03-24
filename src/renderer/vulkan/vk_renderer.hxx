@@ -1,7 +1,6 @@
 #pragma once
-#include "core/containers/scene.hxx"
-#include "math/vec3.hxx"
-#include "renderer/containers/uniforms.hxx"
+#include "core/containers/gltf/model.hxx"
+#include "shaders/basic.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
@@ -12,6 +11,8 @@
 #include "vk_settings.hxx"
 #include "vk_texture_image.hxx"
 
+#include <map>
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -40,7 +41,15 @@ public:
 
 	void tick(double deltaTime);
 
-	void loadScene(const scene& scn);
+	void loadModel(const gltf::model& scn);
+
+	template <class T>
+	void registerShader();
+
+	template <class T>
+	vk_shader* findShader();
+
+	const std::unique_ptr<vk_shader>& findShader(const std::string_view& path);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -68,10 +77,12 @@ public:
 	const vk_settings& getSettings() const { return _settings; }
 	vk_settings& getSettings() { return _settings; }
 
-	const std::vector<vk_scene*>& getScenes() const { return _scenes; };
-	std::vector<vk_scene*>& getScenes() { return _scenes; };
+	const std::vector<std::unique_ptr<vk_scene>>& getScenes() const { return _scenes; };
+	std::vector<std::unique_ptr<vk_scene>>& getScenes() { return _scenes; };
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
+
+	const vk_buffer& getCameraDataBuffer() { return _cameraData; };
 
 	vk::CommandBuffer beginSingleTimeTransferCommands();
 
@@ -83,6 +94,8 @@ public:
 
 protected:
 	void drawFrame();
+
+	void updateCameraData();
 
 	bool updateExtent();
 
@@ -112,6 +125,8 @@ protected:
 
 	void createSemaphores();
 
+	void createCameraBuffer();
+
 	void cleanupSwapchain(vk::SwapchainKHR swapchain);
 
 	void recreateSwapchain();
@@ -123,7 +138,7 @@ private:
 
 	vk_texture_image _placeholderTextureImage;
 
-	std::vector<vk_scene*> _scenes;
+	std::vector<std::unique_ptr<vk_scene>> _scenes;
 
 	SDL_Window* _window;
 
@@ -149,6 +164,10 @@ private:
 
 	vk_depth_image _depthImage;
 
+	vk_buffer _cameraData;
+
+	std::map < const std::string_view, std::unique_ptr<vk_shader>> _shaders;
+
 	vk::SwapchainKHR _swapchain;
 
 	std::vector<vk::ImageView> _swapchainImageViews;
@@ -166,3 +185,33 @@ private:
 
 	vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };
+
+template <class T>
+inline void vk_renderer::registerShader()
+{
+	static_assert(std::is_base_of<vk_shader, T>::value);
+
+	std::unique_ptr<vk_shader> newShader(new T());
+
+	const std::string_view filename = newShader->getPath();
+	auto pair = _shaders.try_emplace(filename, std::move(newShader));
+	if (pair.second)
+	{
+		_shaders[filename]->create();
+	}
+}
+
+template <class T>
+inline vk_shader* vk_renderer::findShader()
+{
+	static_assert(std::is_base_of<vk_shader, T>::value);
+
+	for (const auto& pair : _shaders)
+	{
+		if (dynamic_cast<T*>(pair.second.get()))
+		{
+			return pair.second.get();
+		}
+	}
+	return nullptr;
+}

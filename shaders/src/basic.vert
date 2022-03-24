@@ -3,18 +3,27 @@
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
+layout(location = 3) in vec4 inColor;
 
 layout(location = 0) out vec3 outNormal;
 layout(location = 1) out vec2 outUV;
+layout(location = 2) out vec4 outColor;
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
+layout(binding = 0) uniform Camera 
+{
     mat4 view;
-    mat4 proj;
-} ubo;
+    mat4 viewProj;
+} cameraData;
+
+layout( push_constant ) uniform constants
+{
+    mat4 model;
+} modelData;
 
 void main() {
-    outNormal = inNormal;
     outUV = inUV;
-    gl_Position = ubo.proj * ubo.view * ubo.model  * vec4(inPosition, 1.0);
+    outColor = inColor;
+    outNormal = mat3(cameraData.view * modelData.model) * inNormal;
+
+    gl_Position = cameraData.viewProj * modelData.model * vec4(inPosition, 1.0);
 }

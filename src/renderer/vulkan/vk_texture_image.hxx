@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/containers/image.hxx"
+#include "core/containers/gltf/image.hxx"
 #include "core/containers/image_data.hxx"
 
 #include "vk_image.hxx"
@@ -17,7 +17,7 @@ public:
 
 	void create() override;
 
-	void create(const image& img);
+	void create(const gltf::image& img);
 
 	void create(const image_data& textureData);
 

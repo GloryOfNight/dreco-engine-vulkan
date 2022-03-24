@@ -36,6 +36,8 @@ public:
 
 	vk::Buffer get() const;
 
+	size_t getSize() const { return _size; };
+
 	vk_device_memory& getDeviceMemory();
 
 	static void copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer bufferDst, const std::vector<vk::BufferCopy>& bufferCopyRegions);
@@ -46,4 +48,6 @@ private:
 	vk_device_memory _deviceMemory;
 
 	vk::Buffer _buffer;
+
+	size_t _size;
 };

@@ -5,13 +5,15 @@ struct image_data
 {
 	image_data();
 	image_data(const image_data&) = delete;
-	image_data(image_data&&) = default;
+	image_data(image_data&& other);
 	~image_data();
 
 	bool isLoaded() const;
 	bool load(const std::string_view& texUri);
 
 	void getData(uint8_t** pixels, uint16_t* texWidth, uint16_t* texHeight, uint8_t* texChannels) const;
+
+	static image_data createPlaceholderTexture();
 
 protected:
 	uint8_t* _pixels;

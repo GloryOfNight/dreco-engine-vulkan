@@ -3,24 +3,40 @@
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
 #include "renderer/containers/vk_vertex.hxx"
+#include "shaders/basic.hxx"
 
 #include "dreco.hxx"
-#include "vk_descriptor_set.hxx"
+#include "vk_mesh.hxx"
 #include "vk_renderer.hxx"
-#include "vk_shader_module.hxx"
+#include "vk_shader.hxx"
 #include "vk_utils.hxx"
 
 #include <array>
 #include <vector>
 
-void vk_graphics_pipeline::create(const material& mat)
+void vk_graphics_pipeline::create(const vk_scene* scene, const gltf::material& mat)
 {
-	_mat = mat;
-
+	loadGltfMaterial(scene, mat);
 	vk_renderer* renderer{vk_renderer::get()};
-	const vk::Device device = renderer->getDevice();
+	vk::Device device = renderer->getDevice();
 
-	createDescriptorLayouts(device);
+	vk_buffer::create_info bufferCreateInfo{};
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
+	bufferCreateInfo.size = sizeof(material_data);
+
+	_materialBuffer.create(bufferCreateInfo);
+	_materialBuffer.getDeviceMemory().map(&_material, sizeof(material_data));
+
+	_shaders.emplace(vk::ShaderStageFlagBits::eVertex, renderer->findShader<vk_shader_basic_vert>());
+	_shaders.emplace(vk::ShaderStageFlagBits::eFragment, renderer->findShader<vk_shader_basic_frag>());
+
+	_settings.setup();
+	_settings._rasterizationState.setCullMode(mat._doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack);
+	_settings._multisamplingState.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount());
+
+	createDescriptorSets(device);
+
 	createPipelineLayout(device);
 	createPipeline(device);
 }
@@ -40,28 +56,93 @@ void vk_graphics_pipeline::destroy()
 	const vk::Device device = vk_renderer::get()->getDevice();
 	if (_pipeline)
 	{
-		for (auto descriptorLayout : _descriptorSetLayouts)
-		{
-			device.destroyDescriptorSetLayout(descriptorLayout);
-		}
+		device.destroyDescriptorSetLayout(_descriptorSetLayout);
+		device.destroyDescriptorPool(_descriptorPool);
 		device.destroyPipelineLayout(_pipelineLayout);
 		device.destroyPipeline(_pipeline);
 	}
 }
 
-void vk_graphics_pipeline::bindToCmdBuffer(const vk::CommandBuffer commandBuffer)
+void vk_graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer)
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, getLayout(), 0, _descriptorSets, nullptr);
 }
 
-const material& vk_graphics_pipeline::getMaterial() const
+void vk_graphics_pipeline::drawCmd(vk::CommandBuffer commandBuffer)
 {
-	return _mat;
+	for (const vk_mesh* mesh : _dependedMeshes)
+	{
+		for (auto& shader : _shaders)
+		{
+			shader.second->cmdPushConstants(commandBuffer, getLayout(), mesh);
+		}
+		mesh->bindToCmdBuffer(commandBuffer);
+	}
 }
 
-const std::vector<vk::DescriptorSetLayout>& vk_graphics_pipeline::getDescriptorSetLayouts() const
+void vk_graphics_pipeline::updateDescriptiors()
 {
-	return _descriptorSetLayouts;
+	vk_descriptor_write_infos infos;
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	for (auto& shader : _shaders)
+	{
+		shader.second->addDescriptorWriteInfos(infos, *this);
+		shader.second->addDescriptorPoolSizes(poolSizes);
+	}
+
+	const size_t writeSize = poolSizes.size();
+	std::vector<vk::WriteDescriptorSet> writes(writeSize, vk::WriteDescriptorSet());
+
+	uint32_t bufferOffset{0};
+	uint32_t imageOffset{0};
+	for (size_t i = 0; i < writeSize; ++i)
+	{
+		writes[i] = vk::WriteDescriptorSet()
+						.setDstSet(_descriptorSets[0])
+						.setDstBinding(i)
+						.setDescriptorType(poolSizes[i].type);
+		switch (poolSizes[i].type)
+		{
+		case vk::DescriptorType::eUniformBuffer:
+			writes[i].setDescriptorCount(poolSizes[i].descriptorCount);
+			writes[i].setPBufferInfo(&infos.bufferInfos[bufferOffset]);
+			bufferOffset += poolSizes[i].descriptorCount;
+			break;
+		case vk::DescriptorType::eCombinedImageSampler:
+			writes[i].setDescriptorCount(poolSizes[i].descriptorCount);
+			writes[i].setPImageInfo(&infos.imageInfos[imageOffset]);
+			imageOffset += poolSizes[i].descriptorCount;
+			break;
+		default:
+			break;
+		}
+	}
+	vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
+}
+
+const material_data& vk_graphics_pipeline::getMaterial() const
+{
+	return _material;
+}
+
+const vk_texture_image& vk_graphics_pipeline::getTextureImageFromIndex(uint32_t index) const
+{
+	if (index < _textures.size() && _textures[index]->isValid())
+	{
+		return *_textures[index];
+	}
+	return vk_renderer::get()->getTextureImagePlaceholder();
+}
+
+const vk_buffer& vk_graphics_pipeline::getMaterialBuffer() const
+{
+	return _materialBuffer;
+}
+
+vk::DescriptorSetLayout vk_graphics_pipeline::getDescriptorSetLayout() const
+{
+	return _descriptorSetLayout;
 }
 
 vk::PipelineLayout vk_graphics_pipeline::getLayout() const
@@ -74,91 +155,106 @@ vk::Pipeline vk_graphics_pipeline::get() const
 	return _pipeline;
 }
 
-void vk_graphics_pipeline::createDescriptorLayouts(const vk::Device device)
+void vk_graphics_pipeline::addDependentMesh(const vk_mesh* mesh)
 {
-	const vk::DescriptorSetLayoutBinding uniformBinding =
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eUniformBuffer)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-
-	const vk::DescriptorSetLayoutBinding sampledImageBinding =
-		vk::DescriptorSetLayoutBinding()
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-	const std::array<vk::DescriptorSetLayoutBinding, 2> layoutBindings{uniformBinding, sampledImageBinding};
-
-	const vk::DescriptorSetLayoutCreateInfo layoutCreateInfo =
-		vk::DescriptorSetLayoutCreateInfo()
-			.setFlags({})
-			.setBindings(layoutBindings);
-
-	_descriptorSetLayouts.push_back(device.createDescriptorSetLayout(layoutCreateInfo));
+	_dependedMeshes.push_back(mesh);
 }
 
-void vk_graphics_pipeline::createPipelineLayout(const vk::Device device)
+void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::material& mat)
 {
+	_material = material_data();
+	_textures.reserve(4);
+
+	_material._baseColorFactor[0] = mat._pbrMetallicRoughness._baseColorFactor[0];
+	_material._baseColorFactor[1] = mat._pbrMetallicRoughness._baseColorFactor[1];
+	_material._baseColorFactor[2] = mat._pbrMetallicRoughness._baseColorFactor[2];
+	_material._baseColorFactor[3] = mat._pbrMetallicRoughness._baseColorFactor[3];
+
+	_material._emissiveFactor[0] = mat._emissive._factor[0];
+	_material._emissiveFactor[1] = mat._emissive._factor[1];
+	_material._emissiveFactor[2] = mat._emissive._factor[2];
+
+	_material._metallicFactor = mat._pbrMetallicRoughness._metallicFactor;
+	_material._roughnessFactor = mat._pbrMetallicRoughness._roughnessFactor;
+
+	_material._normalScale = mat._normal._scale;
+
+	if (mat._pbrMetallicRoughness._baseColorTexture._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._baseColorTexture._index].get());
+		_material._baseColorIndex = _textures.size() - 1;
+	}
+	if (mat._pbrMetallicRoughness._metallicRoughnessTexture._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._pbrMetallicRoughness._metallicRoughnessTexture._index].get());
+		_material._metallicRoughnessIndex = _textures.size() - 1;
+	}
+	if (mat._normal._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._normal._index].get());
+		_material._normalIndex = _textures.size() - 1;
+	}
+	if (mat._emissive._index != UINT32_MAX)
+	{
+		_textures.push_back(scene->getTextureImages()[mat._emissive._index].get());
+		_material._emissiveIndex = _textures.size() - 1;
+	}
+}
+
+void vk_graphics_pipeline::createDescriptorSets(vk::Device device)
+{
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	for (auto& shader : _shaders)
+	{
+		shader.second->addDescriptorSetLayoutBindings(bindings);
+		shader.second->addDescriptorPoolSizes(poolSizes);
+	}
+
+	_descriptorSetLayout = device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo()
+																.setFlags({})
+																.setBindings(bindings));
+
+	_descriptorPool = device.createDescriptorPool(vk::DescriptorPoolCreateInfo()
+													  .setFlags({})
+													  .setPoolSizes(poolSizes)
+													  .setMaxSets(1));
+
+	_descriptorSets = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo()
+														.setDescriptorPool(_descriptorPool)
+														.setSetLayouts(_descriptorSetLayout));
+
+	updateDescriptiors();
+}
+
+void vk_graphics_pipeline::createPipelineLayout(vk::Device device)
+{
+	std::vector<vk::PushConstantRange> pushConstantRanges;
+	for (auto& shader : _shaders)
+	{
+		shader.second->addPushConstantRange(pushConstantRanges);
+	}
+
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		vk::PipelineLayoutCreateInfo()
-			.setSetLayouts(_descriptorSetLayouts)
-			.setPushConstantRanges(nullptr);
+			.setSetLayouts(_descriptorSetLayout)
+			.setPushConstantRanges(pushConstantRanges);
 
 	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
 }
 
-void vk_graphics_pipeline::createPipeline(const vk::Device device)
+void vk_graphics_pipeline::createPipeline(vk::Device device)
 {
 	const vk_renderer* renderer{vk_renderer::get()};
-	const vk::RenderPass renderPass{renderer->getRenderPass()};
-	const vk::SurfaceKHR surface = renderer->getSurface();
-	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
-	const auto physicaDeviceFeatures = physicalDevice.getFeatures();
+
+	std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
+	shaderStages.reserve(_shaders.size());
+	for (const auto& shader : _shaders)
+	{
+		shader.second->addPipelineShaderStageCreateInfo(shaderStages);
+	}
 
 	const vk::Extent2D extent = renderer->getCurrentExtent();
-	const vk::SampleCountFlagBits sampleCount = renderer->getSettings().getPrefferedSampleCount();
-
-	std::string vertShaderCode;
-	file_utils::readFile(SHADER_BASIC_VERTEX_BIN_URI, vertShaderCode);
-	std::string fragShaderCode;
-	file_utils::readFile(SHADER_BASIC_FRAGMENT_BIN_URI, fragShaderCode);
-
-	vk_shader_module vertShaderModule;
-	vertShaderModule.create(reinterpret_cast<uint32_t*>(vertShaderCode.data()), vertShaderCode.size());
-
-	vk_shader_module fragShaderModule;
-	fragShaderModule.create(reinterpret_cast<uint32_t*>(fragShaderCode.data()), fragShaderCode.size());
-
-	const vk::PipelineShaderStageCreateInfo vertShaderStageInfo =
-		vk::PipelineShaderStageCreateInfo()
-			.setModule(vertShaderModule.get())
-			.setStage(vk::ShaderStageFlagBits::eVertex)
-			.setPName("main");
-
-	const vk::PipelineShaderStageCreateInfo fragShaderStageInfo =
-		vk::PipelineShaderStageCreateInfo()
-			.setModule(fragShaderModule.get())
-			.setStage(vk::ShaderStageFlagBits::eFragment)
-			.setPName("main");
-
-	const std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStagesInfo{vertShaderStageInfo, fragShaderStageInfo};
-
-	const auto vertexInputBindingDescription{vk_vertex::getInputBindingDescription()};
-	const auto vertexInputAttributeDescriptions{vk_vertex::getInputAttributeDescription()};
-
-	const vk::PipelineVertexInputStateCreateInfo vertexInputState =
-		vk::PipelineVertexInputStateCreateInfo()
-			.setVertexBindingDescriptions(vertexInputBindingDescription)
-			.setVertexAttributeDescriptions(vertexInputAttributeDescriptions);
-
-	const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState =
-		vk::PipelineInputAssemblyStateCreateInfo()
-			.setTopology(vk::PrimitiveTopology::eTriangleList)
-			.setPrimitiveRestartEnable(VK_FALSE);
-
 	const vk::Viewport viewport =
 		vk::Viewport()
 			.setX(0)
@@ -178,72 +274,18 @@ void vk_graphics_pipeline::createPipeline(const vk::Device device)
 			.setViewports({1, &viewport})
 			.setScissors({1, &scissors});
 
-	const vk::PipelineRasterizationStateCreateInfo rasterizationState =
-		vk::PipelineRasterizationStateCreateInfo()
-			.setRasterizerDiscardEnable(VK_FALSE)
-			.setPolygonMode(renderer->getSettings().getDefaultPolygonMode())
-			.setLineWidth(1.0F)
-			.setCullMode(_mat._doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack)
-			.setFrontFace(vk::FrontFace::eCounterClockwise)
-			.setDepthClampEnable(VK_FALSE)
-			.setDepthBiasEnable(VK_FALSE)
-			.setDepthBiasConstantFactor(0.0F)
-			.setDepthBiasSlopeFactor(0.0F)
-			.setDepthBiasClamp(0.0F);
-
-	const vk::PipelineMultisampleStateCreateInfo multisampleState =
-		vk::PipelineMultisampleStateCreateInfo()
-			.setSampleShadingEnable(VK_FALSE)
-			.setRasterizationSamples(sampleCount)
-			.setMinSampleShading(1.0F)
-			.setPSampleMask(nullptr)
-			.setAlphaToCoverageEnable(VK_TRUE)
-			.setAlphaToOneEnable(physicaDeviceFeatures.alphaToOne);
-
-	const vk::PipelineColorBlendAttachmentState colorBlendAttachment =
-		vk::PipelineColorBlendAttachmentState()
-			.setBlendEnable(VK_TRUE)
-			.setColorWriteMask(
-				vk::ColorComponentFlagBits::eR |
-				vk::ColorComponentFlagBits::eG |
-				vk::ColorComponentFlagBits::eB |
-				vk::ColorComponentFlagBits::eA)
-			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setColorBlendOp(vk::BlendOp::eAdd)
-			.setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setAlphaBlendOp(vk::BlendOp::eSubtract);
-
-	const vk::PipelineColorBlendStateCreateInfo colorBlendingState =
-		vk::PipelineColorBlendStateCreateInfo()
-			.setLogicOpEnable(VK_FALSE)
-			.setLogicOp(vk::LogicOp::eCopy)
-			.setAttachments({1, &colorBlendAttachment})
-			.setBlendConstants({0.0F, 0.0F, 0.0F, 0.0F});
-
-	const vk::PipelineDepthStencilStateCreateInfo depthStencil =
-		vk::PipelineDepthStencilStateCreateInfo()
-			.setDepthTestEnable(VK_TRUE)
-			.setDepthWriteEnable(VK_TRUE)
-			.setDepthCompareOp(vk::CompareOp::eLess)
-			.setDepthBoundsTestEnable(VK_FALSE)
-			.setMinDepthBounds(0.0F)
-			.setMaxDepthBounds(1.0F)
-			.setStencilTestEnable(VK_FALSE);
-
 	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
 		vk::GraphicsPipelineCreateInfo()
-			.setStages(shaderStagesInfo)
-			.setPVertexInputState(&vertexInputState)
-			.setPInputAssemblyState(&inputAssemblyState)
+			.setStages(shaderStages)
+			.setPVertexInputState(&_settings._vertexInputState)
+			.setPInputAssemblyState(&_settings._inputAssemblyState)
 			.setPViewportState(&viewportState)
-			.setPRasterizationState(&rasterizationState)
-			.setPColorBlendState(&colorBlendingState)
-			.setPMultisampleState(&multisampleState)
-			.setPDepthStencilState(&depthStencil)
+			.setPRasterizationState(&_settings._rasterizationState)
+			.setPColorBlendState(&_settings._colorBlendingState)
+			.setPMultisampleState(&_settings._multisamplingState)
+			.setPDepthStencilState(&_settings._depthStencilState)
 			.setLayout(_pipelineLayout)
-			.setRenderPass(renderPass)
+			.setRenderPass(renderer->getRenderPass())
 			.setSubpass(0);
 
 	const auto createPipelineResult = device.createGraphicsPipeline(nullptr, pipelineCreateInfo);

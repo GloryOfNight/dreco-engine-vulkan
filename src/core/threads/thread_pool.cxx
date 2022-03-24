@@ -80,7 +80,6 @@ thread_pool::~thread_pool()
 		SDL_WaitThread(thread, &status);
 		DE_LOG(Verbose, "Thread %p exit with code: %i", thread, status);
 	}
-	processCompletedTasks();
 }
 
 void thread_pool::tick()

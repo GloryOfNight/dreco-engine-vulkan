@@ -1,10 +1,10 @@
 #pragma once
-#include "core/containers/scene.hxx"
+#include "core/containers/gltf/model.hxx"
 
 #include <string_view>
 
 class gltf_loader
 {
 public:
-	static scene loadScene(const std::string_view& sceneFile);
+	static gltf::model loadModel(const std::string_view& sceneFile);
 };

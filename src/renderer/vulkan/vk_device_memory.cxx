@@ -39,6 +39,11 @@ void vk_device_memory::map(const void* data, const vk::DeviceSize size, const vk
 
 void vk_device_memory::map(const std::vector<map_memory_region>& regions, const vk::DeviceSize offset)
 {
+	if (regions.empty())
+	{
+		return;
+	}
+
 	const vk::Device device = vk_renderer::get()->getDevice();
 	void* region = device.mapMemory(_deviceMemory, offset, VK_WHOLE_SIZE);
 	for (const auto& reg : regions)

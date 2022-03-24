@@ -1,6 +1,8 @@
 #pragma once
-#include "core/containers/scene.hxx"
+#include "core/containers/gltf/model.hxx"
 #include "vulkan/vulkan.h"
+
+#include "vk_buffer.hxx"
 
 #include <vector>
 
@@ -14,29 +16,43 @@ public:
 	vk_scene() = default;
 	~vk_scene();
 
-	void create(const scene& scn);
-
-    void update();
+	void create(const gltf::model& m);
 
 	void recreatePipelines();
 
-	void bindToCmdBuffer(VkCommandBuffer commandBuffer);
+	void bindToCmdBuffer(vk::CommandBuffer commandBuffer);
 
 	bool isEmpty() const;
 
 	void destroy();
 
-	std::vector<vk_texture_image*>& getTextureImages() { return _textureImages; };
-	const std::vector<vk_texture_image*>& getTextureImages() const { return _textureImages; }
+	std::vector<std::unique_ptr<vk_texture_image>>& getTextureImages() { return _textureImages; };
+	const std::vector<std::unique_ptr<vk_texture_image>>& getTextureImages() const { return _textureImages; }
+	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
 
-	std::vector<vk_graphics_pipeline*>& getGraphicPipelines() { return _graphicsPipelines; };
-	const std::vector<vk_graphics_pipeline*>& getGraphicPipelines() const { return _graphicsPipelines; }
+	std::vector<std::unique_ptr<vk_graphics_pipeline>>& getGraphicPipelines() { return _graphicsPipelines; };
+	const std::vector<std::unique_ptr<vk_graphics_pipeline>>& getGraphicPipelines() const { return _graphicsPipelines; }
 
-    std::vector<vk_mesh*>& getMeshes() { return _meshes; };
-	const std::vector<vk_mesh*>& getMeshes() const { return _meshes; }
+	std::vector<std::unique_ptr<vk_mesh>>& getMeshes() { return _meshes; };
+	const std::vector<std::unique_ptr<vk_mesh>>& getMeshes() const { return _meshes; }
 
 private:
-	std::vector<vk_texture_image*> _textureImages;
-	std::vector<vk_graphics_pipeline*> _graphicsPipelines;
-	std::vector<vk_mesh*> _meshes;
+	struct scene_meshes_info
+	{
+		uint32_t _totalVertexSize{0};
+		uint32_t _totalIndexSize{0};
+		std::vector<vk_device_memory::map_memory_region> _vertexMemRegions;
+		std::vector<vk_device_memory::map_memory_region> _indexMemRegions;
+	};
+
+	void recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat, scene_meshes_info& info);
+
+	void createMeshesBuffer(scene_meshes_info& info);
+
+	std::vector<std::unique_ptr<vk_texture_image>> _textureImages;
+	std::vector<std::unique_ptr<vk_graphics_pipeline>> _graphicsPipelines;
+	std::vector<std::unique_ptr<vk_mesh>> _meshes;
+
+	uint32_t _indexVIBufferOffset;
+	vk_buffer _meshesVIBuffer;
 };

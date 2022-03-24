@@ -1,11 +1,12 @@
 #include "vk_renderer.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
+#include "core/objects/camera.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
-#include "core/utils/utils.hxx"
 #include "engine/engine.hxx"
+#include "renderer/containers/camera_data.hxx"
 
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
@@ -21,7 +22,9 @@
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
 //disabled due to unstabilities on linux
-//#define VK_ENABLE_LUNAR_MONITOR
+#if PLATFORM_WINDOWS
+#define VK_ENABLE_LUNAR_MONITOR
+#endif
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
@@ -107,7 +110,12 @@ void vk_renderer::init()
 	createFences();
 	createSemaphores();
 
+	createCameraBuffer();
+
 	_placeholderTextureImage.create();
+
+	registerShader<vk_shader_basic_vert>();
+	registerShader<vk_shader_basic_frag>();
 }
 
 void vk_renderer::exit()
@@ -119,7 +127,8 @@ void vk_renderer::exit()
 
 	_device.waitIdle();
 
-	clearVectorOfPtr(_scenes);
+	_scenes.clear();
+	_shaders.clear();
 
 	for (auto& fence : _submitQueueFences)
 	{
@@ -128,8 +137,8 @@ void vk_renderer::exit()
 
 	cleanupSwapchain(_swapchain);
 
-	_scenes.clear();
 	_placeholderTextureImage.destroy();
+	_cameraData.destroy();
 
 	_device.destroySemaphore(_semaphoreImageAvaible);
 	_device.destroySemaphore(_semaphoreRenderFinished);
@@ -154,6 +163,7 @@ void vk_renderer::exit()
 
 void vk_renderer::tick(double deltaTime)
 {
+	updateCameraData();
 	if (updateExtent())
 	{
 		recreateSwapchain();
@@ -161,9 +171,14 @@ void vk_renderer::tick(double deltaTime)
 	drawFrame();
 }
 
-void vk_renderer::loadScene(const scene& scn)
+void vk_renderer::loadModel(const gltf::model& scn)
 {
 	_scenes.emplace_back(new vk_scene())->create(scn);
+}
+
+const std::unique_ptr<vk_shader>& vk_renderer::findShader(const std::string_view& path)
+{
+	return _shaders.at(path);
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -426,55 +441,43 @@ void vk_renderer::createRenderPass()
 	const bool isSamplingSupported = _settings.getIsSamplingSupported();
 
 	std::vector<vk::AttachmentDescription> attachmentsDescriptions;
-	attachmentsDescriptions.reserve(3);
 
-	[[maybe_unused]] const vk::AttachmentDescription colorAttachment =
-		attachmentsDescriptions.emplace_back()
+	std::vector<vk::AttachmentReference> attachmentReferences;
+	std::vector<vk::AttachmentReference> resolveAttachmentReferences;
+
+	attachmentsDescriptions.emplace_back() // color
+		.setFormat(_settings.getSurfaceFormat().format)
+		.setSamples(sampleCount)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(isSamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
+	attachmentReferences.push_back(vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal));
+
+	attachmentsDescriptions.emplace_back() // depth
+		.setFormat(_depthImage.getFormat())
+		.setSamples(sampleCount)
+		.setLoadOp(vk::AttachmentLoadOp::eClear)
+		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+		.setInitialLayout(vk::ImageLayout::eUndefined)
+		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	attachmentReferences.push_back(vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal));
+
+	if (isSamplingSupported)
+	{
+		attachmentsDescriptions.emplace_back() // color msaa
 			.setFormat(_settings.getSurfaceFormat().format)
-			.setSamples(sampleCount)
-			.setLoadOp(vk::AttachmentLoadOp::eClear)
-			.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
-			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(isSamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
-
-	[[maybe_unused]] const vk::AttachmentDescription depthAttachment =
-		attachmentsDescriptions.emplace_back()
-			.setFormat(_depthImage.getFormat())
-			.setSamples(sampleCount)
-			.setLoadOp(vk::AttachmentLoadOp::eClear)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-
-	if (isSamplingSupported)
-	{
-		[[maybe_unused]] const vk::AttachmentDescription colorAttachmentResolve =
-			attachmentsDescriptions.emplace_back()
-				.setFormat(_settings.getSurfaceFormat().format)
-				.setSamples(vk::SampleCountFlagBits::e1)
-				.setLoadOp(vk::AttachmentLoadOp::eDontCare)
-				.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-				.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-				.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-				.setInitialLayout(vk::ImageLayout::eUndefined)
-				.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-	}
-
-	// clang-format off
-	const std::array<vk::AttachmentReference, 2> attachmentReferences
-	{
-		vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal),
-		vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal)
-	};
-	// clang-format on
-
-	std::vector<vk::AttachmentReference> resolveAttachmentReferences;
-	if (isSamplingSupported)
-	{
+			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 		resolveAttachmentReferences.push_back(vk::AttachmentReference(2, vk::ImageLayout::eColorAttachmentOptimal));
 	}
 
@@ -583,6 +586,15 @@ void vk_renderer::createSemaphores()
 	_semaphoreRenderFinished = _device.createSemaphore(vk::SemaphoreCreateInfo());
 }
 
+void vk_renderer::createCameraBuffer()
+{
+	vk_buffer::create_info bufferCreateInfo{};
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
+	bufferCreateInfo.size = sizeof(camera_data);
+	_cameraData.create(bufferCreateInfo);
+}
+
 void vk_renderer::drawFrame()
 {
 	vk::ResultValue<uint32_t> aquireNextImageResult = vk::ResultValue<uint32_t>(vk::Result{}, UINT32_MAX);
@@ -652,6 +664,18 @@ void vk_renderer::drawFrame()
 		SDL_UpdateWindowSurface(_window);
 
 		DE_LOG(Error, "OutOfDateKHRError");
+	}
+}
+
+void vk_renderer::updateCameraData()
+{
+	const auto camera = engine::get()->getCamera();
+	if (camera)
+	{
+		camera_data data;
+		data.view = camera->getView();
+		data.viewProj = data.view * camera->getProjection();
+		_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
 	}
 }
 
@@ -731,7 +755,6 @@ vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 	for (auto& scene : _scenes)
 	{
-		scene->update();
 		scene->bindToCmdBuffer(commandBuffer);
 	}
 	commandBuffer.endRenderPass();

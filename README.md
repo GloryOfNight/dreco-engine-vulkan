@@ -1,16 +1,35 @@
 # Dreco Engine - Vulkan
-Project for personal fun of writing vulkan renderer and an game engine (probably).
+Project for personal fun of writing vulkan renderer and an game engine.
 
-Rewrite of first [dreco-engine](https://github.com/GloryOfNight/dreco-engine) with some core changes:
-- Full support for 3rd space, new matrixes
-- Vulkan as primary rendering API (really fun thing to try)
+## Targets
+* Environment 
+  * Std::Cpp17 (with ability to upgrade std::Cpp20+)
+  * CMake
+  * Crossplatform support, at least: Windows, Linux
+* Vulkan
+  * No different renderer backends, Vulkan as one and only
+  * Design for high realtime perfomance
+  * Implement dynamic lights, shadows
+  * Implement PBR support
+  * Threaded rendering
+* Engine 
+  * Math library
+  * Threaded tasks
+  * Assets library
+* Editor
+  * Implement editor with ImGui
+  * Make engine actually usable
+* Game
+  * Create game that utilizes editor and engine
 
+I'm not expecting myself to handle every target, but its fun have something to work towards.
+
+  
 ## Build
 [![Ubuntu](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml)
 [![Windows](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/windows_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/windows_cmake.yml)
 
- ## Required Dependencies
+ ## Build Dependencies
 - CMake at least 3.19.0 ([link](https://cmake.org/))
 - Vulkan SDK ([link](https://vulkan.lunarg.com/))
-- SDL2 at least 2.0.16 ([link](https://github.com/libsdl-org/SDL))
-- GLM at least 0.9.8 ([link](https://github.com/g-truc/glm))
+- SDL2 ([link](https://github.com/libsdl-org/SDL))

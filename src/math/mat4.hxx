@@ -1,18 +1,48 @@
 #pragma once
+#include "vec.hxx"
+
 #include <array>
 #include <cstddef>
 
-struct vec3;
-struct rotator;
+struct rotatorRad;
 struct transform;
+struct quaternion;
+
+template <typename T, uint8_t dim>
+struct matrix
+{
+	struct collumn
+	{
+		float _c[dim]{};
+		const float& operator[](uint8_t index) const
+		{
+			return _c[index];
+		}
+		float& operator[](uint8_t index)
+		{
+			return _c[index];
+		}
+	};
+
+	collumn _rc[dim]{};
+	const collumn& operator[](uint8_t index) const
+	{
+		return _rc[index];
+	}
+	collumn& operator[](uint8_t index)
+	{
+		return _rc[index];
+	}
+};
 
 struct mat4
 {
-	typedef std::array<std::array<float, 4>, 4> mat4d;
+	using mat4d = matrix<float, 4>;
 
 	mat4();
 
-	explicit mat4(const mat4d& _mat);
+	explicit mat4(const mat4d& mat);
+	explicit mat4(mat4d&& mat);
 
 	static constexpr float size() noexcept;
 
@@ -20,7 +50,9 @@ struct mat4
 
 	static mat4 makeTranslation(const vec3& vec);
 
-	static mat4 makeRotation(const rotator& rot);
+	static mat4 makeRotation(const rotatorRad& rot);
+
+	static mat4 makeRotationQ(const quaternion& q);
 
 	static mat4 makeScale(const vec3& vec);
 
@@ -31,6 +63,15 @@ struct mat4
 	static mat4 makeInverse(const mat4& mat);
 
 	mat4d _mat;
+
+	const mat4d::collumn& operator[](uint8_t index) const
+	{
+		return _mat[index];
+	}
+	mat4d::collumn& operator[](uint8_t index)
+	{
+		return _mat[index];
+	}
 };
 
 mat4 operator*(const mat4& a, const mat4& b);
