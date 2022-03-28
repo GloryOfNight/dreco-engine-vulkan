@@ -1,6 +1,7 @@
 #include "vk_settings.hxx"
 
 #include "vk_renderer.hxx"
+
 #include <map>
 
 static vk::SampleCountFlagBits findMaxSampleCount(const vk::PhysicalDevice physicalDevice)
@@ -40,22 +41,27 @@ static vk::SurfaceFormatKHR findSurfaceFormat(const vk::PhysicalDevice physicalD
 
 static vk::PresentModeKHR findPresentMode(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
 {
-	vk::PresentModeKHR outMode = vk::PresentModeKHR::eImmediate;
+	// clang-format off
+	const std::array<vk::PresentModeKHR, 4> priorityModes =
+		{
+			vk::PresentModeKHR::eMailbox,
+			vk::PresentModeKHR::eFifoRelaxed,
+			vk::PresentModeKHR::eFifo,
+			vk::PresentModeKHR::eImmediate
+		};
+	// clang-format on
 
-	const auto presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
-	for (const auto& mode : presentModes)
+	const auto availableModes = physicalDevice.getSurfacePresentModesKHR(surface);
+	const auto availableModesBegin = availableModes.begin();
+	const auto availableModesEnd = availableModes.end();
+	for (const auto mode : priorityModes)
 	{
-		if (mode == vk::PresentModeKHR::eMailbox)
+		if (std::find(availableModesBegin, availableModesEnd, mode) != availableModesEnd)
 		{
-			outMode = mode;
-			break;
-		}
-		else if(mode == vk::PresentModeKHR::eFifo) 
-		{
-			outMode = mode;
+			return mode;
 		}
 	}
-	return outMode;
+	return vk::PresentModeKHR::eImmediate;
 }
 
 vk_settings::vk_settings()
