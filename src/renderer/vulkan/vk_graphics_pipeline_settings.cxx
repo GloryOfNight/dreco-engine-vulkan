@@ -56,7 +56,7 @@ void vk_graphics_pipeline_settings::setup()
 							 .setDepthTestEnable(VK_TRUE)
 							 .setDepthWriteEnable(VK_TRUE)
 							 .setDepthCompareOp(vk::CompareOp::eLess)
-							 .setDepthBoundsTestEnable(VK_TRUE)
+							 .setDepthBoundsTestEnable(VK_FALSE)
 							 .setMinDepthBounds(0.0F)
 							 .setMaxDepthBounds(1.0F)
 							 .setStencilTestEnable(VK_TRUE);

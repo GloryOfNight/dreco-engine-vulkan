@@ -112,6 +112,10 @@ int shader_compiler::attemptCompileShaders(const std::string_view& srcShaderDir,
 			{
 				std::cout << outputShaderPath << " - COMPILED OK" << std::endl;
 			}
+			else 
+			{
+				return 1;
+			}
 		}
 	}
 	const auto endTime = std::chrono::steady_clock::now();

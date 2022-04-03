@@ -128,7 +128,11 @@ void engine::run()
 		DE_LOG(Error, "Init engine first. Cannot run.");
 		return;
 	}
-	shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR);
+	if (shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR))
+	{
+		DE_LOG(Error, "Shader compilation task failed. . .");
+		return;
+	}
 
 	if (true == startRenderer())
 	{

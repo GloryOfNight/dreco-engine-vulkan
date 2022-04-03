@@ -10,7 +10,6 @@
 # Precompiled Headers
 *.gch
 *.pch
-
 # Compiled Dynamic libraries
 *.so
 *.dylib
@@ -37,11 +36,16 @@
 # Folders
 .vs/*
 .vscode/*
+.cache/*
+.kdev4/*
 build/*
 tools/build*
 bin/*
 install/*
 out/*
+
+# IDE Files
+*.kdev4
 
 # CMake files
 CMakeSettings.json
