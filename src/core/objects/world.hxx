@@ -2,7 +2,7 @@
 
 #include "math/transform.hxx"
 
-#include "entity.hxx"
+#include "node_base.hxx"
 
 #include <memory>
 #include <vector>
@@ -25,7 +25,7 @@ public:
 	game_instance* getGameInstance() const { return &_owner; };
 
 private:
-	std::vector<std::unique_ptr<entity>> _entities;
+	std::vector<std::unique_ptr<node_base>> _nodes;
 
 	game_instance& _owner;
 };
@@ -33,10 +33,10 @@ private:
 template <class T>
 inline T* world::NewEntity()
 {
-	static_assert(std::is_base_of<entity, T>(), "T should be direved from entity");
+	static_assert(std::is_base_of<node_base, T>(), "T should be direved from entity");
 	if (this)
 	{
-		return dynamic_cast<T*>(_entities.emplace_back(new T(*this)).get());
+		return dynamic_cast<T*>(_nodes.emplace_back(new T(*this)).get());
 	}
 	return nullptr;
 }

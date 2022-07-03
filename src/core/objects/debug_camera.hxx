@@ -5,7 +5,7 @@
 class debug_camera final : public camera
 {
 public:
-	debug_camera(world& w, entity* owner = nullptr) 
+	debug_camera(world& w, node_base* owner = nullptr) 
 		: camera(w, owner)
 	{
 	}

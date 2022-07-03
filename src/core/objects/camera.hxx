@@ -1,13 +1,13 @@
 #pragma once
 #include "math/mat4.hxx"
 
-#include "entity.hxx"
+#include "node_base.hxx"
 
-class camera : public entity
+class camera : public node_base
 {
 public:
-	camera(world& w, entity* owner = nullptr)
-		: entity(w, owner)
+	camera(world& w, node_base* owner = nullptr)
+		: node_base(w, owner)
 	{
 	}
 

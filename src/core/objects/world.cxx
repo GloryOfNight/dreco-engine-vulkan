@@ -11,7 +11,7 @@ void world::init()
 
 void world::tick(double deltaTime)
 {
-	for (auto& ent : _entities)
+	for (auto& ent : _nodes)
 	{
 		ent->tick(deltaTime);
 	}
