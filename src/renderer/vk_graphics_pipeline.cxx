@@ -2,7 +2,6 @@
 
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
-#include "renderer/containers/vk_vertex.hxx"
 #include "shaders/basic.hxx"
 
 #include "dreco.hxx"

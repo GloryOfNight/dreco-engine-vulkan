@@ -3,7 +3,7 @@
 #include "core/managers/input_manager.hxx"
 #include "core/objects/game_instance.hxx"
 #include "core/threads/thread_pool.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_renderer.hxx"
 
 #include "dreco.hxx"
 

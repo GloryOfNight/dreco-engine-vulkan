@@ -2,7 +2,7 @@
 
 #include "core/platform.h"
 #include "core/utils/log.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_renderer.hxx"
 
 #include <SDL2/SDL_events.h>
 

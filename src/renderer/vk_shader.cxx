@@ -1,7 +1,7 @@
 #include "vk_shader.hxx"
 
 #include "core/utils/file_utils.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_renderer.hxx"
 
 #include "dreco.hxx"
 

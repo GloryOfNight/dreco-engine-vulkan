@@ -1,6 +1,6 @@
 #include "camera.hxx"
 
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_renderer.hxx"
 
 mat4 camera::getView() const
 {

@@ -1,8 +1,8 @@
 #include "basic.hxx"
 
 #include "renderer/containers/camera_data.hxx"
-#include "renderer/vulkan/vk_mesh.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_mesh.hxx"
+#include "renderer/vk_renderer.hxx"
 
 #include "dreco.hxx"
 

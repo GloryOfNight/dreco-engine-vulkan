@@ -1,10 +1,10 @@
 #pragma once
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/log.hxx"
-#include "renderer/vulkan/vk_mesh.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
-#include "renderer/vulkan/vk_scene.hxx"
-#include "renderer/vulkan/vk_texture_image.hxx"
+#include "renderer/vk_mesh.hxx"
+#include "renderer/vk_renderer.hxx"
+#include "renderer/vk_scene.hxx"
+#include "renderer/vk_texture_image.hxx"
 
 #include <string_view>
 

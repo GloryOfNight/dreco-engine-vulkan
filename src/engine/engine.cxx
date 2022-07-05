@@ -4,8 +4,8 @@
 #include "core/platform_paths.hxx"
 #include "core/utils/file_utils.hxx"
 #include "core/utils/log.hxx"
-#include "renderer/vulkan/vk_mesh.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_mesh.hxx"
+#include "renderer/vk_renderer.hxx"
 
 #include "engine.hxx"
 #include "signal_handler.hxx"

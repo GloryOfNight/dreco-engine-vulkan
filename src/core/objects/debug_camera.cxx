@@ -4,7 +4,7 @@
 
 #include "core/utils/log.hxx"
 #include "engine/engine.hxx"
-#include "renderer/vulkan/vk_renderer.hxx"
+#include "renderer/vk_renderer.hxx"
 
 void debug_camera::tick(double deltaTime)
 {

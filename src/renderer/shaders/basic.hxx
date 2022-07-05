@@ -1,5 +1,5 @@
 #pragma once
-#include "renderer/vulkan/vk_shader.hxx"
+#include "renderer/vk_shader.hxx"
 
 class vk_shader_basic_vert : public vk_shader
 {

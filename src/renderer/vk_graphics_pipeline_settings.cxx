@@ -1,6 +1,6 @@
 #include "vk_graphics_pipeline_settings.hxx"
 
-#include "renderer/containers/vk_vertex.hxx"
+#include "renderer/vk_vertex.hxx"
 
 #include "vk_renderer.hxx"
 #include "vk_shader.hxx"
