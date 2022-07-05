@@ -17,7 +17,7 @@ add_library(${PROJECT_NAME} STATIC ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_BUILD_STATIC)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES} ${Vulkan_LIBRARY} shader-compiler-static)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES} ${Vulkan_LIBRARY} shader-compiler-static spirv-reflect)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -40,6 +40,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 -DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
 
 add_subdirectory(tools)
+add_subdirectory(thirdparty)
 add_subdirectory(launcher)
 
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/install")
