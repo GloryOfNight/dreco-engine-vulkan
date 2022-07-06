@@ -3,9 +3,9 @@
 #include "renderer/containers/material_data.hxx"
 
 #include "vk_buffer.hxx"
-#include "vk_graphics_pipeline_settings.hxx"
 
 #include <vector>
+#include <map>
 #include <vulkan/vulkan.hpp>
 
 class vk_descriptor_set;
@@ -43,9 +43,6 @@ public:
 
 	vk::Pipeline get() const;
 
-	const vk_graphics_pipeline_settings& getSetings() const { return _settings; };
-	vk_graphics_pipeline_settings& getSetings() { return _settings; };
-
 	void addDependentMesh(const vk_mesh* mesh);
 
 protected:
@@ -58,7 +55,6 @@ protected:
 	void createPipeline(vk::Device device);
 
 private:
-	vk_graphics_pipeline_settings _settings;
 	std::map<vk::ShaderStageFlagBits, vk_shader const*> _shaders;
 
 	material_data _material;

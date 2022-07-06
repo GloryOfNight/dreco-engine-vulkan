@@ -2,6 +2,7 @@
 
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
+#include "renderer/vk_vertex.hxx"
 #include "shaders/basic.hxx"
 
 #include "dreco.hxx"
@@ -29,10 +30,6 @@ void vk_graphics_pipeline::create(const vk_scene* scene, const gltf::material& m
 
 	_shaders.emplace(vk::ShaderStageFlagBits::eVertex, renderer->findShader<vk_shader_basic_vert>());
 	_shaders.emplace(vk::ShaderStageFlagBits::eFragment, renderer->findShader<vk_shader_basic_frag>());
-
-	_settings.setup();
-	_settings._rasterizationState.setCullMode(mat._doubleSided ? vk::CullModeFlagBits::eNone : vk::CullModeFlagBits::eBack);
-	_settings._multisamplingState.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount());
 
 	createDescriptorSets(device);
 
@@ -250,6 +247,68 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 		shaderStages.push_back(shader.second->getPipelineShaderStageCreateInfo());
 	}
 
+	const std::vector<vk::VertexInputBindingDescription> vertexInputBindingDesc = vk_vertex::getInputBindingDescription();
+	const std::vector<vk::VertexInputAttributeDescription> vertexInputAttributeDesc = vk_vertex::getInputAttributeDescription();
+	const auto vertexInputState = vk::PipelineVertexInputStateCreateInfo()
+									  .setVertexBindingDescriptions(vertexInputBindingDesc)
+									  .setVertexAttributeDescriptions(vertexInputAttributeDesc);
+
+	std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments;
+	colorBlendAttachments[0] = vk::PipelineColorBlendAttachmentState()
+								   .setBlendEnable(VK_TRUE)
+								   .setColorWriteMask(
+									   vk::ColorComponentFlagBits::eR |
+									   vk::ColorComponentFlagBits::eG |
+									   vk::ColorComponentFlagBits::eB |
+									   vk::ColorComponentFlagBits::eA)
+								   .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+								   .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+								   .setColorBlendOp(vk::BlendOp::eAdd)
+								   .setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
+								   .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+								   .setAlphaBlendOp(vk::BlendOp::eSubtract);
+
+	const std::array<float, 4> colorBlendConstants = {0.F, 0.F, 0.F, 0.F};
+
+	const auto colorBlendingState = vk::PipelineColorBlendStateCreateInfo()
+										.setLogicOpEnable(VK_FALSE)
+										.setLogicOp(vk::LogicOp::eCopy)
+										.setAttachments(colorBlendAttachments)
+										.setBlendConstants(colorBlendConstants);
+
+	const auto inputAssemblyState = vk::PipelineInputAssemblyStateCreateInfo()
+										.setTopology(vk::PrimitiveTopology::eTriangleList)
+										.setPrimitiveRestartEnable(VK_FALSE);
+
+	const auto rasterizationState = vk::PipelineRasterizationStateCreateInfo()
+										.setRasterizerDiscardEnable(VK_FALSE)
+										.setPolygonMode(vk::PolygonMode::eFill)
+										.setLineWidth(1.0F)
+										.setCullMode(vk::CullModeFlagBits::eNone)
+										.setFrontFace(vk::FrontFace::eCounterClockwise)
+										.setDepthClampEnable(VK_FALSE)
+										.setDepthBiasEnable(VK_FALSE)
+										.setDepthBiasConstantFactor(0.0F)
+										.setDepthBiasSlopeFactor(0.0F)
+										.setDepthBiasClamp(0.0F);
+
+	const auto multisamplingState = vk::PipelineMultisampleStateCreateInfo()
+										.setSampleShadingEnable(VK_FALSE)
+										.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount())
+										.setMinSampleShading(1.0F)
+										.setPSampleMask(nullptr)
+										.setAlphaToCoverageEnable(VK_TRUE)
+										.setAlphaToOneEnable(VK_TRUE);
+
+	const auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+									   .setDepthTestEnable(VK_TRUE)
+									   .setDepthWriteEnable(VK_TRUE)
+									   .setDepthCompareOp(vk::CompareOp::eLess)
+									   .setDepthBoundsTestEnable(VK_FALSE)
+									   .setMinDepthBounds(0.0F)
+									   .setMaxDepthBounds(1.0F)
+									   .setStencilTestEnable(VK_TRUE);
+
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::Viewport viewport =
 		vk::Viewport()
@@ -273,13 +332,13 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
 		vk::GraphicsPipelineCreateInfo()
 			.setStages(shaderStages)
-			.setPVertexInputState(&_settings._vertexInputState)
-			.setPInputAssemblyState(&_settings._inputAssemblyState)
+			.setPVertexInputState(&vertexInputState)
+			.setPInputAssemblyState(&inputAssemblyState)
 			.setPViewportState(&viewportState)
-			.setPRasterizationState(&_settings._rasterizationState)
-			.setPColorBlendState(&_settings._colorBlendingState)
-			.setPMultisampleState(&_settings._multisamplingState)
-			.setPDepthStencilState(&_settings._depthStencilState)
+			.setPRasterizationState(&rasterizationState)
+			.setPColorBlendState(&colorBlendingState)
+			.setPMultisampleState(&multisamplingState)
+			.setPDepthStencilState(&depthStencilState)
 			.setLayout(_pipelineLayout)
 			.setRenderPass(renderer->getRenderPass())
 			.setSubpass(0);
