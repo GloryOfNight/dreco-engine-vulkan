@@ -55,7 +55,9 @@ void vk_graphics_pipeline::destroy()
 	const vk::Device device = vk_renderer::get()->getDevice();
 	if (_pipeline)
 	{
-		device.destroyDescriptorSetLayout(_descriptorSetLayout);
+		for (auto descriptorSetLayout : _descriptorSetLayouts)
+			device.destroyDescriptorSetLayout(descriptorSetLayout);
+
 		device.destroyDescriptorPool(_descriptorPool);
 		device.destroyPipelineLayout(_pipelineLayout);
 		device.destroyPipeline(_pipeline);
@@ -82,42 +84,38 @@ void vk_graphics_pipeline::drawCmd(vk::CommandBuffer commandBuffer)
 
 void vk_graphics_pipeline::updateDescriptiors()
 {
-	vk_descriptor_write_infos infos;
-	std::vector<vk::DescriptorPoolSize> poolSizes;
 	for (auto& shader : _shaders)
 	{
+		vk_descriptor_write_infos infos;
 		shader.second->addDescriptorWriteInfos(infos, *this);
-		shader.second->addDescriptorPoolSizes(poolSizes);
-	}
-
-	const size_t writeSize = poolSizes.size();
-	std::vector<vk::WriteDescriptorSet> writes(writeSize, vk::WriteDescriptorSet());
-
-	uint32_t bufferOffset{0};
-	uint32_t imageOffset{0};
-	for (size_t i = 0; i < writeSize; ++i)
-	{
-		writes[i] = vk::WriteDescriptorSet()
-						.setDstSet(_descriptorSets[0])
-						.setDstBinding(i)
-						.setDescriptorType(poolSizes[i].type);
-		switch (poolSizes[i].type)
+		const auto& shaderDataSets = shader.second->getDescirptorShaderData();
+		for (const auto& data : shaderDataSets)
 		{
-		case vk::DescriptorType::eUniformBuffer:
-			writes[i].setDescriptorCount(poolSizes[i].descriptorCount);
-			writes[i].setPBufferInfo(&infos.bufferInfos[bufferOffset]);
-			bufferOffset += poolSizes[i].descriptorCount;
-			break;
-		case vk::DescriptorType::eCombinedImageSampler:
-			writes[i].setDescriptorCount(poolSizes[i].descriptorCount);
-			writes[i].setPImageInfo(&infos.imageInfos[imageOffset]);
-			imageOffset += poolSizes[i].descriptorCount;
-			break;
-		default:
-			break;
+			std::vector<vk::WriteDescriptorSet> writes(data._descriptorSetLayoutBindings.size(), vk::WriteDescriptorSet());
+			for (uint32_t i = 0; i < data._descriptorSetLayoutBindings.size(); ++i)
+			{
+				const auto& binding = data._descriptorSetLayoutBindings[i];
+				writes[i] = vk::WriteDescriptorSet()
+								.setDstSet(_descriptorSets[data._descriptorSetIndex])
+								.setDstBinding(binding.binding)
+								.setDescriptorType(binding.descriptorType);
+				switch (binding.descriptorType)
+				{
+				case vk::DescriptorType::eUniformBuffer:
+					writes[i].setDescriptorCount(binding.descriptorCount);
+					writes[i].setPBufferInfo(&infos.bufferInfos[0]);
+					break;
+				case vk::DescriptorType::eCombinedImageSampler:
+					writes[i].setDescriptorCount(binding.descriptorCount);
+					writes[i].setPImageInfo(&infos.imageInfos[0]);
+					break;
+				default:
+					break;
+				}
+			}
+			vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
 		}
 	}
-	vk_renderer::get()->getDevice().updateDescriptorSets(writes, nullptr);
 }
 
 const material_data& vk_graphics_pipeline::getMaterial() const
@@ -137,11 +135,6 @@ const vk_texture_image& vk_graphics_pipeline::getTextureImageFromIndex(uint32_t 
 const vk_buffer& vk_graphics_pipeline::getMaterialBuffer() const
 {
 	return _materialBuffer;
-}
-
-vk::DescriptorSetLayout vk_graphics_pipeline::getDescriptorSetLayout() const
-{
-	return _descriptorSetLayout;
 }
 
 vk::PipelineLayout vk_graphics_pipeline::getLayout() const
@@ -202,26 +195,29 @@ void vk_graphics_pipeline::loadGltfMaterial(const vk_scene* scene, const gltf::m
 
 void vk_graphics_pipeline::createDescriptorSets(vk::Device device)
 {
-	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	uint32_t maxSets{};
 	std::vector<vk::DescriptorPoolSize> poolSizes;
 	for (auto& shader : _shaders)
 	{
-		shader.second->addDescriptorSetLayoutBindings(bindings);
-		shader.second->addDescriptorPoolSizes(poolSizes);
-	}
+		const auto& shaderDataSets = shader.second->getDescirptorShaderData();
+		maxSets += shaderDataSets.size();
+		for (const auto& data : shaderDataSets)
+		{
+			_descriptorSetLayouts.push_back(device.createDescriptorSetLayout(data._descriptorSetLayoutCreateInfo));
+			const auto& dataPoolSizes = data.getDescriptorPoolSizes();
 
-	_descriptorSetLayout = device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo()
-																.setFlags({})
-																.setBindings(bindings));
+			std::copy(dataPoolSizes.begin(), dataPoolSizes.end(), std::back_inserter(poolSizes));
+		}
+	}
 
 	_descriptorPool = device.createDescriptorPool(vk::DescriptorPoolCreateInfo()
 													  .setFlags({})
 													  .setPoolSizes(poolSizes)
-													  .setMaxSets(1));
+													  .setMaxSets(maxSets));
 
 	_descriptorSets = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo()
 														.setDescriptorPool(_descriptorPool)
-														.setSetLayouts(_descriptorSetLayout));
+														.setSetLayouts(_descriptorSetLayouts));
 
 	updateDescriptiors();
 }
@@ -231,12 +227,13 @@ void vk_graphics_pipeline::createPipelineLayout(vk::Device device)
 	std::vector<vk::PushConstantRange> pushConstantRanges;
 	for (auto& shader : _shaders)
 	{
-		shader.second->addPushConstantRange(pushConstantRanges);
+		const auto& ranges = shader.second->getPushConstantRanges();
+		std::copy(ranges.begin(), ranges.end(), std::back_inserter(pushConstantRanges));
 	}
 
 	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
 		vk::PipelineLayoutCreateInfo()
-			.setSetLayouts(_descriptorSetLayout)
+			.setSetLayouts(_descriptorSetLayouts)
 			.setPushConstantRanges(pushConstantRanges);
 
 	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
@@ -250,7 +247,7 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 	shaderStages.reserve(_shaders.size());
 	for (const auto& shader : _shaders)
 	{
-		shader.second->addPipelineShaderStageCreateInfo(shaderStages);
+		shaderStages.push_back(shader.second->getPipelineShaderStageCreateInfo());
 	}
 
 	const vk::Extent2D extent = renderer->getCurrentExtent();

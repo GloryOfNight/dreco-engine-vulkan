@@ -6,8 +6,8 @@ layout(location = 2) in vec4 inColor;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 1) uniform sampler2D texSampler[4];
-layout(binding = 2) uniform materialUniform
+layout(set = 1, binding = 0) uniform sampler2D texSampler[4];
+layout(set = 1, binding = 1) uniform materialUniform
 {
     uint baseColorIndex;
     uint metallicRoughnessIndex;

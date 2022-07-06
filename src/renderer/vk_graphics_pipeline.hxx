@@ -39,8 +39,6 @@ public:
 
 	const vk_buffer& getMaterialBuffer() const;
 
-	vk::DescriptorSetLayout getDescriptorSetLayout() const;
-
 	vk::PipelineLayout getLayout() const;
 
 	vk::Pipeline get() const;
@@ -70,8 +68,8 @@ private:
 
 	std::vector<const vk_mesh*> _dependedMeshes;
 
-	vk::DescriptorSetLayout _descriptorSetLayout;
 	vk::DescriptorPool _descriptorPool;
+	std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts;
 	std::vector<vk::DescriptorSet> _descriptorSets;
 
 	vk::PipelineLayout _pipelineLayout;

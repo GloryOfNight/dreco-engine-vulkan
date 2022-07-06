@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vulkan/vulkan.hpp>
+#include <spirv-reflect/spirv_reflect.h>
 
 struct vk_descriptor_write_infos
 {
@@ -37,23 +38,15 @@ public:
 
 	std::string_view getPath() const;
 
-	virtual void addPipelineShaderStageCreateInfo(std::vector<vk::PipelineShaderStageCreateInfo>& shaderStages) const {};
-
-	virtual void addDescriptorSetLayoutBindings(std::vector<vk::DescriptorSetLayoutBinding>& bindings) const {};
-
-	virtual void addPushConstantRange(std::vector<vk::PushConstantRange>& ranges) const {};
-
-	virtual void addDescriptorPoolSizes(std::vector<vk::DescriptorPoolSize>& sizes) const {};
-
 	virtual void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const {};
 
 	virtual void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh) const{};
 
-	const vk::PipelineShaderStageCreateInfo& getPipelineShaderStageCreateInfo() const;
+	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const;
 
-	const std::vector<vk_descriptor_shader_data> getDescirptorShaderData() const;
+	const std::vector<vk_descriptor_shader_data>& getDescirptorShaderData() const;
 	
-	const std::vector<vk::PushConstantRange> getPushConstantRanges() const;
+	const std::vector<vk::PushConstantRange>& getPushConstantRanges() const;
 
 protected:
 	void descriptShader(const std::string_view& shaderCode);
@@ -62,7 +55,7 @@ protected:
 
 	vk::ShaderModule _shaderModule{};
 
-	vk::PipelineShaderStageCreateInfo _pipelineShaderStageCreateInfo{};
+	SpvReflectShaderModule _reflModule{};
 
 	std::vector<vk_descriptor_shader_data> _descirptorShaderData;
 
