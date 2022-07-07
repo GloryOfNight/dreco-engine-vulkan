@@ -38,7 +38,7 @@ private:
 template <class T>
 inline T* node_base::AddChild()
 {
-	static_assert(std::is_base_of<T, base_node>(), "T should be direved from entity");
+	static_assert(std::is_base_of<T, node_base>(), "T should be direved from node_base");
 	auto& newEntitity = _children.emplace_back(new T(_world, this));
 	newEntitity->init();
 	return dynamic_cast<T*>(newEntitity.get());
