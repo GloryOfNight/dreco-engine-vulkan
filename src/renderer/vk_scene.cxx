@@ -68,14 +68,16 @@ void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNod
 		{
 			auto& newMesh = _meshes.emplace_back(new vk_mesh());
 
-			newMesh->create(*this, primitive, info._totalVertexSize / sizeof(gltf::mesh::primitive::vertex), info._totalIndexSize / sizeof(uint32_t));
+			newMesh->init(primitive._vertexes.size(), info._totalVertexSize / sizeof(gltf::mesh::primitive::vertex), primitive._indexes.size(), info._totalIndexSize / sizeof(uint32_t));
 			newMesh->_mat = newRootMat;
 
-			const uint32_t vertexSize = newMesh->getVertexesSize();
+			getGraphicPipelines()[primitive._material]->addDependentMesh(newMesh.get());
+
+			const uint32_t vertexSize = newMesh->getVertexSize();
 			info._vertexMemRegions.push_back({primitive._vertexes.data(), vertexSize, info._totalVertexSize});
 			info._totalVertexSize += vertexSize;
 
-			const uint32_t indexSize = newMesh->getIndexesSize();
+			const uint32_t indexSize = newMesh->getIndexSize();
 			info._indexMemRegions.push_back({primitive._indexes.data(), indexSize, info._totalIndexSize});
 			info._totalIndexSize += indexSize;
 		}

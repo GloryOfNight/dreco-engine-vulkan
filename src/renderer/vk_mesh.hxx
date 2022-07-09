@@ -1,14 +1,7 @@
 #pragma once
-#include "core/containers/gltf/mesh.hxx"
-#include "math/transform.hxx"
+#include "math/mat4.hxx"
 
-#include "vk_buffer.hxx"
-#include "vk_graphics_pipeline.hxx"
-#include "vk_scene.hxx"
-#include "vk_texture_image.hxx"
-
-#include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class vk_device;
 class vk_scene;
@@ -18,8 +11,6 @@ class vk_physical_device;
 
 class vk_mesh final
 {
-	using _memory_region = vk_device_memory::map_memory_region;
-
 public:
 	vk_mesh() = default;
 	vk_mesh(const vk_mesh&) = delete;
@@ -29,14 +20,15 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void create(const vk_scene& scene, const gltf::mesh::primitive& prim, uint32_t vertexOffset, uint32_t indexOffset);
+	void init(uint32_t vertexCount, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset);
 
 	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const;
 
-	uint32_t getVertexesSize() const { return _vertexSize; };
-	uint32_t getIndexesSize() const { return _indexSize; };
-
+	// temporal hold of the mesh matrix (transform)
 	mat4 _mat;
+
+	vk::DeviceSize getVertexSize() const { return _vertexSize; };
+	vk::DeviceSize getIndexSize() const { return _indexSize; };
 
 private:
 	uint32_t _vertexOffset{0};

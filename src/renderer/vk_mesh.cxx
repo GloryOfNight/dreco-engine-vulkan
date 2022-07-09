@@ -1,27 +1,15 @@
 #include "vk_mesh.hxx"
+#include "vk_vertex.hxx"
 
-#include "core/utils/file_utils.hxx"
-#include "engine/engine.hxx"
-
-#include "vk_queue_family.hxx"
-#include "vk_renderer.hxx"
-#include "vk_scene.hxx"
-#include "vk_utils.hxx"
-
-#include <array>
-#include <set>
-
-void vk_mesh::create(const vk_scene& scene, const gltf::mesh::primitive& prim, uint32_t vertexOffset, uint32_t indexOffset)
+void vk_mesh::init(uint32_t vertexCount, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset)
 {
-	_vertexCount = prim._vertexes.size();
-	_vertexSize = _vertexCount * sizeof(gltf::mesh::primitive::vertex);
+	_vertexCount = vertexCount;
+	_vertexSize = _vertexCount * vk_vertex::size();
 	_vertexOffset = vertexOffset;
 
-	_indexCount = prim._indexes.size();
+	_indexCount = indexCount;
 	_indexSize = _indexCount * sizeof(uint32_t);
 	_indexOffset = indexOffset;
-
-	scene.getGraphicPipelines()[prim._material]->addDependentMesh(this);
 }
 
 void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const
