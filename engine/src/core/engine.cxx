@@ -13,9 +13,8 @@
 #include <csignal>
 #include <shader_compiler.hxx>
 
-extern "C++" std::unique_ptr<game_instance> createGameInstance(engine& eng);
-
 static inline engine* gEngine{nullptr};
+static inline game_api gGameApi;
 
 static void onQuitEvent(const SDL_Event&)
 {
@@ -81,8 +80,9 @@ const camera* engine::getCamera() const
 	return _gameInstance->getActiveCamera();
 }
 
-int32_t engine::initialize()
+int32_t engine::initialize(const game_api& api)
 {
+	gGameApi = api;
 	if (_isRunning)
 	{
 		DE_LOG(Error, "Egnine already running, cannot init.");
@@ -129,7 +129,7 @@ int32_t engine::run()
 		return 1;
 	}
 
-	_gameInstance = createGameInstance(*this);
+	_gameInstance = gGameApi.createGameInstance(*this);
 	if (nullptr == _gameInstance)
 	{
 		DE_LOG(Error, "Game Instance object nullptr, coundn't run");

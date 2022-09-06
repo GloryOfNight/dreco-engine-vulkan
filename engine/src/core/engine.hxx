@@ -9,6 +9,16 @@
 
 #include <cstdint>
 
+struct DRECO_API game_api
+{
+	std::function<std::unique_ptr<game_instance>(engine&)> createGameInstance;
+	game_api& setCreateGameInstanceFunc(const std::function<std::unique_ptr<game_instance>(engine&)>& Value)
+	{
+		createGameInstance = Value;
+		return *this;
+	}
+};
+
 class DRECO_API engine
 {
 public:
@@ -36,7 +46,7 @@ public:
 	const input_manager& getInputManager() const { return _inputManager; };
 	input_manager& getInputManager() { return _inputManager; };
 
-	[[nodiscard]] int32_t initialize();
+	[[nodiscard]] int32_t initialize(const game_api& api);
 
 	[[nodiscard]] int32_t run();
 

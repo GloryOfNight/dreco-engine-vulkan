@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19.0)
+cmake_minimum_required(VERSION 3.16.2)
 project(dreco-engine)
 
 find_package(Vulkan REQUIRED)
@@ -6,8 +6,6 @@ find_package(SDL2 REQUIRED)
 
 file(GLOB_RECURSE DRECO_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)
 file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hxx)
-
-set(DRECO_BUILD_SHARED FALSE)
 
 if (DRECO_BUILD_SHARED)
 add_library(${PROJECT_NAME} SHARED ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
@@ -18,7 +16,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_BUILD_STATIC)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES} ${Vulkan_LIBRARY} shader-compiler-static spirv-reflect)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS} )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
@@ -37,3 +35,5 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 add_subdirectory(tools)
 add_subdirectory(thirdparty)
+
+install(IMPORTED_RUNTIME_ARTIFACTS SDL2::SDL2 RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})

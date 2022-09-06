@@ -4,6 +4,8 @@
 #include "game_objects/game_instance.hxx"
 #include "game_objects/world.hxx"
 
+#include "dreco.hxx"
+
 class launcher_world : public world
 {
 public:
@@ -32,7 +34,7 @@ public:
 	}
 };
 
-std::unique_ptr<game_instance> createGameInstance(engine& eng)
+std::unique_ptr<game_instance> DRECO_API createGameInstance(engine& eng)
 {
 	return std::unique_ptr<game_instance>(new launcher_gi(eng));
 }

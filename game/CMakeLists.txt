@@ -3,7 +3,11 @@ project(dreco-game)
 
 set(SOURCES_LIST game.cxx)
 
+if(DRECO_BUILD_SHARED)
+add_library(${PROJECT_NAME} SHARED ${SOURCES_LIST})
+else()
 add_library(${PROJECT_NAME} STATIC ${SOURCES_LIST})
+endif()
 
 target_link_libraries(${PROJECT_NAME} dreco-engine)
 

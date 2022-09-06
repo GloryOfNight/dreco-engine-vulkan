@@ -3,7 +3,7 @@
 
 #include "node_base.hxx"
 
-class camera : public node_base
+class DRECO_API camera : public node_base
 {
 public:
 	camera(world& w, node_base* owner = nullptr)

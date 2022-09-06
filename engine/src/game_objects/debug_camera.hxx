@@ -2,7 +2,7 @@
 
 #include "camera.hxx"
 
-class debug_camera final : public camera
+class DRECO_API debug_camera final : public camera
 {
 public:
 	debug_camera(world& w, node_base* owner = nullptr) 

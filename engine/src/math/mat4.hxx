@@ -35,7 +35,7 @@ struct matrix
 	}
 };
 
-struct mat4
+struct DRECO_API mat4
 {
 	using mat4d = matrix<float, 4>;
 

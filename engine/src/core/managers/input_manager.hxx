@@ -1,10 +1,11 @@
 #pragma once
 
+#include "dreco.hxx"
 #include "event_manager.hxx"
 
 #include <set>
 
-class input_manager
+class DRECO_API input_manager
 {
 private:
 	struct mouse_state
