@@ -70,7 +70,7 @@ bool vk_renderer::isSupported()
 
 void vk_renderer::init()
 {
-	vkEnumerateInstanceVersion(&_apiVersion);
+	_apiVersion = vk::enumerateInstanceVersion();
 
 	createWindow();
 	createInstance();
