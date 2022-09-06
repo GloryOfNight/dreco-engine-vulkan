@@ -1,7 +1,7 @@
 #include "vk_scene.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
-#include "engine/engine.hxx"
+#include "core/engine.hxx"
 
 #include "vk_graphics_pipeline.hxx"
 #include "vk_mesh.hxx"

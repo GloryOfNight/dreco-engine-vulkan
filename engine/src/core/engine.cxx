@@ -1,9 +1,7 @@
 #include "engine.hxx"
 
 #include "core/loaders/gltf_loader.hxx"
-#include "core/platform_paths.hxx"
 #include "core/utils/file_utils.hxx"
-#include "core/utils/log.hxx"
 #include "renderer/vk_mesh.hxx"
 #include "renderer/vk_renderer.hxx"
 
@@ -14,6 +12,8 @@
 #include <chrono>
 #include <csignal>
 #include <shader_compiler.hxx>
+
+extern "C++" std::unique_ptr<game_instance> createGameInstance(engine& eng);
 
 static inline engine* gEngine{nullptr};
 
@@ -81,12 +81,12 @@ const camera* engine::getCamera() const
 	return _gameInstance->getActiveCamera();
 }
 
-bool engine::init()
+int32_t engine::initialize()
 {
 	if (_isRunning)
 	{
 		DE_LOG(Error, "Egnine already running, cannot init.");
-		return false;
+		return 1;
 	}
 
 	if (gEngine != nullptr)
@@ -100,44 +100,47 @@ bool engine::init()
 			DE_LOG(Error, "Another engine instance already initialized.");
 		}
 
-		return false;
+		return 2;
 	}
 
 	signal_handler::registerSignalsHandle();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
-		return false;
+		return 3;
 	}
 
 	if (!platform_paths::init())
 	{
 		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir().c_str());
-		return false;
+		return 4;
 	}
 
 	gEngine = this;
 
-	return true;
+	return 0;
 }
 
-void engine::run()
+int32_t engine::run()
 {
 	if (nullptr == engine::get())
 	{
 		DE_LOG(Error, "Init engine first. Cannot run.");
-		return;
+		return 1;
 	}
-	if (shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR))
+
+	_gameInstance = createGameInstance(*this);
+	if (nullptr == _gameInstance)
 	{
-		DE_LOG(Error, "Shader compilation task failed. . .");
-		return;
+		DE_LOG(Error, "Game Instance object nullptr, coundn't run");
+		return 3;
 	}
 
 	if (true == startRenderer())
 	{
 		startMainLoop();
 	}
+	return 0;
 }
 
 void engine::stop()
@@ -210,7 +213,10 @@ void engine::postMainLoop()
 
 double engine::calculateNewDeltaTime()
 {
-	const auto frametime_from_fps_lam = [](const double fps) constexpr { return (1.0 / static_cast<double>(fps)); };
+	const auto frametime_from_fps_lam = [](const double fps) constexpr
+	{
+		return (1.0 / static_cast<double>(fps));
+	};
 	constexpr double fpsMax = frametime_from_fps_lam(5000);
 	constexpr double fpsMin = frametime_from_fps_lam(24);
 

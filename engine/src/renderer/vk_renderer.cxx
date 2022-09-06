@@ -1,11 +1,11 @@
 #include "vk_renderer.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
-#include "core/objects/camera.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
-#include "engine/engine.hxx"
+#include "core/engine.hxx"
+#include "game_objects/camera.hxx"
 #include "renderer/containers/camera_data.hxx"
 
 #include "vk_mesh.hxx"

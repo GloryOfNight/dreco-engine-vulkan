@@ -3,7 +3,7 @@
 #include "math/vec3.hxx"
 
 #include "core/utils/log.hxx"
-#include "engine/engine.hxx"
+#include "core/engine.hxx"
 #include "renderer/vk_renderer.hxx"
 
 void debug_camera::tick(double deltaTime)

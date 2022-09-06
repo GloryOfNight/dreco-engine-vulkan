@@ -1,8 +1,8 @@
 #pragma once
 #include "core/managers/event_manager.hxx"
 #include "core/managers/input_manager.hxx"
-#include "core/objects/game_instance.hxx"
 #include "core/threads/thread_pool.hxx"
+#include "game_objects/game_instance.hxx"
 #include "renderer/vk_renderer.hxx"
 
 #include "dreco.hxx"
@@ -36,16 +36,13 @@ public:
 	const input_manager& getInputManager() const { return _inputManager; };
 	input_manager& getInputManager() { return _inputManager; };
 
-	[[nodiscard]] bool init();
+	[[nodiscard]] int32_t initialize();
 
-	template<class T>
-	void runGI();
+	[[nodiscard]] int32_t run();
 
 	void stop();
 
 private:
-	void run();
-
 	bool startRenderer();
 
 	void startMainLoop();
@@ -68,14 +65,3 @@ private:
 
 	std::unique_ptr<game_instance> _gameInstance;
 };
-
-template <class T>
-inline void engine::runGI()
-{
-	static_assert(std::is_base_of<game_instance, T>(), "T should be direved from game instance");
-	if (this)
-	{
-		_gameInstance.reset(new T(*this));
-		run();
-	}
-}

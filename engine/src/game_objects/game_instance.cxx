@@ -1,6 +1,6 @@
 #include "game_instance.hxx"
 
-#include "engine/engine.hxx"
+#include "core/engine.hxx"
 
 #include "camera.hxx"
 
