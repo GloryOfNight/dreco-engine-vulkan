@@ -25,9 +25,8 @@ Project for personal fun of writing vulkan renderer and an game engine.
 I'm not expecting myself to handle every target, but its fun have something to work towards.
 
   
-## Build
-[![Ubuntu](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/ubuntu_cmake.yml)
-[![Windows](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/windows_cmake.yml/badge.svg)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/windows_cmake.yml)
+## Builds
+[![Builds](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/builds.yml/badge.svg?branch=development)](https://github.com/GloryOfNight/dreco-engine-vulkan/actions/workflows/builds.yml)
 
  ## Build Dependencies
 - CMake at least 3.19.0 ([link](https://cmake.org/))
