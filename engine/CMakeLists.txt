@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16.2)
 project(dreco-engine)
 
+set(DRECO_ASSETS_DIR "assets")
+set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
+set(DRECO_SHADERS_BINARY_DIR "shaders/bin")
+
 find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
 
