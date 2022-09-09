@@ -11,6 +11,7 @@ public:
 	game_instance() = default;
 	game_instance(game_instance&) = delete;
 	game_instance(game_instance&&) = delete;
+	virtual ~game_instance() = default;
 
 	virtual void init();
 
