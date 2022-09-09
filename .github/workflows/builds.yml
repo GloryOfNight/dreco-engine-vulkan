@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ master, development ]
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   Windows:
     runs-on: windows-latest
@@ -23,10 +20,10 @@ jobs:
       uses: humbletim/setup-vulkan-sdk@v1.0.3
       
     - name: CMake Configure
-      run: set SDL2_DIR="C:/Program Files (x86)/SDL2" && cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+      run: set SDL2_DIR="C:/Program Files (x86)/SDL2" && cmake --preset win64-release
 
     - name: CMake Build
-      run: cmake --build build --config $BUILD_TYPE
+      run: cmake --build build
   Linux:
     runs-on: ubuntu-latest
     steps:
@@ -39,8 +36,8 @@ jobs:
         run: wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add - && sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.148-bionic.list https://packages.lunarg.com/vulkan/1.2.148/lunarg-vulkan-1.2.148-bionic.list && sudo apt update && sudo apt install vulkan-sdk  
 
       - name: CMake Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        run: cmake --preset linux64-release
 
       - name: CMake Build
         shell: bash
-        run: cmake --build build --config $BUILD_TYPE
+        run: cmake --build build
