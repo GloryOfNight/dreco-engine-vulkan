@@ -16,25 +16,21 @@ public:
 
 	void init() override
 	{
-		auto* cam = NewEntity<debug_camera>();
-		getGameInstance()->setActiveCamera(*cam);
+		getGameInstance()->setActiveCamera(NewEntity<debug_camera>());
 	}
 };
 
 class launcher_gi : public game_instance
 {
 public:
-	launcher_gi(engine& eng)
-		: game_instance(eng)
-	{
-	}
+	launcher_gi() = default;
 	void init() override
 	{
 		loadWorld<launcher_world>();
 	}
-};
 
-std::unique_ptr<game_instance> DRECO_API createGameInstance(engine& eng)
-{
-	return std::unique_ptr<game_instance>(new launcher_gi(eng));
-}
+	virtual std::unique_ptr<game_instance> makeNew() const override 
+	{
+		return std::unique_ptr<game_instance>(new launcher_gi());
+	}
+};

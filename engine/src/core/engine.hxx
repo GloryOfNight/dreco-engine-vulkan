@@ -9,14 +9,16 @@
 
 #include <cstdint>
 
-struct DRECO_API game_api
+template <typename base>
+struct defaultObject
 {
-	std::function<std::unique_ptr<game_instance>(engine&)> createGameInstance;
-	game_api& setCreateGameInstanceFunc(const std::function<std::unique_ptr<game_instance>(engine&)>& Value)
-	{
-		createGameInstance = Value;
-		return *this;
-	}
+	template <typename T>
+	void init(T&& inObj) { obj = std::unique_ptr<base>(std::move(inObj)); }
+	bool isSet() const { return obj != nullptr; }
+	std::unique_ptr<base> makeNew() const { return obj->makeNew(); };
+
+private:
+	std::unique_ptr<base> obj{nullptr};
 };
 
 class DRECO_API engine
@@ -46,11 +48,13 @@ public:
 	const input_manager& getInputManager() const { return _inputManager; };
 	input_manager& getInputManager() { return _inputManager; };
 
-	[[nodiscard]] int32_t initialize(const game_api& api);
+	[[nodiscard]] int32_t initialize();
 
 	[[nodiscard]] int32_t run();
 
 	void stop();
+
+	defaultObject<game_instance> _defaultGameInstance;
 
 private:
 	bool startRenderer();

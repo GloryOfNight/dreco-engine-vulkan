@@ -4,11 +4,6 @@
 
 #include "camera.hxx"
 
-game_instance::game_instance(engine& eng)
-	: _owner{eng}
-{
-}
-
 void game_instance::init()
 {
 }
@@ -18,17 +13,16 @@ void game_instance::tick(double deltaTime)
 	_currentWorld->tick(deltaTime);
 }
 
-camera const* game_instance::getActiveCamera() const
+const std::shared_ptr<camera>& game_instance::getActiveCamera() const
 {
 	return _activeCamera;
 }
 
-bool game_instance::setActiveCamera(camera& c)
+bool game_instance::setActiveCamera(const std::shared_ptr<camera>& cam)
 {
-	if (c.getWorld() == _currentWorld.get())
+	if (cam && cam->getWorld() == _currentWorld.get())
 	{
-		// what to do if camera was set active but deleted in process?
-		_activeCamera = &c;
+		_activeCamera = cam;
 		return true;
 	}
 	return false;

@@ -14,7 +14,6 @@
 #include <shader_compiler.hxx>
 
 static inline engine* gEngine{nullptr};
-static inline game_api gGameApi;
 
 static void onQuitEvent(const SDL_Event&)
 {
@@ -77,12 +76,11 @@ engine* engine::get()
 
 const camera* engine::getCamera() const
 {
-	return _gameInstance->getActiveCamera();
+	return _gameInstance->getActiveCamera().get();
 }
 
-int32_t engine::initialize(const game_api& api)
+int32_t engine::initialize()
 {
-	gGameApi = api;
 	if (_isRunning)
 	{
 		DE_LOG(Error, "Egnine already running, cannot init.");
@@ -128,8 +126,14 @@ int32_t engine::run()
 		DE_LOG(Error, "Init engine first. Cannot run.");
 		return 1;
 	}
+	
+	if (!_defaultGameInstance.isSet())
+	{
+		DE_LOG(Error, "Game Instance isn't registred.");
+		return 2;
+	}
 
-	_gameInstance = gGameApi.createGameInstance(*this);
+	_gameInstance = _defaultGameInstance.makeNew();
 	if (nullptr == _gameInstance)
 	{
 		DE_LOG(Error, "Game Instance object nullptr, coundn't run");

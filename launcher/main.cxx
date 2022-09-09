@@ -3,14 +3,15 @@
 #include "dreco.hxx"
 #include "shader_compiler.hxx"
 
-extern "C++" std::unique_ptr<game_instance> createGameInstance(engine& eng);
+extern "C++" void registerGame(defaultObject<game_instance>&);
 
 int main()
 {
-	const game_api gameApi = game_api().setCreateGameInstanceFunc(&createGameInstance);
-
 	engine Engine;
-	const int32_t initRes = Engine.initialize(gameApi);
+	const int32_t initRes = Engine.initialize();
+
+	registerGame(Engine._defaultGameInstance);
+
 	if (initRes == 0)
 	{
 		if (const auto res = shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR); res != 0)

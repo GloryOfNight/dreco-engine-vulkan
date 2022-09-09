@@ -3,8 +3,6 @@ project(dreco-project)
 
 set(DRECO_BUILD_SHARED TRUE)
 
-set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX})
-
 set(DRECO_ASSETS_DIR "assets")
 set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
 set(DRECO_SHADERS_BINARY_DIR "shaders/bin")

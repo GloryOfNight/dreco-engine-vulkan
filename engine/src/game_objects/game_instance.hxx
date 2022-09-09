@@ -5,10 +5,11 @@
 class engine;
 class camera;
 
+
 class DRECO_API game_instance
 {
 public:
-	game_instance(engine& eng);
+	game_instance() = default;
 	game_instance(game_instance&) = delete;
 	game_instance(game_instance&&) = delete;
 
@@ -19,15 +20,15 @@ public:
 
 	virtual void tick(double deltaTime);
 
-	camera const* getActiveCamera() const;
-	bool setActiveCamera(camera& c);
+	const std::shared_ptr<camera>& getActiveCamera() const;
+	bool setActiveCamera(const std::shared_ptr<camera>& cam);
+
+	virtual std::unique_ptr<game_instance> makeNew() const = 0;
 
 private:
-	engine& _owner;
-
 	std::unique_ptr<world> _currentWorld;
 
-	camera* _activeCamera;
+	std::shared_ptr<camera> _activeCamera;
 };
 
 template <class T>
