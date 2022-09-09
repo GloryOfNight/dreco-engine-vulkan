@@ -5,6 +5,7 @@
 #include "vk_buffer.hxx"
 
 #include <vector>
+#include <memory>
 
 class vk_texture_image;
 class vk_graphics_pipeline;

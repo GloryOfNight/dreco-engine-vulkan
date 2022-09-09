@@ -34,11 +34,8 @@ template <class T>
 inline std::shared_ptr<T> world::NewEntity()
 {
 	static_assert(std::is_base_of<node_base, T>(), "T should be direved from entity");
-	if (this)
-	{
-		auto newObj = std::shared_ptr<T>(new T(*this));
-		_nodes.emplace_back(newObj);
-		return newObj;
-	}
-	return nullptr;
+
+	auto newObj = std::shared_ptr<T>(new T(*this));
+	_nodes.emplace_back(newObj);
+	return newObj;
 }

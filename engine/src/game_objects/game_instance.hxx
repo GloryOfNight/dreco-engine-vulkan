@@ -5,7 +5,6 @@
 class engine;
 class camera;
 
-
 class DRECO_API game_instance
 {
 public:
@@ -35,9 +34,7 @@ template <class T>
 inline void game_instance::loadWorld()
 {
 	static_assert(std::is_base_of<world, T>(), "T should be direved from world");
-	if (this)
-	{
-		_currentWorld.reset(new T(*this));
-		_currentWorld->init();
-	}
+
+	_currentWorld.reset(new T(*this));
+	_currentWorld->init();
 }
