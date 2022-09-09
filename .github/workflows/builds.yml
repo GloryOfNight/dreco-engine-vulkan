@@ -17,13 +17,13 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install SDL2
-      run: git clone https://github.com/libsdl-org/SDL.git -b release-2.0.16 && cmake -S SDL -B SDL/build -DSDL_STATIC=FALSE -DCMAKE_INSTALL_PREFIX="sdl2" && cmake --build SDL/build --config Release --target INSTALL
+      run: git clone https://github.com/libsdl-org/SDL.git -b release-2.0.16 && cmake -S SDL -B SDL/build -DSDL_STATIC=FALSE -DCMAKE_INSTALL_PREFIX="sdl2" && cmake --build SDL/build --config Release --target INSTALL && set SDL2_DIR "sdl2"
       
     - name: Install Vulkan SDK
       uses: humbletim/setup-vulkan-sdk@v1.0.3
       
     - name: CMake Configure
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DSDL2_DIR="sdl2"
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
     - name: CMake Build
       run: cmake --build build --config $BUILD_TYPE
