@@ -16,11 +16,10 @@
 #include <chrono>
 #include <stdexcept>
 
-#define VK_USE_DEBUG 1
+#define VK_USE_DEBUG true
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
-//disabled due to unstabilities on linux
 #if PLATFORM_WINDOWS
 #define VK_ENABLE_LUNAR_MONITOR
 #endif
@@ -670,7 +669,6 @@ void vk_renderer::setCameraData(const mat4& inView, const mat4 inProj)
 {
 	_cameraData.view = inView;
 	_cameraData.viewProj = inView * inProj;
-
 }
 
 void vk_renderer::updateCameraBuffer()

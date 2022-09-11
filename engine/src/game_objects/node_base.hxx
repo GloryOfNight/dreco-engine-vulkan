@@ -14,6 +14,7 @@ public:
 	node_base(world& w, node_base* owner = nullptr);
 	node_base(node_base&) = delete;
 	node_base(node_base&&) = delete;
+	virtual ~node_base() = default;
 
 	virtual void init();
 
