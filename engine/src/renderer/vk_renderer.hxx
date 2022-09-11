@@ -1,5 +1,6 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
+#include "renderer/containers/camera_data.hxx"
 #include "shaders/basic.hxx"
 
 #include "vk_buffer.hxx"
@@ -40,6 +41,8 @@ public:
 	void exit();
 
 	void tick(double deltaTime);
+
+	void setCameraData(const mat4& inView, const mat4 inProj);
 
 	void loadModel(const gltf::model& scn);
 
@@ -82,7 +85,7 @@ public:
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
-	const vk_buffer& getCameraDataBuffer() { return _cameraData; };
+	const vk_buffer& getCameraDataBuffer() const { return _cameraDataBuffer; };
 
 	vk::CommandBuffer beginSingleTimeTransferCommands();
 
@@ -93,9 +96,9 @@ public:
 	void applySettings();
 
 protected:
-	void drawFrame();
+	void updateCameraBuffer();
 
-	void updateCameraData();
+	void drawFrame();
 
 	bool updateExtent();
 
@@ -164,9 +167,10 @@ private:
 
 	vk_depth_image _depthImage;
 
-	vk_buffer _cameraData;
+	camera_data _cameraData;
+	vk_buffer _cameraDataBuffer;
 
-	std::map < const std::string_view, std::unique_ptr<vk_shader>> _shaders;
+	std::map<const std::string_view, std::unique_ptr<vk_shader>> _shaders;
 
 	vk::SwapchainKHR _swapchain;
 
@@ -215,3 +219,4 @@ inline vk_shader* vk_renderer::findShader()
 	}
 	return nullptr;
 }
+

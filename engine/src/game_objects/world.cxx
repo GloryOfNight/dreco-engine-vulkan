@@ -1,5 +1,7 @@
 #include "world.hxx"
 
+#include "node_base.hxx"
+
 world::world(game_instance& gi)
 	: _owner{gi}
 {

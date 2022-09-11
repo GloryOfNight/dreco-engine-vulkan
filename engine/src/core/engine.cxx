@@ -74,11 +74,6 @@ engine* engine::get()
 	return gEngine;
 }
 
-const camera* engine::getCamera() const
-{
-	return _gameInstance->getActiveCamera().get();
-}
-
 int32_t engine::initialize()
 {
 	if (_isRunning)

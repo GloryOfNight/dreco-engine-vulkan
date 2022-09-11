@@ -2,12 +2,11 @@
 
 #include "math/transform.hxx"
 
-#include "node_base.hxx"
-
 #include <memory>
 #include <vector>
 
 class game_instance;
+class node_base;
 class DRECO_API world
 {
 public:
@@ -22,7 +21,7 @@ public:
 	template <class T>
 	std::shared_ptr<T> NewEntity();
 
-	game_instance* getGameInstance() const { return &_owner; };
+	game_instance& getGameInstance() const { return _owner; };
 
 private:
 	std::vector<std::shared_ptr<node_base>> _nodes;

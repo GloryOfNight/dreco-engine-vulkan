@@ -1,10 +1,12 @@
 #pragma once
 #include "dreco.hxx"
+
 #include "world.hxx"
 
-class engine;
-class camera;
+#include <memory>
+#include <vector>
 
+class camera;
 class DRECO_API game_instance
 {
 public:
@@ -16,26 +18,33 @@ public:
 	virtual void init();
 
 	template <class T>
-	void loadWorld();
+	size_t loadWorld(const bool makeCurrent = true);
 
 	virtual void tick(double deltaTime);
 
-	const std::shared_ptr<camera>& getActiveCamera() const;
-	bool setActiveCamera(const std::shared_ptr<camera>& cam);
+	const std::vector<std::unique_ptr<world>>& getWorlds() const;
+	world& getCurrentWorld() const;
+	bool setCurrentWorldIndex(const size_t index);
 
 	virtual std::unique_ptr<game_instance> makeNew() const = 0;
 
 private:
-	std::unique_ptr<world> _currentWorld;
-
-	std::shared_ptr<camera> _activeCamera;
+	std::vector<std::unique_ptr<world>> _worlds;
+	size_t _currentWorldIndex{};
 };
 
 template <class T>
-inline void game_instance::loadWorld()
+inline size_t game_instance::loadWorld(const bool makeCurrent)
 {
 	static_assert(std::is_base_of<world, T>(), "T should be direved from world");
 
-	_currentWorld.reset(new T(*this));
-	_currentWorld->init();
+	_worlds.push_back(std::unique_ptr<world>(new T(*this)));
+	const size_t newWorldIndex = _worlds.size() - 1;
+
+	_worlds[newWorldIndex]->init();
+
+	if (makeCurrent)
+		_currentWorldIndex = newWorldIndex;
+
+	return newWorldIndex;
 }

@@ -1,12 +1,11 @@
 #include "vk_renderer.hxx"
 
 #include "async_tasks/async_load_texture_task.hxx"
+#include "core/engine.hxx"
 #include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
-#include "core/engine.hxx"
 #include "game_objects/camera.hxx"
-#include "renderer/containers/camera_data.hxx"
 
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
@@ -138,7 +137,7 @@ void vk_renderer::exit()
 	cleanupSwapchain(_swapchain);
 
 	_placeholderTextureImage.destroy();
-	_cameraData.destroy();
+	_cameraDataBuffer.destroy();
 
 	_device.destroySemaphore(_semaphoreImageAvaible);
 	_device.destroySemaphore(_semaphoreRenderFinished);
@@ -163,7 +162,7 @@ void vk_renderer::exit()
 
 void vk_renderer::tick(double deltaTime)
 {
-	updateCameraData();
+	updateCameraBuffer();
 	if (updateExtent())
 	{
 		recreateSwapchain();
@@ -592,7 +591,7 @@ void vk_renderer::createCameraBuffer()
 	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
 	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
 	bufferCreateInfo.size = sizeof(camera_data);
-	_cameraData.create(bufferCreateInfo);
+	_cameraDataBuffer.create(bufferCreateInfo);
 }
 
 void vk_renderer::drawFrame()
@@ -667,16 +666,16 @@ void vk_renderer::drawFrame()
 	}
 }
 
-void vk_renderer::updateCameraData()
+void vk_renderer::setCameraData(const mat4& inView, const mat4 inProj)
 {
-	const auto camera = engine::get()->getCamera();
-	if (camera)
-	{
-		camera_data data;
-		data.view = camera->getView();
-		data.viewProj = data.view * camera->getProjection();
-		_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
-	}
+	_cameraData.view = inView;
+	_cameraData.viewProj = inView * inProj;
+
+}
+
+void vk_renderer::updateCameraBuffer()
+{
+	_cameraDataBuffer.getDeviceMemory().map(&_cameraData, sizeof(_cameraData));
 }
 
 bool vk_renderer::updateExtent()

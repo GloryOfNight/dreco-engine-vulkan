@@ -3,11 +3,11 @@
 #include "math/transform.hxx"
 
 #include "dreco.hxx"
+#include "world.hxx"
 
 #include <memory>
 #include <vector>
 
-class world;
 class DRECO_API node_base
 {
 public:
@@ -21,11 +21,13 @@ public:
 
 	transform _transform;
 
-	template<class T>
+	template <class T>
 	T* AddChild();
 
-	world* getWorld() const { return &_world; };
-	node_base* getOwner() const { return _owner; };
+	world& getWorld() const { return _world; };
+
+	bool hasOwner() const { return !(_owner == nullptr); }
+	node_base* getOwner() { return _owner; };
 
 private:
 	world& _world;

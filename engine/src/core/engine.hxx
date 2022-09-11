@@ -34,8 +34,6 @@ public:
 
 	static engine* get();
 
-	const camera* getCamera() const;
-
 	const vk_renderer& getRenderer() const { return _renderer; };
 	vk_renderer& getRenderer() { return _renderer; };
 

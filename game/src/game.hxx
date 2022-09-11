@@ -16,7 +16,7 @@ public:
 
 	void init() override
 	{
-		getGameInstance()->setActiveCamera(NewEntity<debug_camera>());
+		NewEntity<debug_camera>();
 	}
 };
 
