@@ -8,13 +8,13 @@
 #include <memory>
 #include <vector>
 
-class DRECO_API node_base
+class DRECO_API root_node
 {
 public:
-	node_base(world& w, node_base* owner = nullptr);
-	node_base(node_base&) = delete;
-	node_base(node_base&&) = delete;
-	virtual ~node_base() = default;
+	root_node(world& w, root_node* owner = nullptr);
+	root_node(root_node&) = delete;
+	root_node(root_node&&) = delete;
+	virtual ~root_node() = default;
 
 	virtual void init();
 
@@ -28,20 +28,20 @@ public:
 	world& getWorld() const { return _world; };
 
 	bool hasOwner() const { return !(_owner == nullptr); }
-	node_base* getOwner() { return _owner; };
+	root_node* getOwner() { return _owner; };
 
 private:
 	world& _world;
 
-	node_base* _owner;
+	root_node* _owner;
 
-	std::vector<std::unique_ptr<node_base>> _children;
+	std::vector<std::unique_ptr<root_node>> _children;
 };
 
 template <class T>
-inline T* node_base::AddChild()
+inline T* root_node::AddChild()
 {
-	static_assert(std::is_base_of<T, node_base>(), "T should be direved from node_base");
+	static_assert(std::is_base_of<T, root_node>(), "T should be direved from node_base");
 	auto& newEntitity = _children.emplace_back(new T(_world, this));
 	newEntitity->init();
 	return dynamic_cast<T*>(newEntitity.get());

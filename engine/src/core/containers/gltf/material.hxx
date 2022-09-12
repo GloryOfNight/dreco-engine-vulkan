@@ -21,7 +21,7 @@ namespace gltf
 
 	struct emissive : public base_texture
 	{
-		std::array<double, 3> _factor;
+		std::array<double, 3> _factor = {1.0, 1.0, 1.0};
 	};
 
 	struct pbr_metallic_roughness

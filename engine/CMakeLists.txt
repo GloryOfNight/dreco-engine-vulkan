@@ -1,12 +1,19 @@
 cmake_minimum_required(VERSION 3.16.2)
 project(dreco-engine)
 
+find_package(Vulkan REQUIRED)
+if(NOT DEFINED Vulkan_FOUND)
+    message(FATAL_ERROR "Vulkan not found")
+endif()
+
+find_package(SDL2 REQUIRED)
+if(NOT DEFINED SDL2_FOUND)
+    message(FATAL_ERROR "SDL2 not found")
+endif()
+
 set(DRECO_ASSETS_DIR "assets")
 set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
 set(DRECO_SHADERS_BINARY_DIR "shaders/bin")
-
-find_package(Vulkan REQUIRED)
-find_package(SDL2 REQUIRED)
 
 file(GLOB_RECURSE DRECO_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)
 file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hxx)

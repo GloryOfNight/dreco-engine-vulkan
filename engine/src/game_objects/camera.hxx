@@ -1,13 +1,13 @@
 #pragma once
 #include "math/mat4.hxx"
 
-#include "node_base.hxx"
+#include "root_node.hxx"
 
-class DRECO_API camera : public node_base
+class DRECO_API camera : public root_node
 {
 public:
-	camera(world& w, node_base* owner = nullptr)
-		: node_base(w, owner)
+	camera(world& w, root_node* owner = nullptr)
+		: root_node(w, owner)
 	{
 	}
 

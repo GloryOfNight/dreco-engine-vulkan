@@ -15,7 +15,7 @@ mat4 camera::getProjection() const
 
 void camera::tick(double deltaTime)
 {
-	node_base::tick(deltaTime);
+	root_node::tick(deltaTime);
 
 	{ // update view
 		transform viewTransform = _transform;
