@@ -6,7 +6,7 @@ if (BUILD_EXECUTABLE)
     get_target_property(DRECO_BINARY_DIR dreco BINARY_DIR)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED 17
+        CXX_STANDARD_REQUIRED TRUE
         EXPORT_COMPILE_COMMANDS TRUE
         RUNTIME_OUTPUT_DIRECTORY ${DRECO_BINARY_DIR})
 else()
@@ -14,7 +14,7 @@ else()
     target_include_directories(${PROJECT_NAME}-static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
     set_target_properties(${PROJECT_NAME}-static PROPERTIES
         CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED 17
+        CXX_STANDARD_REQUIRED TRUE
         EXPORT_COMPILE_COMMANDS TRUE)
     target_compile_definitions(${PROJECT_NAME}-static PRIVATE BUILD_STATIC)
 endif()
