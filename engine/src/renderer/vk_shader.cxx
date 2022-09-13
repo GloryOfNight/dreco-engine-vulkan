@@ -61,6 +61,36 @@ const std::vector<vk::PushConstantRange>& vk_shader::getPushConstantRanges() con
 	return _pushConstantRanges;
 }
 
+const vk_vertex_input_info vk_shader::getVertexInputInfo() const
+{
+	vk_vertex_input_info out;
+	out._attributeDesc.resize(_reflModule.input_variable_count);
+
+	std::vector<size_t> sizes(_reflModule.input_variable_count, size_t());
+
+	for (int i = 0; i < _reflModule.input_variable_count; ++i)
+	{
+		const auto& inputVar = _reflModule.input_variables[i];
+		out._attributeDesc[inputVar->location] = vk::VertexInputAttributeDescription()
+													 .setBinding(0)
+													 .setLocation(inputVar->location)
+													 .setFormat(static_cast<vk::Format>(inputVar->format));
+		sizes[inputVar->location] = (inputVar->numeric.scalar.width / 8) * inputVar->numeric.vector.component_count;
+	}
+
+	out._bindingDesc[0] = vk::VertexInputBindingDescription()
+							  .setBinding(0)
+							  .setInputRate(vk::VertexInputRate::eVertex);
+	for (int i = 0; i < _reflModule.input_variable_count; ++i)
+	{
+		out._bindingDesc[0].stride += sizes[i];
+		if (i > 0)
+			out._attributeDesc[i].offset = out._attributeDesc[i - 1].offset + sizes[i];
+	}
+
+	return out;
+}
+
 void vk_shader::descriptShader(const std::string_view& shaderCode)
 {
 	const SpvReflectResult result =

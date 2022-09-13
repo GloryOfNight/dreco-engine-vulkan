@@ -2,7 +2,6 @@
 
 #include "core/utils/file_utils.hxx"
 #include "math/vec3.hxx"
-#include "renderer/vk_vertex.hxx"
 #include "shaders/basic.hxx"
 
 #include "dreco.hxx"
@@ -247,11 +246,10 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 		shaderStages.push_back(shader.second->getPipelineShaderStageCreateInfo());
 	}
 
-	const std::vector<vk::VertexInputBindingDescription> vertexInputBindingDesc = vk_vertex::getInputBindingDescription();
-	const std::vector<vk::VertexInputAttributeDescription> vertexInputAttributeDesc = vk_vertex::getInputAttributeDescription();
+	const auto vertexInputInfo  = _shaders[vk::ShaderStageFlagBits::eVertex]->getVertexInputInfo();
 	const auto vertexInputState = vk::PipelineVertexInputStateCreateInfo()
-									  .setVertexBindingDescriptions(vertexInputBindingDesc)
-									  .setVertexAttributeDescriptions(vertexInputAttributeDesc);
+									  .setVertexBindingDescriptions(vertexInputInfo._bindingDesc)
+									  .setVertexAttributeDescriptions(vertexInputInfo._attributeDesc);
 
 	std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments;
 	colorBlendAttachments[0] = vk::PipelineColorBlendAttachmentState()

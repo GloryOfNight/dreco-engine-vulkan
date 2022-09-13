@@ -24,6 +24,12 @@ struct vk_descriptor_shader_data
 	std::vector<vk::DescriptorPoolSize> getDescriptorPoolSizes() const;
 };
 
+struct vk_vertex_input_info
+{
+	std::array<vk::VertexInputBindingDescription, 1> _bindingDesc;
+	std::vector<vk::VertexInputAttributeDescription> _attributeDesc;
+};
+
 class vk_shader
 {
 public:
@@ -47,6 +53,8 @@ public:
 	const std::vector<vk_descriptor_shader_data>& getDescirptorShaderData() const;
 	
 	const std::vector<vk::PushConstantRange>& getPushConstantRanges() const;
+
+	const vk_vertex_input_info getVertexInputInfo() const;
 
 protected:
 	void descriptShader(const std::string_view& shaderCode);
