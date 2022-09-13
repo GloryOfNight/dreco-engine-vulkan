@@ -14,7 +14,7 @@ namespace de
 		Error = SDL_LOG_PRIORITY_ERROR,
 		Critical = SDL_LOG_PRIORITY_CRITICAL
 	};
-	static void log(log_priority priority, const char* fmt, ...)
+	static void log(log_priority priority, const char* fmt, ...) noexcept
 	{
 		va_list list;
 		va_start(list, fmt);

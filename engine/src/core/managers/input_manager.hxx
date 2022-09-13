@@ -10,9 +10,9 @@ class DRECO_API input_manager
 private:
 	struct mouse_state
 	{
-		uint32_t _state;
-		uint16_t _x;
-		uint16_t _y;
+		uint32_t _state{};
+		uint16_t _x{};
+		uint16_t _y{};
 	};
 
 public:
@@ -43,5 +43,5 @@ private:
 
 	mouse_state _mouseState;
 
-	bool _inMouseFocus;
+	bool _inMouseFocus{};
 };

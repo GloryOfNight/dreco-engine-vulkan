@@ -12,5 +12,5 @@
 #define PLATFORM_WINDOWS false
 #endif
 
-#include "platforms/paths/generic.hxx"
+#include "paths/generic.hxx"
 using platform_paths = generic_paths;

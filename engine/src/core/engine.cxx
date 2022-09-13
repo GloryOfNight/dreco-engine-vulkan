@@ -210,14 +210,14 @@ void engine::postMainLoop()
 	SDL_Quit();
 }
 
-double engine::calculateNewDeltaTime()
+double engine::calculateNewDeltaTime() noexcept
 {
-	const auto frametime_from_fps_lam = [](const double fps) constexpr
+	const auto frametime_from_fps_lam = [](const double fps) constexpr noexcept
 	{
 		return (1.0 / static_cast<double>(fps));
 	};
-	constexpr double fpsMax = frametime_from_fps_lam(5000);
-	constexpr double fpsMin = frametime_from_fps_lam(24);
+	constexpr double ftMax = frametime_from_fps_lam(5000);
+	constexpr double ftMin = frametime_from_fps_lam(24);
 
 	static std::chrono::time_point past = std::chrono::steady_clock::now();
 	const std::chrono::time_point now = std::chrono::steady_clock::now();
@@ -229,15 +229,15 @@ double engine::calculateNewDeltaTime()
 	}
 
 	const double delta{microSeconds / 1000000.0};
-	if (delta < fpsMax)
+	if (delta < ftMax)
 	{
 		return 0.0;
 	}
 
 	past = now;
-	if (delta >= fpsMin)
+	if (delta >= ftMin)
 	{
-		return fpsMin;
+		return ftMin;
 	}
 
 	return delta;

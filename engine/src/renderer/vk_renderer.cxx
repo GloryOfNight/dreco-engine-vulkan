@@ -2,11 +2,11 @@
 
 #include "async_tasks/async_load_texture_task.hxx"
 #include "core/engine.hxx"
-#include "core/platform.h"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
 #include "game_objects/camera.hxx"
 
+#include "dreco.hxx"
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"

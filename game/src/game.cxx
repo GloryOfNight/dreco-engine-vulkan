@@ -4,5 +4,5 @@
 
 DRECO_API void registerGame(defaultObject<game_instance>& defaultGameInstance)
 {
-	defaultGameInstance.init(new launcher_gi());
+	defaultGameInstance.init<launcher_gi>();
 }

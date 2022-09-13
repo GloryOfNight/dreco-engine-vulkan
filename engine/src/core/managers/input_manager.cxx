@@ -1,6 +1,6 @@
 #include "input_manager.hxx"
 
-#include "core/platform.h"
+#include "platforms/platform.h"
 #include "core/utils/log.hxx"
 #include "renderer/vk_renderer.hxx"
 

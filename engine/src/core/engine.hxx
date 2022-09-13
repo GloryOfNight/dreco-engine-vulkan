@@ -8,12 +8,17 @@
 #include "dreco.hxx"
 
 #include <cstdint>
+#include <utility>
 
 template <typename base>
 struct defaultObject
 {
 	template <typename T>
-	void init(T&& inObj) { obj = std::unique_ptr<base>(std::move(inObj)); }
+	void init()
+	{ 
+		decltype(std::declval<T>().makeNew()) val = T().makeNew();
+		obj = std::unique_ptr<base>(std::move(val)); 
+	}
 	bool isSet() const { return obj != nullptr; }
 	std::unique_ptr<base> makeNew() const { return obj->makeNew(); };
 
@@ -63,7 +68,7 @@ private:
 
 	void postMainLoop();
 
-	double calculateNewDeltaTime();
+	double calculateNewDeltaTime() noexcept;
 
 	event_manager _eventManager;
 
