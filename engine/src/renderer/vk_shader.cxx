@@ -83,9 +83,9 @@ const vk_vertex_input_info vk_shader::getVertexInputInfo() const
 							  .setInputRate(vk::VertexInputRate::eVertex);
 	for (int i = 0; i < _reflModule.input_variable_count; ++i)
 	{
-		out._bindingDesc[0].stride += sizes[i];
 		if (i > 0)
-			out._attributeDesc[i].offset = out._attributeDesc[i - 1].offset + sizes[i];
+			out._attributeDesc[i].offset = out._bindingDesc[0].stride;
+		out._bindingDesc[0].stride += sizes[i];
 	}
 
 	return out;

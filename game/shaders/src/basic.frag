@@ -10,18 +10,17 @@ layout(set = 1, binding = 0) uniform sampler2D texSampler[4];
 layout(set = 1, binding = 1) uniform materialUniform
 {
     uint baseColorIndex;
-    uint metallicRoughnessIndex;
-    uint normalIndex;
-    uint emissiveIndex;
-    // 16 ^ group all by 16
     vec4 baseColorFactor;
-    // 16 ^
-    vec3 emissiveFactor;
-    float normalScale;
-    // 16 ^
+
+    uint metallicRoughnessIndex;
     float metallicFactor;
     float roughnessFactor;
-    // 8 ^
+
+    uint emissiveIndex;
+    vec3 emissiveFactor;
+	
+    uint normalIndex;   
+    float normalScale;
 } mat;
 
 void main() {
