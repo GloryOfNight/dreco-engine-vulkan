@@ -2,7 +2,7 @@ project(spirv-reflect)
 
 find_package(Vulkan REQUIRED)
 
-add_library(${PROJECT_NAME} STATIC spirv_reflect.h spirv_reflect.cpp)
+add_library(${PROJECT_NAME} STATIC spirv_reflect.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Vulkan_INCLUDE_DIR})
 
