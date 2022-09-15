@@ -5,7 +5,6 @@ class vk_renderer;
 
 struct vk_settings
 {
-	vk_settings();
 	void init(const vk_renderer* renderer);
 
 	const vk::SurfaceFormatKHR& getSurfaceFormat() const;
@@ -26,7 +25,9 @@ private:
 	vk::SurfaceFormatKHR _surfaceFormat;
 	vk::PresentModeKHR _presentMode;
 
-	vk::SampleCountFlagBits _maxSampleCount, _prefferedSampleCount;
+	vk::SampleCountFlagBits _maxSampleCount{vk::SampleCountFlagBits::e1};
+	 
+	vk::SampleCountFlagBits _prefferedSampleCount{vk::SampleCountFlagBits::e1};
 
-	vk::PolygonMode _polygonMode;
+	vk::PolygonMode _polygonMode{vk::PolygonMode::eFill};
 };

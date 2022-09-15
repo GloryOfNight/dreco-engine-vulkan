@@ -24,7 +24,7 @@ class vk_mesh;
 class vk_renderer final
 {
 public:
-	vk_renderer();
+	vk_renderer() = default;
 	vk_renderer(const vk_renderer&) = delete;
 	vk_renderer(vk_renderer&&) = delete;
 	~vk_renderer();
@@ -137,15 +137,15 @@ protected:
 	vk::CommandBuffer prepareCommandBuffer(uint32_t imageIndex);
 
 private:
-	uint32_t _apiVersion;
+	uint32_t _apiVersion{};
 
 	vk_texture_image _placeholderTextureImage;
 
 	std::vector<std::unique_ptr<vk_scene>> _scenes;
 
-	SDL_Window* _window;
+	SDL_Window* _window{};
 
-	uint32_t _windowId;
+	uint32_t _windowId{};
 
 	vk::Extent2D _currentExtent;
 
@@ -219,4 +219,3 @@ inline vk_shader* vk_renderer::findShader()
 	}
 	return nullptr;
 }
-

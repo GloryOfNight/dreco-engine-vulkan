@@ -5,8 +5,6 @@
 class vk_queue_family final
 {
 public:
-	vk_queue_family();
-
 	void setup(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface);
 
 	uint32_t getGraphicsIndex() const;
@@ -24,11 +22,11 @@ public:
 	std::vector<uint32_t> getUniqueQueueIndexes(const vk::SharingMode sharingMode) const;
 
 private:
-	uint32_t graphicsIndex;
+	uint32_t graphicsIndex{UINT32_MAX};
 
-	uint32_t transferIndex;
+	uint32_t transferIndex{UINT32_MAX};
 
-	uint32_t presentIndex;
+	uint32_t presentIndex{UINT32_MAX};
 
-	vk::SharingMode sharingMode;
+	vk::SharingMode sharingMode{vk::SharingMode::eExclusive};
 };

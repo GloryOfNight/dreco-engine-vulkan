@@ -26,27 +26,6 @@
 #define VK_ENABLE_MESA_OVERLAY
 #endif
 
-vk_renderer::vk_renderer()
-	: _apiVersion{0}
-	, _window{nullptr}
-	, _windowId{}
-	, _surface()
-	, _physicalDevice()
-	, _queueFamily()
-	, _device()
-	, _instance{}
-	, _swapchain{}
-	, _swapchainImageViews{}
-	, _framebuffers{}
-	, _renderPass{}
-	, _graphicsCommandPools{}
-	, _transferCommandPool{}
-	, _submitQueueFences{}
-	, _semaphoreImageAvaible{}
-	, _semaphoreRenderFinished{}
-{
-}
-
 vk_renderer::~vk_renderer()
 {
 	exit();

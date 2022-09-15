@@ -64,15 +64,6 @@ static vk::PresentModeKHR findPresentMode(const vk::PhysicalDevice physicalDevic
 	return vk::PresentModeKHR::eImmediate;
 }
 
-vk_settings::vk_settings()
-	: _surfaceFormat{}
-	, _presentMode{}
-	, _maxSampleCount{vk::SampleCountFlagBits::e1}
-	, _prefferedSampleCount{vk::SampleCountFlagBits::e1}
-	, _polygonMode{vk::PolygonMode::eFill}
-{
-}
-
 void vk_settings::init(const vk_renderer* renderer)
 {
 	const vk::SurfaceKHR surface = renderer->getSurface();
