@@ -19,7 +19,12 @@ void vk_shader::create()
 	if (!shaderCode.empty())
 	{
 		_shaderModule = vk_renderer::get()->getDevice().createShaderModule(vk::ShaderModuleCreateInfo({}, shaderCode.size(), reinterpret_cast<uint32_t*>(shaderCode.data())));
-		descriptShader(shaderCode);
+
+		const SpvReflectResult result =
+			spvReflectCreateShaderModule(shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data()), &_reflModule);
+
+		// spirv failed to reflect, investigate required
+		assert(result == SPV_REFLECT_RESULT_SUCCESS);
 	}
 }
 
@@ -33,17 +38,17 @@ void vk_shader::destroy()
 	spvReflectDestroyShaderModule(&_reflModule);
 }
 
-bool vk_shader::isValid() const
+bool vk_shader::isValid() const noexcept
 {
 	return _shaderModule;
 }
 
-std::string_view vk_shader::getPath() const
+std::string_view vk_shader::getPath() const noexcept
 {
 	return _shaderPath;
 }
 
-vk::PipelineShaderStageCreateInfo vk_shader::getPipelineShaderStageCreateInfo() const
+vk::PipelineShaderStageCreateInfo vk_shader::getPipelineShaderStageCreateInfo() const noexcept
 {
 	return vk::PipelineShaderStageCreateInfo()
 		.setModule(_shaderModule)
@@ -51,17 +56,49 @@ vk::PipelineShaderStageCreateInfo vk_shader::getPipelineShaderStageCreateInfo() 
 		.setPName(_reflModule.entry_point_name);
 }
 
-const std::vector<vk_descriptor_shader_data>& vk_shader::getDescirptorShaderData() const
+std::vector<vk_descriptor_shader_data> vk_shader::getDescirptorShaderData() const noexcept
 {
-	return _descirptorShaderData;
+	std::vector<vk_descriptor_shader_data> out(_reflModule.descriptor_set_count, vk_descriptor_shader_data());
+	for (uint8_t i = 0; i < _reflModule.descriptor_set_count; i++)
+	{
+		const auto& reflDescSet = _reflModule.descriptor_sets[i];
+		auto& descSetData = out[i];
+
+		descSetData._descriptorSetIndex = reflDescSet.set;
+		descSetData._descriptorSetLayoutBindings.resize(reflDescSet.binding_count, vk::DescriptorSetLayoutBinding());
+		for (uint8_t k = 0; k < reflDescSet.binding_count; k++)
+		{
+			const auto& reflBinding = _reflModule.descriptor_bindings[k];
+			auto& binding = descSetData._descriptorSetLayoutBindings[k];
+
+			binding = vk::DescriptorSetLayoutBinding()
+						  .setBinding(reflBinding.binding)
+						  .setDescriptorType(static_cast<vk::DescriptorType>(reflBinding.descriptor_type))
+						  .setDescriptorCount(reflBinding.count)
+						  .setStageFlags(static_cast<vk::ShaderStageFlagBits>(_reflModule.shader_stage));
+		}
+		descSetData._descriptorSetLayoutCreateInfo.setBindings(descSetData._descriptorSetLayoutBindings);
+	}
+	return out;
 }
 
-const std::vector<vk::PushConstantRange>& vk_shader::getPushConstantRanges() const
+std::vector<vk::PushConstantRange> vk_shader::getPushConstantRanges() const noexcept
 {
-	return _pushConstantRanges;
+	std::vector<vk::PushConstantRange> out(_reflModule.push_constant_block_count, vk::PushConstantRange());
+	for (uint8_t i = 0; i < _reflModule.push_constant_block_count; i++)
+	{
+		const auto& reflPushConstantRange = _reflModule.push_constant_blocks[i];
+		auto& pushConstantRange = out[i];
+
+		pushConstantRange = vk::PushConstantRange()
+								.setStageFlags(static_cast<vk::ShaderStageFlagBits>(_reflModule.shader_stage))
+								.setOffset(reflPushConstantRange.offset)
+								.setSize(reflPushConstantRange.size);
+	}
+	return out;
 }
 
-const vk_vertex_input_info vk_shader::getVertexInputInfo() const
+vk_shader::vk_vertex_input_info vk_shader::getVertexInputInfo() const noexcept
 {
 	vk_vertex_input_info out;
 	out._attributeDesc.resize(_reflModule.input_variable_count);
@@ -87,51 +124,7 @@ const vk_vertex_input_info vk_shader::getVertexInputInfo() const
 			out._attributeDesc[i].offset = out._bindingDesc[0].stride;
 		out._bindingDesc[0].stride += sizes[i];
 	}
-
 	return out;
-}
-
-void vk_shader::descriptShader(const std::string_view& shaderCode)
-{
-	const SpvReflectResult result =
-		spvReflectCreateShaderModule(shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data()), &_reflModule);
-
-	// spirv failed to reflect, investigate required
-	assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-	_descirptorShaderData.resize(_reflModule.descriptor_set_count, vk_descriptor_shader_data());
-	for (uint8_t i = 0; i < _reflModule.descriptor_set_count; i++)
-	{
-		const auto& reflDescSet = _reflModule.descriptor_sets[i];
-		auto& descSetData = _descirptorShaderData[i];
-
-		descSetData._descriptorSetIndex = reflDescSet.set;
-		descSetData._descriptorSetLayoutBindings.resize(reflDescSet.binding_count, vk::DescriptorSetLayoutBinding());
-		for (uint8_t k = 0; k < reflDescSet.binding_count; k++)
-		{
-			const auto& reflBinding = _reflModule.descriptor_bindings[k];
-			auto& binding = descSetData._descriptorSetLayoutBindings[k];
-
-			binding = vk::DescriptorSetLayoutBinding()
-						  .setBinding(reflBinding.binding)
-						  .setDescriptorType(static_cast<vk::DescriptorType>(reflBinding.descriptor_type))
-						  .setDescriptorCount(reflBinding.count)
-						  .setStageFlags(static_cast<vk::ShaderStageFlagBits>(_reflModule.shader_stage));
-		}
-		descSetData._descriptorSetLayoutCreateInfo.setBindings(descSetData._descriptorSetLayoutBindings);
-	}
-
-	_pushConstantRanges.resize(_reflModule.push_constant_block_count, vk::PushConstantRange());
-	for (uint8_t i = 0; i < _reflModule.push_constant_block_count; i++)
-	{
-		const auto& reflPushConstantRange = _reflModule.push_constant_blocks[i];
-		auto& pushConstantRange = _pushConstantRanges[i];
-
-		pushConstantRange = vk::PushConstantRange()
-								.setStageFlags(static_cast<vk::ShaderStageFlagBits>(_reflModule.shader_stage))
-								.setOffset(reflPushConstantRange.offset)
-								.setSize(reflPushConstantRange.size);
-	}
 }
 
 std::vector<vk::DescriptorPoolSize> vk_descriptor_shader_data::getDescriptorPoolSizes() const

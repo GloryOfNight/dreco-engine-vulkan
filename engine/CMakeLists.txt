@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.16.2)
 project(dreco-engine)
 
-find_package(Vulkan REQUIRED)
+find_package(Vulkan)
 if(NOT DEFINED Vulkan_FOUND)
-    message(FATAL_ERROR "Vulkan not found")
+    message(FATAL_ERROR "Failed to find Vulkan package")
 endif()
 
-find_package(SDL2 REQUIRED)
+find_package(SDL2)
 if(NOT DEFINED SDL2_FOUND)
-    message(FATAL_ERROR "SDL2 not found")
+    message(FATAL_ERROR "Failed to find SDL2 package")
 endif()
 
 set(DRECO_ASSETS_DIR "assets")
@@ -33,7 +33,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     EXPORT_COMPILE_COMMANDS TRUE
 )
 
@@ -47,5 +47,13 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 
 add_subdirectory(tools)
 add_subdirectory(thirdparty)
+
+if(WIN32)
+add_custom_command(
+  TARGET  ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+)
+endif()
 
 install(IMPORTED_RUNTIME_ARTIFACTS SDL2::SDL2 RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})

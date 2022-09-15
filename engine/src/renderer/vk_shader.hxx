@@ -1,11 +1,11 @@
 #pragma once
 
-#include "vk_shader.hxx"
 #include "vk_graphics_pipeline.hxx"
+#include "vk_shader.hxx"
 
+#include <spirv-reflect/spirv_reflect.h>
 #include <string>
 #include <vulkan/vulkan.hpp>
-#include <spirv-reflect/spirv_reflect.h>
 
 struct vk_descriptor_write_infos
 {
@@ -24,14 +24,14 @@ struct vk_descriptor_shader_data
 	std::vector<vk::DescriptorPoolSize> getDescriptorPoolSizes() const;
 };
 
-struct vk_vertex_input_info
-{
-	std::array<vk::VertexInputBindingDescription, 1> _bindingDesc;
-	std::vector<vk::VertexInputAttributeDescription> _attributeDesc;
-};
-
 class vk_shader
 {
+	struct vk_vertex_input_info
+	{
+		std::array<vk::VertexInputBindingDescription, 1> _bindingDesc;
+		std::vector<vk::VertexInputAttributeDescription> _attributeDesc;
+	};
+
 public:
 	vk_shader() = default;
 	~vk_shader();
@@ -40,32 +40,26 @@ public:
 
 	void destroy();
 
-	bool isValid() const;
+	bool isValid() const noexcept;
 
-	std::string_view getPath() const;
+	std::string_view getPath() const noexcept;
 
 	virtual void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const {};
 
-	virtual void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh) const{};
+	virtual void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh) const {};
 
-	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const;
+	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const noexcept;
 
-	const std::vector<vk_descriptor_shader_data>& getDescirptorShaderData() const;
-	
-	const std::vector<vk::PushConstantRange>& getPushConstantRanges() const;
+	std::vector<vk_descriptor_shader_data> getDescirptorShaderData() const noexcept;
 
-	const vk_vertex_input_info getVertexInputInfo() const;
+	std::vector<vk::PushConstantRange> getPushConstantRanges() const noexcept;
+
+	vk_vertex_input_info getVertexInputInfo() const noexcept;
 
 protected:
-	void descriptShader(const std::string_view& shaderCode);
+	std::string _shaderPath;
 
-	std::string _shaderPath{};
+	vk::ShaderModule _shaderModule;
 
-	vk::ShaderModule _shaderModule{};
-
-	SpvReflectShaderModule _reflModule{};
-
-	std::vector<vk_descriptor_shader_data> _descirptorShaderData;
-
-	std::vector<vk::PushConstantRange> _pushConstantRanges;
+	SpvReflectShaderModule _reflModule;
 };
