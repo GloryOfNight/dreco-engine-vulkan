@@ -1,11 +1,49 @@
 #include "vk_material.hxx"
 
+#include "vk_renderer.hxx"
+
 void vk_material::init()
 {
 }
 
-void vk_material::createDescriptorSets(vk::Device device)
+void vk_material::setShaderVert(const vk_shader::shared& inShader)
 {
+	_vert = inShader;
+}
+
+void vk_material::setShaderFrag(const vk_shader::shared& inShader)
+{
+	_frag = inShader;
+}
+
+void vk_material::addBufferDependecy(const std::string_view& inName, vk_buffer* inBuffer, size_t arrayIndex)
+{
+	auto it = _buffers.try_emplace(std::string(inName));
+	it.first->second[arrayIndex] = inBuffer;
+}
+
+void vk_material::addBufferDependecy(const std::string_view& inName, std::vector<vk_buffer*> inBuffers)
+{
+	auto it = _buffers.try_emplace(std::string(inName));
+	it.first->second = inBuffers;
+}
+
+void vk_material::addImageDependecy(const std::string_view& inName, vk_texture_image* inImage, size_t arrayIndex)
+{
+	auto it = _images.try_emplace(std::string(inName));
+	it.first->second[arrayIndex] = inImage;
+}
+
+void vk_material::addImageDependecy(const std::string_view& inName, std::vector<vk_texture_image*> inImages)
+{
+	auto it = _images.try_emplace(std::string(inName));
+	it.first->second = inImages;
+}
+
+void vk_material::createDescriptorSets()
+{
+	auto device = vk_renderer::get()->getDevice();
+
 	std::vector<vk_descriptor_shader_data> shadersDataSets;
 	{
 		auto dataSets = _vert->getDescirptorShaderData();
