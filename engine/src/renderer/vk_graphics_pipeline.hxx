@@ -3,15 +3,15 @@
 #include "renderer/containers/material_data.hxx"
 
 #include "vk_buffer.hxx"
+#include "vk_shader.hxx"
 
-#include <vector>
 #include <map>
+#include <vector>
 #include <vulkan/vulkan.hpp>
 
 class vk_descriptor_set;
 class vk_mesh;
 class vk_scene;
-class vk_shader;
 class vk_texture_image;
 
 class vk_graphics_pipeline final
@@ -55,7 +55,7 @@ protected:
 	void createPipeline(vk::Device device);
 
 private:
-	std::map<vk::ShaderStageFlagBits, vk_shader const*> _shaders;
+	std::map<vk::ShaderStageFlagBits, vk_shader::shared> _shaders;
 
 	material_data _material;
 	vk_buffer _materialBuffer;

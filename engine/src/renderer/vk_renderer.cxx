@@ -153,9 +153,9 @@ void vk_renderer::loadModel(const gltf::model& scn)
 	_scenes.emplace_back(new vk_scene())->create(scn);
 }
 
-const std::unique_ptr<vk_shader>& vk_renderer::findShader(const std::string_view& path)
+vk_shader::shared vk_renderer::findShader(const std::string_view& path)
 {
-	return _shaders.at(path);
+	return _shaders.at(path.data());
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)

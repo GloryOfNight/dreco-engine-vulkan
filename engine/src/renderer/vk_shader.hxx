@@ -1,11 +1,13 @@
 #pragma once
 
-#include "vk_graphics_pipeline.hxx"
 #include "vk_shader.hxx"
 
 #include <spirv-reflect/spirv_reflect.h>
 #include <string>
 #include <vulkan/vulkan.hpp>
+
+class vk_graphics_pipeline;
+class vk_mesh;
 
 struct vk_descriptor_write_infos
 {
@@ -33,6 +35,8 @@ class vk_shader
 	};
 
 public:
+	using shared = std::shared_ptr<vk_shader>;
+
 	vk_shader() = default;
 	~vk_shader();
 
@@ -47,6 +51,8 @@ public:
 	virtual void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const {};
 
 	virtual void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh) const {};
+
+	const SpvReflectShaderModule& getRefl() const;
 
 	vk::PipelineShaderStageCreateInfo getPipelineShaderStageCreateInfo() const noexcept;
 

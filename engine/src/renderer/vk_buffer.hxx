@@ -38,6 +38,8 @@ public:
 
 	size_t getSize() const { return _size; };
 
+	size_t getOffset() const { return _offset; };
+
 	vk_device_memory& getDeviceMemory();
 
 	static void copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer bufferDst, const std::vector<vk::BufferCopy>& bufferCopyRegions);
@@ -50,4 +52,6 @@ private:
 	vk::Buffer _buffer;
 
 	size_t _size;
+
+	size_t _offset;
 };
