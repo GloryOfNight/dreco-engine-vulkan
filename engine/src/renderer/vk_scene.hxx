@@ -3,12 +3,13 @@
 #include "vulkan/vulkan.h"
 
 #include "vk_buffer.hxx"
+#include "vk_material.hxx"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 class vk_texture_image;
-class vk_graphics_pipeline;
+class vk_material;
 class vk_mesh;
 
 class vk_scene
@@ -31,9 +32,6 @@ public:
 	const std::vector<std::unique_ptr<vk_texture_image>>& getTextureImages() const { return _textureImages; }
 	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
 
-	std::vector<std::unique_ptr<vk_graphics_pipeline>>& getGraphicPipelines() { return _graphicsPipelines; };
-	const std::vector<std::unique_ptr<vk_graphics_pipeline>>& getGraphicPipelines() const { return _graphicsPipelines; }
-
 	std::vector<std::unique_ptr<vk_mesh>>& getMeshes() { return _meshes; };
 	const std::vector<std::unique_ptr<vk_mesh>>& getMeshes() const { return _meshes; }
 
@@ -41,19 +39,25 @@ private:
 	struct scene_meshes_info
 	{
 		uint32_t _totalVertexSize{0};
-		uint32_t _totalIndexSize{0};
 		std::vector<vk_device_memory::map_memory_region> _vertexMemRegions;
+
+		uint32_t _totalIndexSize{0};
 		std::vector<vk_device_memory::map_memory_region> _indexMemRegions;
+
+		uint32_t _totalMaterialsSize{0};
+		std::vector<vk_device_memory::map_memory_region> _materialMemRegions;
 	};
 
 	void recurseSceneNodes(const gltf::model& m, const gltf::node& selfNode, const mat4& rootMat, scene_meshes_info& info);
 
-	void createMeshesBuffer(scene_meshes_info& info);
+	void createMeshesBuffer(const scene_meshes_info& info);
+	void createMaterialsBuffer(const scene_meshes_info& info);
 
 	std::vector<std::unique_ptr<vk_texture_image>> _textureImages;
-	std::vector<std::unique_ptr<vk_graphics_pipeline>> _graphicsPipelines;
+	std::vector<std::unique_ptr<vk_material>> _materials;
 	std::vector<std::unique_ptr<vk_mesh>> _meshes;
 
-	uint32_t _indexVIBufferOffset;
+	uint32_t _indexOffset;
 	vk_buffer _meshesVIBuffer;
+	vk_buffer _materialsBuffer;
 };

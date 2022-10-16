@@ -38,7 +38,7 @@ public:
 
 	size_t getSize() const { return _size; };
 
-	size_t getOffset() const { return _offset; };
+	inline size_t getOffset() const { return 0; };
 
 	vk_device_memory& getDeviceMemory();
 
@@ -52,6 +52,29 @@ private:
 	vk::Buffer _buffer;
 
 	size_t _size;
+};
 
-	size_t _offset;
+class vk_buffer_region
+{
+public:
+	vk_buffer_region() = default;
+	vk_buffer_region(const vk_buffer& buffer, const vk::DeviceSize size, const vk::DeviceSize offset = 0)
+		: _buffer{&buffer}
+		, _size{size}
+		, _offset{offset}
+	{
+	}
+	vk_buffer_region(const vk_buffer& buffer)
+		: vk_buffer_region(buffer, buffer.getSize(), buffer.getOffset())
+	{
+	}
+
+	const vk_buffer& getBuffer() const { return *_buffer; };
+	vk::DeviceSize getSize() const { return _size; };
+	vk::DeviceSize getOffset() const { return _offset; };
+
+private:
+	const vk_buffer* _buffer{};
+	vk::DeviceSize _size{};
+	vk::DeviceSize _offset{};
 };

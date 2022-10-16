@@ -1,7 +1,6 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
 #include "renderer/containers/camera_data.hxx"
-#include "shaders/basic.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
@@ -46,13 +45,7 @@ public:
 
 	void loadModel(const gltf::model& scn);
 
-	template <class T>
-	void registerShader();
-
-	template <class T>
-	vk_shader::shared findShader();
-
-	vk_shader::shared findShader(const std::string_view& path);
+	vk_shader::shared loadShader(const std::string_view& path);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -189,31 +182,3 @@ private:
 
 	vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };
-
-template <class T>
-inline void vk_renderer::registerShader()
-{
-	static_assert(std::is_base_of<vk_shader, T>::value);
-
-	vk_shader::shared newShader(new T());
-	auto pair = _shaders.try_emplace(std::string(newShader->getPath()), std::move(newShader));
-	if (pair.second)
-	{
-		pair.first->second->create();
-	}
-}
-
-template <class T>
-inline vk_shader::shared vk_renderer::findShader()
-{
-	static_assert(std::is_base_of<vk_shader, T>::value);
-
-	for (const auto& pair : _shaders)
-	{
-		if (dynamic_cast<T*>(pair.second.get()))
-		{
-			return pair.second;
-		}
-	}
-	return nullptr;
-}

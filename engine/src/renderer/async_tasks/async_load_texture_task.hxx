@@ -36,11 +36,11 @@ struct async_load_texture_task : public thread_task
 		}
 		texImage->create(_texData);
 
-		const auto& pipelines = _scene->getGraphicPipelines();
-		for (auto& pipeline : pipelines)
-		{
-			pipeline->updateDescriptiors();
-		}
+		//const auto& pipelines = _scene->getGraphicPipelines();
+		//for (auto& pipeline : pipelines)
+		//{
+		//	pipeline->updateDescriptiors();
+		//}
 	};
 
 private:

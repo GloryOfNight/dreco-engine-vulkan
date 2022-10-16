@@ -40,17 +40,13 @@ public:
 	vk_shader() = default;
 	~vk_shader();
 
-	void create();
+	void create(const std::string_view inShaderPath);
 
 	void destroy();
 
 	bool isValid() const noexcept;
 
 	std::string_view getPath() const noexcept;
-
-	virtual void addDescriptorWriteInfos(vk_descriptor_write_infos& infos, const vk_graphics_pipeline& pipeline) const {};
-
-	virtual void cmdPushConstants(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const vk_mesh* mesh) const {};
 
 	const SpvReflectShaderModule& getRefl() const;
 

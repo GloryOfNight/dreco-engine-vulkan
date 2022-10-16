@@ -14,8 +14,10 @@ vk_shader::~vk_shader()
 	destroy();
 }
 
-void vk_shader::create()
+void vk_shader::create(const std::string_view inShaderPath)
 {
+	_shaderPath = inShaderPath;
+
 	std::string shaderCode;
 	file_utils::readFile(_shaderPath, shaderCode);
 	if (!shaderCode.empty())

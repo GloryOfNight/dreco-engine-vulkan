@@ -2,8 +2,21 @@
 
 #include "vk_renderer.hxx"
 
+vk_material::~vk_material()
+{
+	auto device = vk_renderer::get()->getDevice();
+	if (_descriptorPool)
+	{
+		for (auto layout : _descriptorSetLayouts)
+			device.destroyDescriptorSetLayout(layout);
+		device.destroyDescriptorPool(_descriptorPool);
+	}
+}
+
 void vk_material::init()
 {
+	createDescriptorSets();
+	_pipeline.create(*this);
 }
 
 void vk_material::setShaderVert(const vk_shader::shared& inShader)
@@ -16,28 +29,58 @@ void vk_material::setShaderFrag(const vk_shader::shared& inShader)
 	_frag = inShader;
 }
 
-void vk_material::addBufferDependecy(const std::string_view& inName, vk_buffer* inBuffer, size_t arrayIndex)
+void vk_material::updateDescriptorSets()
 {
-	auto it = _buffers.try_emplace(std::string(inName));
-	it.first->second[arrayIndex] = inBuffer;
+	updateShaderDescriptors(*_vert);
+	updateShaderDescriptors(*_frag);
 }
 
-void vk_material::addBufferDependecy(const std::string_view& inName, std::vector<vk_buffer*> inBuffers)
+void vk_material::bindCmd(vk::CommandBuffer commandBuffer)
 {
-	auto it = _buffers.try_emplace(std::string(inName));
-	it.first->second = inBuffers;
+	_pipeline.bindCmd(commandBuffer);
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _pipeline.getLayout(), 0, _descriptorSets, nullptr);
 }
 
-void vk_material::addImageDependecy(const std::string_view& inName, vk_texture_image* inImage, size_t arrayIndex)
+const std::vector<vk::DescriptorSetLayout>& vk_material::getDescriptorSetLayouts() const
 {
-	auto it = _images.try_emplace(std::string(inName));
-	it.first->second[arrayIndex] = inImage;
+	return _descriptorSetLayouts;
 }
 
-void vk_material::addImageDependecy(const std::string_view& inName, std::vector<vk_texture_image*> inImages)
+std::vector<vk::PushConstantRange> vk_material::getPushConstantRanges() const
 {
-	auto it = _images.try_emplace(std::string(inName));
-	it.first->second = inImages;
+	std::vector<vk::PushConstantRange> out;
+	{
+		auto ranges = _vert->getPushConstantRanges();
+		std::move(ranges.begin(), ranges.end(), std::back_inserter(out));
+	}
+	{
+		auto ranges = _frag->getPushConstantRanges();
+		std::move(ranges.begin(), ranges.end(), std::back_inserter(out));
+	}
+	return out;
+}
+
+std::vector<vk::PipelineShaderStageCreateInfo> vk_material::getShaderStages() const
+{
+	auto out = std::vector<vk::PipelineShaderStageCreateInfo>(2, vk::PipelineShaderStageCreateInfo());
+	out[0] = _vert->getPipelineShaderStageCreateInfo();
+	out[1] = _frag->getPipelineShaderStageCreateInfo();
+	return out;
+}
+
+const vk_shader::shared& vk_material::getVertShader() const
+{
+	return _vert;
+}
+
+const vk_shader::shared& vk_material::getFragShader() const
+{
+	return _frag;
+}
+
+vk::PipelineLayout vk_material::getPipelineLayout() const
+{
+	return _pipeline.getLayout();
 }
 
 void vk_material::createDescriptorSets()
@@ -55,15 +98,12 @@ void vk_material::createDescriptorSets()
 	}
 
 	std::vector<vk::DescriptorPoolSize> poolSizes;
-	const auto& shaderDataSets = _vert->getDescirptorShaderData();
-	for (const auto& data : shaderDataSets)
+	for (const auto& data : shadersDataSets)
 	{
 		_descriptorSetLayouts.push_back(device.createDescriptorSetLayout(data._descriptorSetLayoutCreateInfo));
 
 		auto& dataPoolSizes = data.getDescriptorPoolSizes();
 		std::move(dataPoolSizes.begin(), dataPoolSizes.end(), std::back_inserter(poolSizes));
-
-		std::move(data._descriptorSetLayoutBindings.begin(), data._descriptorSetLayoutBindings.end(), std::back_inserter(_descriptorBindings));
 	}
 
 	_descriptorPool = device.createDescriptorPool(vk::DescriptorPoolCreateInfo()
@@ -75,13 +115,9 @@ void vk_material::createDescriptorSets()
 														.setSetLayouts(_descriptorSetLayouts));
 }
 
-void vk_material::createGraphicsPipeline()
+void vk_material::updateShaderDescriptors(const vk_shader& inShader)
 {
-}
-
-std::vector<vk::WriteDescriptorSet> vk_material::getDrescriptorWrites(const vk_shader& inShader)
-{
-	std::vector<vk::WriteDescriptorSet> out;
+	std::vector<vk::WriteDescriptorSet> writes;
 
 	const auto descriptorBufferInfos = getDescriptorBufferInfos(inShader);
 	const auto descriptorImageInfos = getDescriptorImageInfos(inShader);
@@ -94,10 +130,11 @@ std::vector<vk::WriteDescriptorSet> vk_material::getDrescriptorWrites(const vk_s
 		{
 			const auto& reflBinding = relf.descriptor_bindings[k];
 
-			vk::WriteDescriptorSet write = vk::WriteDescriptorSet()
-											   .setDstSet(_descriptorSets[reflDescSet.set])
-											   .setDescriptorCount(reflBinding.count)
-											   .setDescriptorType(static_cast<vk::DescriptorType>(reflBinding.descriptor_type));
+			vk::WriteDescriptorSet& write = writes.emplace_back(vk::WriteDescriptorSet())
+												.setDstSet(_descriptorSets[reflDescSet.set])
+												.setDstBinding(reflBinding.binding)
+												.setDescriptorCount(reflBinding.count)
+												.setDescriptorType(static_cast<vk::DescriptorType>(reflBinding.descriptor_type));
 			switch (write.descriptorType)
 			{
 			case vk::DescriptorType::eUniformBuffer:
@@ -111,10 +148,11 @@ std::vector<vk::WriteDescriptorSet> vk_material::getDrescriptorWrites(const vk_s
 			}
 		}
 	}
-	return out;
+
+	vk_renderer::get()->getDevice().updateDescriptorSets(writes, {});
 }
 
-std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material::getDescriptorBufferInfos(const vk_shader& inShader)
+std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material::getDescriptorBufferInfos(const vk_shader& inShader) const
 {
 	std::map<std::string, std::vector<vk::DescriptorBufferInfo>> out;
 
@@ -123,17 +161,22 @@ std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material::getDes
 	for (uint8_t i = 0; i < relf.descriptor_binding_count; i++)
 	{
 		const auto& reflBinding = relf.descriptor_bindings[i];
-		auto& descBufferInfo = out.emplace(reflBinding.name);
+		if (reflBinding.descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			continue;
+		}
+
+		auto& descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorBufferInfo>());
 		descBufferInfo.first->second.reserve(reflBinding.count);
 
-		const auto& bufferBind = _buffers[reflBinding.name];
+		const auto& bufferBind = _buffers.at(reflBinding.name);
 		for (uint32_t k = 0; k < reflBinding.count; ++k)
 		{
 			const auto buffer = bufferBind[k];
 			auto info = vk::DescriptorBufferInfo()
-							.setBuffer(buffer->get())
-							.setOffset(buffer->getOffset())
-							.setRange(buffer->getSize());
+							.setBuffer(buffer.getBuffer().get())
+							.setOffset(buffer.getOffset())
+							.setRange(buffer.getSize());
 			descBufferInfo.first->second.push_back(info);
 		}
 	}
@@ -141,7 +184,7 @@ std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material::getDes
 	return out;
 }
 
-std::map<std::string, std::vector<vk::DescriptorImageInfo>> vk_material::getDescriptorImageInfos(const vk_shader& inShader)
+std::map<std::string, std::vector<vk::DescriptorImageInfo>> vk_material::getDescriptorImageInfos(const vk_shader& inShader) const
 {
 	std::map<std::string, std::vector<vk::DescriptorImageInfo>> out;
 
@@ -150,10 +193,15 @@ std::map<std::string, std::vector<vk::DescriptorImageInfo>> vk_material::getDesc
 	for (uint8_t i = 0; i < relf.descriptor_binding_count; i++)
 	{
 		const auto& reflBinding = relf.descriptor_bindings[i];
-		auto& descBufferInfo = out.emplace(reflBinding.name);
+		if (reflBinding.descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			continue;
+		}
+
+		auto& descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorImageInfo>());
 		descBufferInfo.first->second.reserve(reflBinding.count);
 
-		const auto& bind = _images[reflBinding.name];
+		const auto& bind = _images.at(reflBinding.name);
 		for (uint32_t k = 0; k < reflBinding.count; ++k)
 		{
 			const auto image = bind[k];
