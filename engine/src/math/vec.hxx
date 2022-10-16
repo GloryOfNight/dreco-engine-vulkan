@@ -1,6 +1,9 @@
 // forward declarations for vectors
 #pragma once
 #include "dreco.hxx"
+#include "vec2.hxx"
+#include "vec3.hxx"
+#include "vec4.hxx"
 
 template <typename T>
 struct DRECO_API vec2t;

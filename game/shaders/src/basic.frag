@@ -13,17 +13,16 @@ layout(set = 1, binding = 3) uniform sampler2D normal;
 
 layout(set = 1, binding = 4) uniform materialUniform
 {
-    bool hasBaseColor;
     vec4 baseColorFactor;
+    vec3 emissiveFactor;
 
+    bool hasBaseColor;
+    bool hasEmissiveIndex;
     bool hasMetallicRoughness;
+    bool hasNormalIndex; 
+
     float metallicFactor;
     float roughnessFactor;
-
-    bool hasEmissiveIndex;
-    vec3 emissiveFactor;
-	
-    bool hasNormalIndex;   
     float normalScale;
 } mat;
 

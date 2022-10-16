@@ -155,7 +155,7 @@ void vk_scene::createMaterialsBuffer(const scene_meshes_info& info)
 	tempBuffer.getDeviceMemory().map(info._materialMemRegions);
 
 	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, createInfo.size);
-	vk_buffer::copyBuffer(tempBuffer.get(), _meshesVIBuffer.get(), {copyRegion});
+	vk_buffer::copyBuffer(tempBuffer.get(), _materialsBuffer.get(), {copyRegion});
 }
 
 void vk_scene::recreatePipelines()
