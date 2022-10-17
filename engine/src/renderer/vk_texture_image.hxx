@@ -15,10 +15,6 @@ public:
 	vk_texture_image(vk_texture_image&&) = delete;
 	virtual ~vk_texture_image() { destroy(); };
 
-	void create() override;
-
-	void create(const std::string_view imgUri);
-
 	void create(const image_data& textureData);
 
 	void destroy() override;

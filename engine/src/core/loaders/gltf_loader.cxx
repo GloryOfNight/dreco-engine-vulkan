@@ -9,8 +9,9 @@
 #include "math/rotator.hxx"
 #include "tinygltf/tiny_gltf.h"
 
+#include <algorithm>
+#include <execution>
 #include <filesystem>
-#include <future>
 #include <iostream>
 #include <vector>
 
@@ -240,21 +241,21 @@ static void parseMaterials(const tinygltf::Model& tModel, gltf::model& dModel)
 	}
 }
 
-[[nodiscard]] static std::vector<std::future<bool>> parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
+static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalImages = tModel.images.size();
-
-	std::vector<std::future<bool>> futures;
-	futures.reserve(totalImages);
 
 	dModel._images.resize(totalImages);
 	for (size_t i = 0; i < totalImages; ++i)
 	{
 		dModel._images[i]._uri = tModel.images[i].uri;
-		futures.emplace_back(std::async(&image_data::load, &dModel._images[i]._image, dModel._rootPath + '/' + dModel._images[i]._uri));
 	}
 
-	return futures;
+	const auto asyncImageLoad = [&dModel](gltf::image& image)
+	{
+		image._image.load(dModel._rootPath + '/' + image._uri);
+	};
+	std::for_each(std::execution::par_unseq, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }
 
 gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
@@ -277,16 +278,12 @@ gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
 
 	gltf::model dModel;
 	dModel._rootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
-	auto imageFutures = parseImages(tModel, dModel);
+
 	parseScenes(tModel, dModel);
 	parseNodes(tModel, dModel);
 	parseMaterials(tModel, dModel);
 	parseMeshes(tModel, dModel);
-
-	for (auto& future : imageFutures)
-	{
-		future.wait();
-	}
+	parseImages(tModel, dModel);
 
 	return dModel;
 }

@@ -6,32 +6,12 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-void vk_texture_image::create()
-{
-	image_data imageData = image_data::createPlaceholderTexture();
-	create(imageData);
-}
-
-void vk_texture_image::create(const std::string_view imgUri)
-{
-	image_data imageData;
-	if (imageData.load(imgUri))
-	{
-		create(imageData);
-	}
-	else
-	{
-		DE_LOG(Error, "Failed to load texture from uri: %s; Loading default instead.", imgUri.data());
-		create();
-	}
-}
-
 void vk_texture_image::create(const image_data& textureData)
 {
 	if (!textureData.isLoaded())
 	{
 		DE_LOG(Error, "No valid texture data, using placeholder instead.");
-		create();
+		create(image_data::makePlaceholder(1024, 1024));
 		return;
 	}
 

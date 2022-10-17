@@ -88,7 +88,7 @@ void vk_renderer::init()
 
 	createCameraBuffer();
 
-	_placeholderTextureImage.create();
+	_placeholderTextureImage.create(image_data::makePlaceholder());
 }
 
 void vk_renderer::exit()
