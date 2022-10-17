@@ -2,6 +2,7 @@
 
 #include "vk_shader.hxx"
 
+#include <memory>
 #include <spirv-reflect/spirv_reflect.h>
 #include <string>
 #include <vulkan/vulkan.hpp>

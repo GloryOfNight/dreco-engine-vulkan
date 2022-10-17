@@ -107,7 +107,7 @@ void vk_material::createDescriptorSets()
 	{
 		_descriptorSetLayouts.push_back(device.createDescriptorSetLayout(data._descriptorSetLayoutCreateInfo));
 
-		auto& dataPoolSizes = data.getDescriptorPoolSizes();
+		const auto dataPoolSizes = data.getDescriptorPoolSizes();
 		std::move(dataPoolSizes.begin(), dataPoolSizes.end(), std::back_inserter(poolSizes));
 	}
 
@@ -171,7 +171,7 @@ std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material::getDes
 			continue;
 		}
 
-		auto& descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorBufferInfo>());
+		const auto descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorBufferInfo>());
 		descBufferInfo.first->second.reserve(reflBinding.count);
 
 		const auto& bufferBind = _buffers.at(reflBinding.name);
@@ -203,7 +203,7 @@ std::map<std::string, std::vector<vk::DescriptorImageInfo>> vk_material::getDesc
 			continue;
 		}
 
-		auto& descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorImageInfo>());
+		const auto descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorImageInfo>());
 		descBufferInfo.first->second.reserve(reflBinding.count);
 
 		const auto& bindIt = _images.find(reflBinding.name);
