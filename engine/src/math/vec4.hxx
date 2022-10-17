@@ -14,22 +14,30 @@ struct DRECO_API vec4t
 		, _w{d}
 	{
 	}
+	template <typename Arr>
+	vec4t(Arr&& arr)
+		: _x{static_cast<T>(arr[0])}
+		, _y{static_cast<T>(arr[1])}
+		, _z{static_cast<T>(arr[2])}
+		, _w{static_cast<T>(arr[3])}
+	{
+	}
 
 	union
 	{
-		T _x, _r;
+		T _x{}, _r;
 	};
 	union
 	{
-		T _y, _g;
+		T _y{}, _g;
 	};
 	union
 	{
-		T _z, _b;
+		T _z{}, _b;
 	};
 	union
 	{
-		T _w, _a;
+		T _w{}, _a;
 	};
 
 	vec4t operator+(const vec4t<T>& other)

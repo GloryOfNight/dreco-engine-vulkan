@@ -1,6 +1,5 @@
 #include "vk_renderer.hxx"
 
-#include "async_tasks/async_load_texture_task.hxx"
 #include "core/engine.hxx"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
@@ -89,10 +88,7 @@ void vk_renderer::init()
 
 	createCameraBuffer();
 
-	_placeholderTextureImage.create();
-
-	registerShader<vk_shader_basic_vert>();
-	registerShader<vk_shader_basic_frag>();
+	_placeholderTextureImage.create(image_data::makePlaceholder());
 }
 
 void vk_renderer::exit()
@@ -153,9 +149,15 @@ void vk_renderer::loadModel(const gltf::model& scn)
 	_scenes.emplace_back(new vk_scene())->create(scn);
 }
 
-const std::unique_ptr<vk_shader>& vk_renderer::findShader(const std::string_view& path)
+vk_shader::shared vk_renderer::loadShader(const std::string_view& path)
 {
-	return _shaders.at(path);
+	const auto shader = _shaders.try_emplace(path.data());
+	if (shader.second)
+	{
+		shader.first->second = vk_shader::shared(new vk_shader());
+		shader.first->second->create(path);
+	}
+	return shader.first->second;
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)

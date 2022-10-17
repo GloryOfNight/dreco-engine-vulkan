@@ -4,6 +4,8 @@
 #include "renderer/vk_renderer.hxx"
 
 #include "dreco.hxx"
+#include "vk_graphics_pipeline.hxx"
+#include "vk_mesh.hxx"
 
 #include <spirv-reflect/spirv_reflect.h>
 
@@ -12,8 +14,10 @@ vk_shader::~vk_shader()
 	destroy();
 }
 
-void vk_shader::create()
+void vk_shader::create(const std::string_view inShaderPath)
 {
+	_shaderPath = inShaderPath;
+
 	std::string shaderCode;
 	file_utils::readFile(_shaderPath, shaderCode);
 	if (!shaderCode.empty())
@@ -46,6 +50,11 @@ bool vk_shader::isValid() const noexcept
 std::string_view vk_shader::getPath() const noexcept
 {
 	return _shaderPath;
+}
+
+const SpvReflectShaderModule& vk_shader::getRefl() const
+{
+	return _reflModule;
 }
 
 vk::PipelineShaderStageCreateInfo vk_shader::getPipelineShaderStageCreateInfo() const noexcept

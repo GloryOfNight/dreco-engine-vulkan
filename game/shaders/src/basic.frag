@@ -6,33 +6,36 @@ layout(location = 2) in vec4 inColor;
 
 layout(location = 0) out vec4 outColor;
 
-layout(set = 1, binding = 0) uniform sampler2D texSampler[4];
-layout(set = 1, binding = 1) uniform materialUniform
-{
-    uint baseColorIndex;
-    vec4 baseColorFactor;
+layout(set = 1, binding = 0) uniform sampler2D baseColor;
+layout(set = 1, binding = 1) uniform sampler2D metallicRoughness;
+layout(set = 1, binding = 2) uniform sampler2D emissive;
+layout(set = 1, binding = 3) uniform sampler2D normal;
 
-    uint metallicRoughnessIndex;
+layout(set = 1, binding = 4) uniform materialUniform
+{
+    vec4 baseColorFactor;
+    vec3 emissiveFactor;
+
+    bool hasBaseColor;
+    bool hasEmissiveIndex;
+    bool hasMetallicRoughness;
+    bool hasNormalIndex; 
+
     float metallicFactor;
     float roughnessFactor;
-
-    uint emissiveIndex;
-    vec3 emissiveFactor;
-	
-    uint normalIndex;   
     float normalScale;
 } mat;
 
 void main() {
-    vec4 baseColor = mat.baseColorFactor + inColor.rgba;
-    if (mat.baseColorIndex != -1)
+    vec4 outColorTemp = mat.baseColorFactor + inColor.rgba;
+    if (mat.hasBaseColor)
     {
-        baseColor = texture(texSampler[mat.baseColorIndex], inUV) * mat.baseColorFactor;
+        outColorTemp = texture(baseColor, inUV) * mat.baseColorFactor;
     }
-    if (mat.emissiveIndex != -1)
+    if (mat.hasEmissiveIndex)
     {
-        baseColor += texture(texSampler[mat.emissiveIndex], inUV) * vec4(mat.emissiveFactor, 1);
+        outColorTemp += texture(emissive, inUV) * vec4(mat.emissiveFactor, 1);
     }
 
-    outColor = baseColor;
+    outColor = outColorTemp;
 }

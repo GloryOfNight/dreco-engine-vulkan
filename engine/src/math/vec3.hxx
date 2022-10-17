@@ -14,17 +14,25 @@ struct DRECO_API vec3t
 	{
 	}
 
+	template <typename Arr>
+	vec3t(Arr&& arr)
+		: _x{static_cast<T>(arr[0])}
+		, _y{static_cast<T>(arr[1])}
+		, _z{static_cast<T>(arr[2])}
+	{
+	}
+
 	union
 	{
-		T _x, _r;
+		T _x{}, _r;
 	};
 	union
 	{
-		T _y, _g;
+		T _y{}, _g;
 	};
 	union
 	{
-		T _z, _b;
+		T _z{}, _b;
 	};
 
 	static float dot(const vec3t<T>& first, const vec3t<T>& second)

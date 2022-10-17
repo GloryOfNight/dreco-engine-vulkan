@@ -1,7 +1,6 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
-#include "renderer/containers/camera_data.hxx"
-#include "shaders/basic.hxx"
+#include "renderer/shader_types/camera_data.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
@@ -46,13 +45,7 @@ public:
 
 	void loadModel(const gltf::model& scn);
 
-	template <class T>
-	void registerShader();
-
-	template <class T>
-	vk_shader* findShader();
-
-	const std::unique_ptr<vk_shader>& findShader(const std::string_view& path);
+	vk_shader::shared loadShader(const std::string_view& path);
 
 	uint32_t getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch = nullptr);
 
@@ -170,7 +163,7 @@ private:
 	camera_data _cameraData;
 	vk_buffer _cameraDataBuffer;
 
-	std::map<const std::string_view, std::unique_ptr<vk_shader>> _shaders;
+	std::map<std::string, vk_shader::shared> _shaders;
 
 	vk::SwapchainKHR _swapchain;
 
@@ -189,33 +182,3 @@ private:
 
 	vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 };
-
-template <class T>
-inline void vk_renderer::registerShader()
-{
-	static_assert(std::is_base_of<vk_shader, T>::value);
-
-	std::unique_ptr<vk_shader> newShader(new T());
-
-	const std::string_view filename = newShader->getPath();
-	auto pair = _shaders.try_emplace(filename, std::move(newShader));
-	if (pair.second)
-	{
-		_shaders[filename]->create();
-	}
-}
-
-template <class T>
-inline vk_shader* vk_renderer::findShader()
-{
-	static_assert(std::is_base_of<vk_shader, T>::value);
-
-	for (const auto& pair : _shaders)
-	{
-		if (dynamic_cast<T*>(pair.second.get()))
-		{
-			return pair.second.get();
-		}
-	}
-	return nullptr;
-}
