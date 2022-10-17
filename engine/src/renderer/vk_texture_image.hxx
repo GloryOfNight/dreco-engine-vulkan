@@ -17,7 +17,7 @@ public:
 
 	void create() override;
 
-	void create(const gltf::image& img);
+	void create(const std::string_view imgUri);
 
 	void create(const image_data& textureData);
 

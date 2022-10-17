@@ -1,6 +1,5 @@
 #include "vk_renderer.hxx"
 
-#include "async_tasks/async_load_texture_task.hxx"
 #include "core/engine.hxx"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"

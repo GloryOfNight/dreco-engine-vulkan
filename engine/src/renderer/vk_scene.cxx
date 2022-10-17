@@ -1,7 +1,7 @@
 #include "vk_scene.hxx"
 
-#include "async_tasks/async_load_texture_task.hxx"
 #include "core/engine.hxx"
+#include "shader_types/material_data.hxx"
 
 #include "vk_graphics_pipeline.hxx"
 #include "vk_material.hxx"
@@ -36,8 +36,8 @@ void vk_scene::create(const gltf::model& m)
 	_textureImages.reserve(imagesNum);
 	for (size_t i = 0; i < imagesNum; ++i)
 	{
-		_textureImages.emplace_back(new vk_texture_image());
-		engine::get()->getThreadPool().queueTask(new async_load_texture_task(m._rootPath + '/' + m._images[i]._uri, this, i));
+		auto& ti = _textureImages.emplace_back(new vk_texture_image());
+		ti->create(m._images[i]._image);
 	}
 
 	const size_t totalPipelines = m._materials.size();
@@ -45,7 +45,7 @@ void vk_scene::create(const gltf::model& m)
 
 	scene_meshes_info info;
 
-	_meshes.reserve(m._meshes.size());
+	_meshes.resize(totalPipelines);
 	const auto& scene = m._scenes[m._sceneIndex];
 	for (const auto nodeIndex : scene._nodes)
 	{
@@ -60,19 +60,6 @@ void vk_scene::create(const gltf::model& m)
 
 		info._materialMemRegions.emplace_back(vk_device_memory::map_memory_region{&materialsData[i], sizeof(material_data), info._totalMaterialsSize});
 		info._totalMaterialsSize += sizeof(materialsData[i]);
-
-		auto& mat = _materials.emplace_back(new vk_material());
-		mat->setShaderVert(renderer->loadShader(DRECO_SHADER("basic.vert.spv")));
-		mat->setShaderFrag(renderer->loadShader(DRECO_SHADER("basic.frag.spv")));
-
-		mat->setBufferDependency("cameraData", renderer->getCameraDataBuffer());
-
-		mat->setImageDependecy("baseColor", &renderer->getTextureImagePlaceholder());
-		mat->setImageDependecy("metallicRoughness", &renderer->getTextureImagePlaceholder());
-		mat->setImageDependecy("emissive", &renderer->getTextureImagePlaceholder());
-		mat->setImageDependecy("normal", &renderer->getTextureImagePlaceholder());
-
-		mat->init();
 	}
 
 	createMeshesBuffer(info);
@@ -80,9 +67,30 @@ void vk_scene::create(const gltf::model& m)
 
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
-		auto& mat = _materials[i];
+		const auto& matData = materialsData[i];
+		auto& mat = _materials.emplace_back(new vk_material());
+		mat->setShaderVert(renderer->loadShader(DRECO_SHADER("basic.vert.spv")));
+		mat->setShaderFrag(renderer->loadShader(DRECO_SHADER("basic.frag.spv")));
+
+		mat->setBufferDependency("cameraData", renderer->getCameraDataBuffer());
+
+		const auto baseColorIndex = m._materials[i]._pbrMetallicRoughness._baseColorTexture._index;
+		const auto metallicRoughnessIndex = m._materials[i]._pbrMetallicRoughness._metallicRoughnessTexture._index;
+		const auto emissiveIndex = m._materials[i]._emissive._index;
+		const auto normalIndex = m._materials[i]._normal._index;
+
+		if (matData._hasBaseColor)
+			mat->setImageDependecy("baseColor", _textureImages[baseColorIndex].get());
+		if (matData._hasMetallicRoughness)
+			mat->setImageDependecy("metallicRoughness", _textureImages[metallicRoughnessIndex].get());
+		if (matData._hasEmissive)
+			mat->setImageDependecy("emissive", _textureImages[emissiveIndex].get());
+		if (matData._hasNormal)
+			mat->setImageDependecy("normal", _textureImages[normalIndex].get());
+
 		mat->setBufferDependency("mat", _materialsBuffer);
 
+		mat->init();
 		mat->updateDescriptorSets();
 	}
 }
@@ -95,7 +103,8 @@ void vk_scene::recurseSceneNodes(const gltf::model& m, const gltf::node& selfNod
 		const auto& mesh = m._meshes[selfNode._mesh];
 		for (const auto& primitive : mesh._primitives)
 		{
-			auto& newMesh = _meshes.emplace_back(new vk_mesh());
+			auto& meshes = _meshes[primitive._material];
+			auto& newMesh = meshes.emplace_back(new vk_mesh());
 
 			newMesh->init(primitive._vertexes.size(), sizeof(primitive._vertexes[0]), info._totalVertexSize / sizeof(gltf::mesh::primitive::vertex), primitive._indexes.size(), info._totalIndexSize / sizeof(uint32_t));
 			newMesh->_mat = newRootMat;
@@ -160,10 +169,10 @@ void vk_scene::createMaterialsBuffer(const scene_meshes_info& info)
 
 void vk_scene::recreatePipelines()
 {
-	//for (auto& pipeline : _graphicsPipelines)
-	//{
-	//	pipeline->recreatePipeline();
-	//}
+	for (auto& mat : _materials)
+	{
+		mat->recreatePipeline();
+	}
 }
 
 void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
@@ -174,21 +183,19 @@ void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 	commandBuffer.bindVertexBuffers(0, _meshesVIBuffer.get(), offsets);
 	commandBuffer.bindIndexBuffer(_meshesVIBuffer.get(), _indexOffset, vk::IndexType::eUint32);
 
-	for (auto& mat : _materials)
+	const size_t totalMaterials = _materials.size();
+	for (size_t i = 0; i < totalMaterials; ++i)
 	{
+		auto& mat = _materials[i];
+		auto& meshes = _meshes[i];
+
 		mat->bindCmd(commandBuffer);
-		for (auto& mesh : _meshes)
+		for (auto& mesh : meshes)
 		{
 			commandBuffer.pushConstants(mat->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &mesh->_mat);
 			mesh->bindToCmdBuffer(commandBuffer);
 		}
 	}
-
-	//for (auto& pipeline : _graphicsPipelines)
-	//{
-	//	pipeline->bindCmd(commandBuffer);
-	//	pipeline->drawCmd(commandBuffer);
-	//}
 }
 
 bool vk_scene::isEmpty() const

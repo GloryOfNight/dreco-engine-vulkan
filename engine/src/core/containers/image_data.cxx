@@ -55,7 +55,7 @@ image_data image_data::createPlaceholderTexture()
 	return outData;
 }
 
-image_data::image_data(image_data&& other)
+image_data::image_data(image_data&& other) noexcept
 {
 	_texWidth = other._texWidth;
 	_texHeight = other._texHeight;
@@ -80,9 +80,10 @@ bool image_data::isLoaded() const
 	return nullptr != _pixels;
 }
 
-bool image_data::load(const std::string_view& texUri)
+bool image_data::load(const std::string_view texUri)
 {
 	int w, h, c;
+
 	_pixels = reinterpret_cast<uint8_t*>(stbi_load(texUri.data(), &w, &h, &c, STBI_rgb_alpha));
 	_texWidth = static_cast<uint16_t>(w);
 	_texHeight = static_cast<uint16_t>(h);

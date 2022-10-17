@@ -35,9 +35,9 @@ struct thread_task
 	// in-sync with main
 	virtual void completed() = 0;
 
-	uint64_t getId() const { return _id; }
+	uint64_t getId() const { return _id; };
 
-	bool useCompleted() const { return _useCompleted; }
+	bool useCompleted() const { return _useCompleted; };
 
 	double getTaskCompletionTime() const
 	{

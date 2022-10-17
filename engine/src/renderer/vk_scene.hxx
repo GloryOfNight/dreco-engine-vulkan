@@ -32,9 +32,6 @@ public:
 	const std::vector<std::unique_ptr<vk_texture_image>>& getTextureImages() const { return _textureImages; }
 	const vk_texture_image& getTextureImageFromIndex(uint32_t index) const;
 
-	std::vector<std::unique_ptr<vk_mesh>>& getMeshes() { return _meshes; };
-	const std::vector<std::unique_ptr<vk_mesh>>& getMeshes() const { return _meshes; }
-
 private:
 	struct scene_meshes_info
 	{
@@ -55,7 +52,7 @@ private:
 
 	std::vector<std::unique_ptr<vk_texture_image>> _textureImages;
 	std::vector<std::unique_ptr<vk_material>> _materials;
-	std::vector<std::unique_ptr<vk_mesh>> _meshes;
+	std::vector<std::vector<std::unique_ptr<vk_mesh>>> _meshes;
 
 	uint32_t _indexOffset;
 	vk_buffer _meshesVIBuffer;

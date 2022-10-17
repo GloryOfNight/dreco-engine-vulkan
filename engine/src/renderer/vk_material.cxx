@@ -29,6 +29,11 @@ void vk_material::setShaderFrag(const vk_shader::shared& inShader)
 	_frag = inShader;
 }
 
+void vk_material::recreatePipeline()
+{
+	_pipeline.recreatePipeline();
+}
+
 void vk_material::updateDescriptorSets()
 {
 	updateShaderDescriptors(*_vert);
@@ -201,10 +206,10 @@ std::map<std::string, std::vector<vk::DescriptorImageInfo>> vk_material::getDesc
 		auto& descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorImageInfo>());
 		descBufferInfo.first->second.reserve(reflBinding.count);
 
-		const auto& bind = _images.at(reflBinding.name);
+		const auto& bindIt = _images.find(reflBinding.name);
 		for (uint32_t k = 0; k < reflBinding.count; ++k)
 		{
-			const auto image = bind[k];
+			const auto image = bindIt != _images.end() ? bindIt->second[k] : &vk_renderer::get()->getTextureImagePlaceholder();
 			auto info = vk::DescriptorImageInfo()
 							.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
 							.setImageView(image->getImageView())

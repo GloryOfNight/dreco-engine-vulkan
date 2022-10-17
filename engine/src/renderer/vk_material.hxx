@@ -24,6 +24,7 @@ public:
 	void setShaderVert(const vk_shader::shared& inShader);
 	void setShaderFrag(const vk_shader::shared& inShader);
 
+	void recreatePipeline();
 	void updateDescriptorSets();
 
 	template <typename Str, typename Buf>

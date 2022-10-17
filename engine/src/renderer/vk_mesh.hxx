@@ -3,12 +3,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-class vk_device;
-class vk_scene;
-class vk_queue_family;
-class vk_graphics_pipeline;
-class vk_physical_device;
-
 class vk_mesh final
 {
 public:

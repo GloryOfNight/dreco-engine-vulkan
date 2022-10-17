@@ -1,6 +1,7 @@
 #include "engine.hxx"
 
 #include "core/loaders/gltf_loader.hxx"
+#include "core/threads/async_tasks/async_load_gltf.hxx"
 #include "core/utils/file_utils.hxx"
 #include "renderer/vk_mesh.hxx"
 #include "renderer/vk_renderer.hxx"
@@ -21,35 +22,6 @@ static void onQuitEvent(const SDL_Event&)
 	if (engine)
 		engine->stop();
 }
-
-struct async_task_load_scene : public thread_task
-{
-	async_task_load_scene(const std::string_view& sceneFile)
-		: _file(sceneFile)
-	{
-	}
-
-	virtual void init() override{};
-
-	virtual void doJob() override
-	{
-		_model = gltf_loader::loadModel(_file);
-	}
-
-	virtual void completed() override
-	{
-		if (auto* eng = engine::get())
-		{
-			auto& renderer = eng->getRenderer();
-			renderer.loadModel(_model);
-		}
-	}
-
-private:
-	std::string _file;
-
-	gltf::model _model;
-};
 
 engine::engine()
 	: _eventManager{}
@@ -121,7 +93,7 @@ int32_t engine::run()
 		DE_LOG(Error, "Init engine first. Cannot run.");
 		return 1;
 	}
-	
+
 	if (!_defaultGameInstance.isSet())
 	{
 		DE_LOG(Error, "Game Instance isn't registred.");
@@ -176,7 +148,7 @@ bool engine::startRenderer()
 
 void engine::preMainLoop()
 {
-	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("mi-24d/scene.gltf")));
+	_threadPool.queueTask(new async_load_gltf(DRECO_ASSET("mi-24d/scene.gltf")));
 	_gameInstance->init();
 }
 

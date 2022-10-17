@@ -12,16 +12,16 @@ void vk_texture_image::create()
 	create(imageData);
 }
 
-void vk_texture_image::create(const gltf::image& img)
+void vk_texture_image::create(const std::string_view imgUri)
 {
 	image_data imageData;
-	if (imageData.load(img._uri))
+	if (imageData.load(imgUri))
 	{
 		create(imageData);
 	}
 	else
 	{
-		DE_LOG(Error, "Failed to load texture from uri: %s; Loading default instead.", img._uri.data());
+		DE_LOG(Error, "Failed to load texture from uri: %s; Loading default instead.", imgUri.data());
 		create();
 	}
 }

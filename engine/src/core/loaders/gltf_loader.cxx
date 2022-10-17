@@ -10,6 +10,7 @@
 #include "tinygltf/tiny_gltf.h"
 
 #include <filesystem>
+#include <future>
 #include <iostream>
 #include <vector>
 
@@ -76,7 +77,7 @@ static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 		{
 			if (tNode.translation.size() == 3)
 			{
-				const vec3 translation = vec3(tNode.translation[0], tNode.translation[1], tNode.translation[2]);
+				const vec3 translation = vec3(tNode.translation);
 				dNode._matrix = dNode._matrix * mat4::makeTranslation(translation);
 			}
 			if (tNode.rotation.size() == 4)
@@ -86,7 +87,7 @@ static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 			}
 			if (tNode.scale.size() == 3)
 			{
-				const vec3 scale = vec3(tNode.scale[0], tNode.scale[1], tNode.scale[2]);
+				const vec3 scale = vec3(tNode.scale);
 				dNode._matrix = dNode._matrix * mat4::makeScale(scale);
 			}
 		}
@@ -239,14 +240,21 @@ static void parseMaterials(const tinygltf::Model& tModel, gltf::model& dModel)
 	}
 }
 
-static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
+[[nodiscard]] static std::vector<std::future<bool>> parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalImages = tModel.images.size();
+
+	std::vector<std::future<bool>> futures;
+	futures.reserve(totalImages);
+
 	dModel._images.resize(totalImages);
 	for (size_t i = 0; i < totalImages; ++i)
 	{
 		dModel._images[i]._uri = tModel.images[i].uri;
+		futures.emplace_back(std::async(&image_data::load, &dModel._images[i]._image, dModel._rootPath + '/' + dModel._images[i]._uri));
 	}
+
+	return futures;
 }
 
 gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
@@ -269,11 +277,16 @@ gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
 
 	gltf::model dModel;
 	dModel._rootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
+	auto imageFutures = parseImages(tModel, dModel);
 	parseScenes(tModel, dModel);
 	parseNodes(tModel, dModel);
 	parseMaterials(tModel, dModel);
 	parseMeshes(tModel, dModel);
-	parseImages(tModel, dModel);
+
+	for (auto& future : imageFutures)
+	{
+		future.wait();
+	}
 
 	return dModel;
 }

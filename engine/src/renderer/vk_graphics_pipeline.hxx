@@ -1,6 +1,5 @@
 #pragma once
 #include "core/containers/gltf/material.hxx"
-#include "renderer/containers/material_data.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_shader.hxx"

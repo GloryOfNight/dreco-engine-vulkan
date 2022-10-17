@@ -1,6 +1,6 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
-#include "renderer/containers/camera_data.hxx"
+#include "renderer/shader_types/camera_data.hxx"
 
 #include "vk_buffer.hxx"
 #include "vk_depth_image.hxx"
