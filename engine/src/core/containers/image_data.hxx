@@ -1,19 +1,35 @@
 #pragma once
-#include <string_view>
 #include <memory>
+#include <string_view>
+#include <vector>
 
 struct image_data
 {
-	bool isLoaded() const;
-	bool load(const std::string_view texUri);
+	static image_data load(const std::string_view texUri, const uint8_t Components = 4);
+	static image_data makePlaceholder(uint16_t width = 128, uint16_t heigth = 128, uint8_t components = 4);
 
-	void getData(uint8_t** pixels, uint16_t* texWidth, uint16_t* texHeight, uint8_t* texChannels) const;
+	bool isValid() const;
 
-	static image_data makePlaceholder(uint16_t width = 128, uint16_t height = 128, uint8_t channels = 4);
+	uint16_t getWidth() const;
+	uint16_t getHeight() const;
+	uint8_t getChannels() const;
+	uint8_t getComponents() const;
+
+	uint8_t const* getPixels() const;
+	size_t getPixelCount() const;
 
 protected:
-	uint16_t _texWidth{};
-	uint16_t _texHeight{};
-	uint8_t _texChannels{};
-	std::unique_ptr<uint8_t> _pixels;
+	image_data& setWidth(const uint16_t inValue);
+	image_data& setHeight(const uint16_t inValue);
+	image_data& setChannels(const uint8_t inValue);
+	image_data& setComponents(const uint8_t inValue);
+	image_data& setPixelCount(const size_t inValue);
+	image_data& setPixels(uint8_t* inValue, size_t size);
+
+private:
+	uint16_t _width{};
+	uint16_t _height{};
+	uint8_t _channels{};
+	uint8_t _components{};
+	std::vector<uint8_t> _pixels;
 };

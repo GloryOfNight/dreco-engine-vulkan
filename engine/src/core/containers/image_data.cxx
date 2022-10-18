@@ -7,59 +7,119 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
-void image_data::getData(uint8_t** pixels, uint16_t* texWidth, uint16_t* texHeight, uint8_t* texChannels) const
+uint16_t image_data::getWidth() const
 {
-	if (pixels)
-		*pixels = _pixels.get();
-
-	if (texWidth)
-		*texWidth = _texWidth;
-
-	if (texHeight)
-		*texHeight = _texHeight;
-
-	if (texChannels)
-		*texChannels = _texChannels;
+	return _width;
 }
 
-image_data image_data::makePlaceholder(uint16_t width, uint16_t height, uint8_t channels)
+uint16_t image_data::getHeight() const
+{
+	return _height;
+}
+
+uint8_t image_data::getChannels() const
+{
+	return _channels;
+}
+
+uint8_t image_data::getComponents() const
+{
+	return _components;
+}
+
+uint8_t const* image_data::getPixels() const
+{
+	return _pixels.data();
+}
+
+size_t image_data::getPixelCount() const
+{
+	return _pixels.size();
+}
+
+image_data& image_data::setWidth(const uint16_t inValue)
+{
+	_width = inValue;
+	return *this;
+};
+
+image_data& image_data::setHeight(const uint16_t inValue)
+{
+	_height = inValue;
+	return *this;
+};
+
+image_data& image_data::setChannels(const uint8_t inValue)
+{
+	_channels = inValue;
+	return *this;
+};
+
+image_data& image_data::setComponents(const uint8_t inValue)
+{
+	_components = inValue;
+	return *this;
+};
+
+image_data& image_data::setPixelCount(const size_t inValue)
+{
+	_pixels.resize(inValue);
+	return *this;
+};
+
+image_data& image_data::setPixels(uint8_t* inValue, size_t size)
+{
+	memmove_s(_pixels.data(), _pixels.size(), inValue, size);
+	return *this;
+};
+
+image_data image_data::makePlaceholder(uint16_t width, uint16_t heigth, uint8_t components)
 {
 	const uint8_t pink[4] = {255, 0, 255, 255};
 	const uint8_t black[4] = {0, 0, 0, 255};
 
-	const auto wh = width * height;
+	const auto wh = width * heigth;
+	image_data outData = image_data()
+							 .setWidth(width)
+							 .setHeight(heigth)
+							 .setChannels(3)
+							 .setComponents(components)
+							 .setPixelCount(wh * components);
 
-	image_data outData;
-	outData._texWidth = width;
-	outData._texHeight = height;
-	outData._texChannels = channels;
-	outData._pixels.reset(new uint8_t[wh * channels]);
-
-	bool usePink = false;
 	for (uint32_t i = 0; i < wh; ++i)
 	{
-		auto dst = outData._pixels.get();
+		auto dst = outData._pixels.data();
 		const auto src = i % 3 || i == 1 ? &pink[0] : &black[0];
-		memcpy(&dst[i * channels], src, channels);
+		memcpy_s(&outData._pixels[i * components], outData.getPixelCount(), src, sizeof(pink));
 	}
 
 	return outData;
 }
 
-bool image_data::isLoaded() const
+bool image_data::isValid() const
 {
-	return nullptr != _pixels;
+	return getWidth() > 0 && getHeight() > 0 && getChannels() > 0 && getComponents() > 0 && getPixelCount() > 0;
 }
 
-bool image_data::load(const std::string_view texUri)
+image_data image_data::load(const std::string_view texUri, const uint8_t components)
 {
-	int w, h, c;
-	const auto stbiPixels = stbi_load(texUri.data(), &w, &h, &c, STBI_rgb_alpha);
+	int width, heigth, channels;
+	const auto stbiPixels = stbi_load(texUri.data(), &width, &heigth, &channels, components);
 
-	_texWidth = static_cast<uint16_t>(w);
-	_texHeight = static_cast<uint16_t>(h);
-	_texChannels = static_cast<uint16_t>(c);
-	_pixels.reset(reinterpret_cast<uint8_t*>(stbiPixels));
+	if (stbiPixels)
+	{
+		const size_t pixelCount = width * heigth * components;
+		image_data outData = image_data()
+								 .setWidth(width)
+								 .setHeight(heigth)
+								 .setChannels(channels)
+								 .setComponents(components)
+								 .setPixelCount(pixelCount)
+								 .setPixels(stbiPixels, pixelCount);
+		delete[] stbiPixels;
+		return outData;
+	}
 
-	return nullptr != _pixels;
+	DE_LOG(Error, "%s: Failed to load image: %s, using placeholder.", __FUNCTION__, texUri.data());
+	return image_data::makePlaceholder(256, 256, components);
 }

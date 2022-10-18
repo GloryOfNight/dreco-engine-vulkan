@@ -253,7 +253,7 @@ static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 
 	const auto asyncImageLoad = [&dModel](gltf::image& image)
 	{
-		image._image.load(dModel._rootPath + '/' + image._uri);
+		image._image = image_data::load(dModel._rootPath + '/' + image._uri);
 	};
 	std::for_each(std::execution::par_unseq, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }
