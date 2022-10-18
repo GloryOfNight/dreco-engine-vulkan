@@ -67,7 +67,10 @@ image_data& image_data::setPixelCount(const size_t inValue)
 
 image_data& image_data::setPixels(uint8_t* inValue, size_t size)
 {
-	memmove_s(_pixels.data(), _pixels.size(), inValue, size);
+	if (_pixels.size() != size)
+		_pixels.resize(size);
+
+	memmove(_pixels.data(), inValue, size);
 	return *this;
 };
 
@@ -88,7 +91,7 @@ image_data image_data::makePlaceholder(uint16_t width, uint16_t heigth, uint8_t 
 	{
 		auto dst = outData._pixels.data();
 		const auto src = i % 3 || i == 1 ? &pink[0] : &black[0];
-		memcpy_s(&outData._pixels[i * components], outData.getPixelCount(), src, sizeof(pink));
+		memcpy(&outData._pixels[i * components], src, sizeof(pink));
 	}
 
 	return outData;
