@@ -171,7 +171,6 @@ bool engine::startRenderer()
 
 void engine::preMainLoop()
 {
-	_threadPool.queueTask(new async_load_gltf(DRECO_ASSET("mi-24d/scene.gltf")));
 	_gameInstance->init();
 }
 

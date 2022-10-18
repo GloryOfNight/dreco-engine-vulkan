@@ -19,8 +19,6 @@ struct async_load_image : public thread_task
 		_texData.load(_texUri);
 	};
 
-	virtual void completed() override{};
-
 private:
 	std::string _imageUri;
 

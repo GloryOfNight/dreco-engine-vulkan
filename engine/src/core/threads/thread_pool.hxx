@@ -1,9 +1,12 @@
 #pragma once
 
+#include "dreco.hxx"
+
 #include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -23,7 +26,9 @@ enum class thread_priority : uint8_t
 struct thread_task
 {
 	friend thread_pool;
+	using callback = std::function<void(thread_task*)>;
 
+	thread_task() = default;
 	virtual ~thread_task() = default;
 
 	// in-sync with main
@@ -33,7 +38,31 @@ struct thread_task
 	virtual void doJob() = 0;
 
 	// in-sync with main
-	virtual void completed() = 0;
+	virtual void completed()
+	{
+		for (const auto& callback : _callbacks)
+		{
+			try
+			{
+				callback(this);
+			}
+			catch (std::bad_function_call badFuncCall)
+			{
+				DE_LOG(Error, "%s: BadFunctionCall: %s", __FUNCTION__, badFuncCall.what());
+			}
+		}
+	}
+
+	template<typename T, typename F>
+	void bindCallback(T* obj, F func) 
+	{
+		bindCallback(std::bind(func, obj, std::placeholders::_1));
+	}
+
+	void bindCallback(callback&& inCallback)
+	{
+		_callbacks.emplace_back(inCallback);
+	}
 
 	uint64_t getId() const { return _id; };
 
@@ -55,6 +84,8 @@ private:
 
 	std::chrono::steady_clock::time_point _begin;
 	std::chrono::steady_clock::time_point _end;
+
+	std::vector<callback> _callbacks;
 };
 
 // empty thread task for testing
@@ -93,7 +124,7 @@ private:
 	std::deque<std::unique_ptr<thread_task>> _waitingTasks;
 
 	std::mutex _completedTasksMutex;
-	std::deque <std::unique_ptr<thread_task>> _completedTasks;
+	std::deque<std::unique_ptr<thread_task>> _completedTasks;
 
 	std::vector<SDL_Thread*> _threads;
 

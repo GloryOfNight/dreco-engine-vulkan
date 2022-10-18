@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game_objects/flying_camera.hxx"
+#include "game_objects/gltf_model.hxx"
 #include "game_objects/game_instance.hxx"
 #include "game_objects/world.hxx"
 
@@ -17,6 +18,9 @@ public:
 	void init() override
 	{
 		getRootNode()->makeChild<flying_camera>(this);
+
+		newNode<gltf_model>(this, nullptr, "mi-24d/scene.gltf");
+		newNode<gltf_model>(this, nullptr, "viking_room/scene.gltf");
 	}
 };
 
