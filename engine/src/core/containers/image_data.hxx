@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 #include <string_view>
 #include <vector>
 
@@ -15,8 +14,8 @@ struct image_data
 	uint8_t getChannels() const;
 	uint8_t getComponents() const;
 
-	uint8_t const* getPixels() const;
 	size_t getPixelCount() const;
+	uint8_t const* getPixels() const;
 
 protected:
 	image_data& setWidth(const uint16_t inValue);

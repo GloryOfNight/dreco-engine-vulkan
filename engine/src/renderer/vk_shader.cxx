@@ -18,11 +18,10 @@ void vk_shader::create(const std::string_view inShaderPath)
 {
 	_shaderPath = inShaderPath;
 
-	std::string shaderCode;
-	file_utils::readFile(_shaderPath, shaderCode);
+	const auto shaderCode = file_utils::readFile(_shaderPath);
 	if (!shaderCode.empty())
 	{
-		_shaderModule = vk_renderer::get()->getDevice().createShaderModule(vk::ShaderModuleCreateInfo({}, shaderCode.size(), reinterpret_cast<uint32_t*>(shaderCode.data())));
+		_shaderModule = vk_renderer::get()->getDevice().createShaderModule(vk::ShaderModuleCreateInfo({}, shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data())));
 
 		const SpvReflectResult result =
 			spvReflectCreateShaderModule(shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data()), &_reflModule);

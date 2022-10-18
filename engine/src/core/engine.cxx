@@ -7,7 +7,6 @@
 #include "renderer/vk_renderer.hxx"
 
 #include "engine.hxx"
-#include "signal_handler.hxx"
 
 #include <SDL.h>
 #include <chrono>
@@ -68,7 +67,7 @@ int32_t engine::initialize()
 		return 2;
 	}
 
-	signal_handler::registerSignalsHandle();
+	registerSignals();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
@@ -122,6 +121,30 @@ void engine::stop()
 		return;
 	}
 	_isRunning = false;
+}
+
+void engine::registerSignals()
+{
+	std::signal(SIGINT, engine::onSystemSignal);
+	std::signal(SIGILL, engine::onSystemSignal);
+	std::signal(SIGFPE, engine::onSystemSignal);
+	std::signal(SIGSEGV, engine::onSystemSignal);
+	std::signal(SIGTERM, engine::onSystemSignal);
+	std::signal(SIGABRT, engine::onSystemSignal);
+}
+
+void engine::onSystemSignal(int sig)
+{
+	if (sig == SIGFPE)
+		DE_LOG(Info, "Engine recieved floating point excetion. . . Stopping engine.");
+	else if (sig == SIGSEGV)
+		DE_LOG(Info, "Engine recieved segment violation. . . Stopping engine.");
+	else if (sig == SIGABRT || sig == SIGTERM || sig == SIGINT)
+		DE_LOG(Info, "Engine stop signal. . . Stopping engine.");
+
+	auto* eng = engine::get();
+	if (eng)
+		eng->stop();
 }
 
 bool engine::startRenderer()

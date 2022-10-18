@@ -8,26 +8,29 @@
 class file_utils
 {
 public:
-	static bool readFile(const std::string_view& path, std::string& data)
+	template<typename Str>
+	static std::string readFile(Str&& path)
 	{
-		data.clear();
-		std::ifstream file{path.data(), std::ifstream::binary | std::ifstream::ate};
-
-		const bool isFileRead = file.is_open();
-		if (isFileRead)
+		if (std::filesystem::is_regular_file(path))
 		{
-			const size_t len{static_cast<size_t>(file.tellg())};
-			file.seekg(0, file.beg);
-			data.reserve(len);
-			data.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+			std::ifstream file(path, std::ifstream::binary);
+			if (file.is_open())
+			{
+				const auto fileSize = std::filesystem::file_size(path);
+				std::string fileContent = std::string(fileSize, '\0');
+				file.read(fileContent.data(), fileContent.size());
+				file.close();
+				return fileContent;
+			}
+			else
+			{
+				DE_LOG(Error, "%s: Failed to open file: %s", __FUNCTION__, path);
+			}
 		}
 		else
 		{
-			DE_LOG(Error, "Failed to load file: %s", path.data());
+			DE_LOG(Error, "%s: Not a file: %s", __FUNCTION__, path);
 		}
-
-		file.close();
-
-		return isFileRead;
+		return std::string();
 	}
 };

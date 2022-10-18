@@ -60,6 +60,10 @@ public:
 	defaultObject<game_instance> _defaultGameInstance;
 
 private:
+	static void onSystemSignal(int sig);
+	
+	void registerSignals();
+
 	bool startRenderer();
 
 	void startMainLoop();
