@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game_objects/debug_camera.hxx"
+#include "game_objects/flying_camera.hxx"
 #include "game_objects/game_instance.hxx"
 #include "game_objects/world.hxx"
 
@@ -16,7 +16,7 @@ public:
 
 	void init() override
 	{
-		NewEntity<debug_camera>();
+		getRootNode()->makeChild<flying_camera>(this);
 	}
 };
 
@@ -29,8 +29,8 @@ public:
 		loadWorld<launcher_world>();
 	}
 
-	virtual std::unique_ptr<game_instance> makeNew() const override 
+	virtual game_instance::unique makeNew() const override 
 	{
-		return std::unique_ptr<game_instance>(new launcher_gi());
+		return game_instance::unique(new launcher_gi());
 	}
 };

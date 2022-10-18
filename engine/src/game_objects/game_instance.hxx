@@ -10,6 +10,8 @@ class camera;
 class DRECO_API game_instance
 {
 public:
+	using unique = std::unique_ptr<game_instance>;
+
 	game_instance() = default;
 	game_instance(game_instance&) = delete;
 	game_instance(game_instance&&) = delete;
@@ -22,14 +24,14 @@ public:
 
 	virtual void tick(double deltaTime);
 
-	const std::vector<std::unique_ptr<world>>& getWorlds() const;
+	const std::vector<world::unique>& getWorlds() const;
 	world& getCurrentWorld() const;
 	bool setCurrentWorldIndex(const size_t index);
 
-	virtual std::unique_ptr<game_instance> makeNew() const = 0;
+	virtual game_instance::unique makeNew() const = 0;
 
 private:
-	std::vector<std::unique_ptr<world>> _worlds;
+	std::vector<world::unique> _worlds;
 	size_t _currentWorldIndex{};
 };
 

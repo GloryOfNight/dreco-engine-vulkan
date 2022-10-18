@@ -15,10 +15,10 @@ mat4 camera::getProjection() const
 
 void camera::tick(double deltaTime)
 {
-	root_node::tick(deltaTime);
+	node::tick(deltaTime);
 
 	{ // update view
-		transform viewTransform = _transform;
+		transform viewTransform = getTransform();
 		viewTransform._translation._x = -viewTransform._translation._x;
 		viewTransform._translation._y = -viewTransform._translation._y;
 		viewTransform._translation._z = -viewTransform._translation._z;

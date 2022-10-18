@@ -17,7 +17,7 @@ void game_instance::tick(double deltaTime)
 	}
 }
 
-const std::vector<std::unique_ptr<world>>& game_instance::getWorlds() const
+const std::vector<world::unique>& game_instance::getWorlds() const
 {
 	return _worlds;
 }
