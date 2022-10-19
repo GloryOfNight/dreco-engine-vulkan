@@ -7,10 +7,8 @@ void gltf_model::init()
 {
 	node::init();
 
-	auto task = new async_load_gltf(DRECO_ASSET(_modelPath));
+	auto task = engine::get()->getThreadPool().queueTask<async_load_gltf>(DRECO_ASSET(_modelPath));
 	task->bindCallback(this, &gltf_model::onModelLoaded);
-
-	engine::get()->getThreadPool().queueTask(task);
 }
 
 void gltf_model::onModelLoaded(thread_task* task)

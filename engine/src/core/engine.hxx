@@ -15,9 +15,9 @@ struct defaultObject
 {
 	template <typename T>
 	void init()
-	{ 
+	{
 		decltype(std::declval<T>().makeNew()) val = T().makeNew();
-		obj = std::unique_ptr<base>(std::move(val)); 
+		obj = std::unique_ptr<base>(std::move(val));
 	}
 	bool isSet() const { return obj != nullptr; }
 	std::unique_ptr<base> makeNew() const { return obj->makeNew(); };
@@ -51,6 +51,8 @@ public:
 	const input_manager& getInputManager() const { return _inputManager; };
 	input_manager& getInputManager() { return _inputManager; };
 
+	uint64_t getFrameCount() const { return _frameCounter; };
+
 	[[nodiscard]] int32_t initialize();
 
 	[[nodiscard]] int32_t run();
@@ -61,7 +63,7 @@ public:
 
 private:
 	static void onSystemSignal(int sig);
-	
+
 	void registerSignals();
 
 	bool startRenderer();
@@ -82,7 +84,9 @@ private:
 
 	vk_renderer _renderer;
 
-	bool _isRunning;
+	game_instance::unique _gameInstance;
 
-	std::unique_ptr<game_instance> _gameInstance;
+	uint64_t _frameCounter;
+
+	bool _isRunning;
 };

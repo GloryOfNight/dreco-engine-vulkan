@@ -12,8 +12,6 @@ struct async_load_image : public thread_task
 	{
 	}
 
-	virtual void init() override{};
-
 	virtual void doJob() override
 	{
 		_texData.load(_texUri);

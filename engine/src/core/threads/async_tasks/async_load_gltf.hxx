@@ -16,8 +16,6 @@ struct async_load_gltf : public thread_task
 	{
 	}
 
-	virtual void init() override{};
-
 	virtual void doJob() override
 	{
 		_model = gltf_loader::loadModel(_file);

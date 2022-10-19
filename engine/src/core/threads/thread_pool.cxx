@@ -1,50 +1,116 @@
 #include "thread_pool.hxx"
 
-#include "core/utils/log.hxx"
-
 #include "SDL_thread.h"
 
-#include <chrono>
-#include <iostream>
+#include <algorithm>
 
-class thread_pool_accessor
+thread_pool::thread_pool(const std::string_view name, const uint32_t threadCount, const priority priority)
+	: _priority{priority}
 {
-public:
-	static std::unique_ptr<thread_task> tryPopTask(thread_pool& pool)
+	_threads.resize(threadCount);
+	for (uint32_t i = 0U; i < threadCount; ++i)
 	{
-		std::scoped_lock<std::mutex> lock(pool._waitingTasksMutex);
-		if (!pool._waitingTasks.empty())
-		{
-			auto task = std::move(pool._waitingTasks.front());
-			pool._waitingTasks.pop_front();
-			pool._threadsTaskAwaible = !pool._waitingTasks.empty();
-			return task;
-		}
-		return nullptr;
+		_threads[i] = SDL_CreateThread(thread_pool::threadsLoop, name.data(), this);
 	}
+	DE_LOG(Verbose, "%s: allocated %i threads", __FUNCTION__, _threads.size());
+}
 
-	static void addCompletedTask(thread_pool& pool, std::unique_ptr<thread_task>&& task)
+thread_pool::~thread_pool()
+{
+	_loopCondition = false;
+	for (auto* thread : _threads)
 	{
-		std::scoped_lock<std::mutex> lock(pool._completedTasksMutex);
-		pool._completedTasks.push_back(std::move(task));
+		int status{0};
+		SDL_WaitThread(thread, &status);
+		DE_LOG(Verbose, "%s: thread %p exit with code: %i", __FUNCTION__, thread, status);
 	}
+}
+
+void thread_pool::setCleanupFrame(uint64_t inValue)
+{
+	_cleanupFrame = inValue;
+}
+
+bool thread_pool::getLoopCondition() const
+{
+	return _loopCondition;
 };
 
-static int thread_loop_func(void* data)
+thread_pool::priority thread_pool::getPriority() const
 {
-	thread_pool& pool = *reinterpret_cast<thread_pool*>(data);
-	while (pool.getThreadLoopCondition())
+	return _priority;
+}
+
+void thread_pool::tick(uint64_t frameCount)
+{
+	const auto processTasks = [](auto& pair)
 	{
-		if (pool.getThreadTaskAvaible())
+		if (pair.second == task_state::uninitialized)
 		{
-			auto task = thread_pool_accessor::tryPopTask(pool);
+			pair.first->init();
+			pair.second = task_state::waiting;
+		}
+		else if (pair.second == task_state::processed)
+		{
+			pair.second = task_state::done;
+			pair.first->completed();
+		}
+	};
+	std::for_each(_tasks.begin(), _tasks.end(), processTasks);
+
+	if (frameCount % _cleanupFrame == 0)
+	{
+		std::scoped_lock<std::mutex> lock(_tasksMutex);
+		while (1)
+		{
+			auto it = std::find_if(_tasks.begin(), _tasks.end(),
+				[](auto& pair) -> bool
+				{
+					return pair.second == task_state::done;
+				});
+			if (it == _tasks.end())
+				break;
+			_tasks.erase(it);
+		}
+		DE_LOG(Verbose, "%s: cleanup done", __FUNCTION__);
+	}
+}
+
+uint32_t thread_pool::hardwareConcurrency()
+{
+	return static_cast<uint32_t>(std::thread::hardware_concurrency());
+}
+
+uint64_t thread_pool::makeTaskId()
+{
+	return ++_totalTaskCount;
+}
+
+thread_task::shared thread_pool::findTask(const uint64_t taskId)
+{
+	auto it = std::find_if(_tasks.begin(), _tasks.end(),
+		[taskId](const auto& pair) -> bool
+		{
+			return pair.first->getId() == taskId;
+		});
+	return it != _tasks.end() ? it->first : thread_task::shared();
+}
+
+int thread_pool::threadsLoop(void* data)
+{
+	auto& pool = *reinterpret_cast<thread_pool*>(data);
+
+	SDL_SetThreadPriority(static_cast<SDL_ThreadPriority>(pool.getPriority()));
+
+	while (pool.getLoopCondition())
+	{
+		if (auto task = pool.beginTaskProcessing())
+		{
 			if (task)
 			{
-				task->doJob();
-				if (task->useCompleted())
-				{
-					thread_pool_accessor::addCompletedTask(pool, std::move(task));
-				}
+				if (!task->isAborted())
+					task->doJob();
+				pool.endProcessingTask(task);
 			}
 		}
 		else
@@ -55,66 +121,30 @@ static int thread_loop_func(void* data)
 	return 0;
 }
 
-thread_pool::thread_pool(const char* name, const uint32_t threadCount, const thread_priority priority)
-	: _totalTaskCount{0}
+thread_task* thread_pool::beginTaskProcessing()
 {
-	const uint32_t num = threadCount > 0 ? threadCount : 1;
-
-	_threads.resize(num);
-	for (uint32_t i = 0U; i < num; ++i)
+	std::scoped_lock<std::mutex> lock(_tasksMutex);
+	auto it = std::find_if(_tasks.begin(), _tasks.end(),
+		[](auto& pair) -> bool
+		{
+			return pair.second == task_state::waiting;
+		});
+	if (it != _tasks.end())
 	{
-		_threads[i] = SDL_CreateThread(thread_loop_func, name, this);
-
-		const SDL_ThreadPriority sdlPriority = static_cast<SDL_ThreadPriority>(priority);
-		SDL_SetThreadPriority(sdlPriority);
+		it->second = task_state::procesing;
+		return it->first.get();
 	}
+	return nullptr;
 }
 
-thread_pool::~thread_pool()
+void thread_pool::endProcessingTask(thread_task* task)
 {
-	_threadsLoopCondition = false;
-
-	for (auto* thread : _threads)
-	{
-		int status{0};
-		SDL_WaitThread(thread, &status);
-		DE_LOG(Verbose, "Thread %p exit with code: %i", thread, status);
-	}
-}
-
-void thread_pool::tick()
-{
-	processCompletedTasks();
-}
-
-void thread_pool::queueTask(thread_task* task)
-{
-	task->_id = ++_totalTaskCount;
-
-	std::scoped_lock<std::mutex> guard(_waitingTasksMutex);
-	_waitingTasks.push_back(std::unique_ptr<thread_task>(task));
-	task->init();
-	task->markStart();
-
-	_threadsTaskAwaible = true;
-}
-
-uint32_t thread_pool::hardwareConcurrency()
-{
-	return static_cast<uint32_t>(std::thread::hardware_concurrency());
-}
-
-void thread_pool::processCompletedTasks()
-{
-	while (!_completedTasks.empty())
-	{
-		std::scoped_lock<std::mutex> lock(_completedTasksMutex);
-		auto task = std::move(_completedTasks.front());
-		_completedTasks.pop_front();
-
-		task->completed();
-		task->markEnd();
-
-		DE_LOG(Info, "Completed async task with id: %u, took: %fs", static_cast<unsigned int>(task->getId()), task->getTaskCompletionTime());
-	}
+	std::scoped_lock<std::mutex> lock(_tasksMutex);
+	auto it = std::find_if(_tasks.begin(), _tasks.end(),
+		[task](const auto& pair) -> bool
+		{
+			return pair.first.get() == task;
+		});
+	if (it != _tasks.end())
+		it->second = task_state::processed;
 }

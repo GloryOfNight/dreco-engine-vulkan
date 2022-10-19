@@ -186,8 +186,10 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
+		++_frameCounter;
+
 		_eventManager.tick();
-		_threadPool.tick();
+		_threadPool.tick(_frameCounter);
 
 		_gameInstance->tick(deltaTime);
 
