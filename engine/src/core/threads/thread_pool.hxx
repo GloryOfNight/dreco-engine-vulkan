@@ -84,7 +84,7 @@ thread_task::shared thread_pool::queueTask(Args&&... args)
 {
 	static_assert(std::is_base_of<thread_task, Task>::value, "Task must be derived from thread_task");
 
-	auto task = Task::makeNew<Task>(makeTaskId(), std::forward<Args>(args)...);
+	auto task = thread_task::makeNew<Task>(makeTaskId(), std::forward<Args>(args)...);
 
 	std::scoped_lock<std::mutex> guard(_tasksMutex);
 	return _tasks.emplace(thread_task::shared(task), task_state::uninitialized).first->first;
