@@ -47,7 +47,13 @@ private:
 };
 
 template <typename NodeClass, typename... Args>
-static NodeClass* node::newNode(world* inWorld, node* inOwner, Args&&... args)
+static NodeClass* newNode(world* inWorld, node* inOwner = nullptr, Args&&... args)
+{
+	return node::newNode<NodeClass>(inWorld, inOwner, std::forward<Args>(args)...);
+}
+
+template <typename NodeClass, typename... Args>
+NodeClass* node::newNode(world* inWorld, node* inOwner, Args&&... args)
 {
 	auto newNode = new NodeClass(std::forward<Args>(args)...);
 	newNode->_world = inWorld;
@@ -58,12 +64,6 @@ static NodeClass* node::newNode(world* inWorld, node* inOwner, Args&&... args)
 		return nullptr;
 	}
 	return newNode;
-}
-
-template <typename NodeClass, typename... Args>
-static NodeClass* newNode(world* inWorld, node* inOwner = nullptr, Args&&... args)
-{
-	return node::newNode<NodeClass>(inWorld, inOwner, std::forward<Args>(args)...);
 }
 
 template <typename NodeClass, typename... Args>

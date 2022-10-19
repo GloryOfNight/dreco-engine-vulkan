@@ -54,7 +54,7 @@ private:
 };
 
 template <typename Task, class... Args>
-static Task* thread_task::makeNew(uint64_t id, Args&&... args)
+Task* thread_task::makeNew(uint64_t id, Args&&... args)
 {
 	auto task = new Task(std::forward<Args>(args)...);
 	task->_id = id;
