@@ -2,6 +2,8 @@
 
 #include "world.hxx"
 
+#include <algorithm>
+
 void node::init()
 {
 }
