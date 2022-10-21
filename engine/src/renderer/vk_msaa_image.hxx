@@ -4,7 +4,7 @@
 class vk_msaa_image : public vk_image
 {
 public:
-	void create() override;
+	void create();
 
 	void recreate();
 

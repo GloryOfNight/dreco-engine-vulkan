@@ -1,12 +1,12 @@
 #include "engine.hxx"
 
 #include "core/loaders/gltf_loader.hxx"
+#include "core/threads/async_tasks/async_load_gltf.hxx"
 #include "core/utils/file_utils.hxx"
 #include "renderer/vk_mesh.hxx"
 #include "renderer/vk_renderer.hxx"
 
 #include "engine.hxx"
-#include "signal_handler.hxx"
 
 #include <SDL.h>
 #include <chrono>
@@ -22,41 +22,11 @@ static void onQuitEvent(const SDL_Event&)
 		engine->stop();
 }
 
-struct async_task_load_scene : public thread_task
-{
-	async_task_load_scene(const std::string_view& sceneFile)
-		: _file(sceneFile)
-	{
-	}
-
-	virtual void init() override{};
-
-	virtual void doJob() override
-	{
-		_model = gltf_loader::loadModel(_file);
-	}
-
-	virtual void completed() override
-	{
-		if (auto* eng = engine::get())
-		{
-			auto& renderer = eng->getRenderer();
-			renderer.loadModel(_model);
-		}
-	}
-
-private:
-	std::string _file;
-
-	gltf::model _model;
-};
-
 engine::engine()
 	: _eventManager{}
 	, _inputManager(_eventManager)
 	, _threadPool("dreco-worker", thread_pool::hardwareConcurrency() / 2)
 	, _renderer{}
-	, _isRunning{false}
 {
 	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
 }
@@ -74,19 +44,8 @@ engine* engine::get()
 	return gEngine;
 }
 
-const camera* engine::getCamera() const
+engine::init_res engine::initialize()
 {
-	return _gameInstance->getActiveCamera().get();
-}
-
-int32_t engine::initialize()
-{
-	if (_isRunning)
-	{
-		DE_LOG(Error, "Egnine already running, cannot init.");
-		return 1;
-	}
-
 	if (gEngine != nullptr)
 	{
 		if (gEngine == this)
@@ -98,53 +57,59 @@ int32_t engine::initialize()
 			DE_LOG(Error, "Another engine instance already initialized.");
 		}
 
-		return 2;
+		return init_res::AlreadyInitialized;
 	}
 
-	signal_handler::registerSignalsHandle();
+	if (_isRunning)
+	{
+		DE_LOG(Error, "Egnine already running, cannot init.");
+		return init_res::AlreadyRunning;
+	}
+
+	registerSignals();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
-		return 3;
+		return init_res::FailedInitSDL;
 	}
 
 	if (!platform_paths::init())
 	{
 		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir().c_str());
-		return 4;
+		return init_res::FailedFindCWD;
 	}
 
 	gEngine = this;
 
-	return 0;
+	return init_res::Ok;
 }
 
-int32_t engine::run()
+engine::run_res engine::run()
 {
 	if (nullptr == engine::get())
 	{
 		DE_LOG(Error, "Init engine first. Cannot run.");
-		return 1;
+		return run_res::Unitialized;
 	}
-	
+
 	if (!_defaultGameInstance.isSet())
 	{
 		DE_LOG(Error, "Game Instance isn't registred.");
-		return 2;
+		return run_res::InvalidGameInstance;
 	}
 
 	_gameInstance = _defaultGameInstance.makeNew();
 	if (nullptr == _gameInstance)
 	{
 		DE_LOG(Error, "Game Instance object nullptr, coundn't run");
-		return 3;
+		return run_res::FailedMakeNewGameInstance;
 	}
 
 	if (true == startRenderer())
 	{
 		startMainLoop();
 	}
-	return 0;
+	return run_res::Ok;
 }
 
 void engine::stop()
@@ -155,6 +120,30 @@ void engine::stop()
 		return;
 	}
 	_isRunning = false;
+}
+
+void engine::registerSignals()
+{
+	std::signal(SIGINT, engine::onSystemSignal);
+	std::signal(SIGILL, engine::onSystemSignal);
+	std::signal(SIGFPE, engine::onSystemSignal);
+	std::signal(SIGSEGV, engine::onSystemSignal);
+	std::signal(SIGTERM, engine::onSystemSignal);
+	std::signal(SIGABRT, engine::onSystemSignal);
+}
+
+void engine::onSystemSignal(int sig)
+{
+	if (sig == SIGFPE)
+		DE_LOG(Info, "Engine recieved floating point excetion. . . Stopping engine.");
+	else if (sig == SIGSEGV)
+		DE_LOG(Info, "Engine recieved segment violation. . . Stopping engine.");
+	else if (sig == SIGABRT || sig == SIGTERM || sig == SIGINT)
+		DE_LOG(Info, "Engine stop signal. . . Stopping engine.");
+
+	auto* eng = engine::get();
+	if (eng)
+		eng->stop();
 }
 
 bool engine::startRenderer()
@@ -181,7 +170,6 @@ bool engine::startRenderer()
 
 void engine::preMainLoop()
 {
-	_threadPool.queueTask(new async_task_load_scene(DRECO_ASSET("mi-24d/scene.gltf")));
 	_gameInstance->init();
 }
 
@@ -197,8 +185,10 @@ void engine::startMainLoop()
 		{
 			continue; // skip tick if delta time zero
 		}
+		++_frameCounter;
+
 		_eventManager.tick();
-		_threadPool.tick();
+		_threadPool.tick(_frameCounter);
 
 		_gameInstance->tick(deltaTime);
 
@@ -215,14 +205,14 @@ void engine::postMainLoop()
 	SDL_Quit();
 }
 
-double engine::calculateNewDeltaTime()
+double engine::calculateNewDeltaTime() noexcept
 {
-	const auto frametime_from_fps_lam = [](const double fps) constexpr
+	const auto frametime_from_fps_lam = [](const double fps) constexpr noexcept
 	{
 		return (1.0 / static_cast<double>(fps));
 	};
-	constexpr double fpsMax = frametime_from_fps_lam(5000);
-	constexpr double fpsMin = frametime_from_fps_lam(24);
+	constexpr double ftMax = frametime_from_fps_lam(5000);
+	constexpr double ftMin = frametime_from_fps_lam(24);
 
 	static std::chrono::time_point past = std::chrono::steady_clock::now();
 	const std::chrono::time_point now = std::chrono::steady_clock::now();
@@ -234,15 +224,15 @@ double engine::calculateNewDeltaTime()
 	}
 
 	const double delta{microSeconds / 1000000.0};
-	if (delta < fpsMax)
+	if (delta < ftMax)
 	{
 		return 0.0;
 	}
 
 	past = now;
-	if (delta >= fpsMin)
+	if (delta >= ftMin)
 	{
-		return fpsMin;
+		return ftMin;
 	}
 
 	return delta;

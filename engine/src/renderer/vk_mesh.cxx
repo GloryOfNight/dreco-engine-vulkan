@@ -1,10 +1,9 @@
 #include "vk_mesh.hxx"
-#include "vk_vertex.hxx"
 
-void vk_mesh::init(uint32_t vertexCount, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset)
+void vk_mesh::init(uint32_t vertexCount, size_t vertexSize, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset)
 {
 	_vertexCount = vertexCount;
-	_vertexSize = _vertexCount * vk_vertex::size();
+	_vertexSize = _vertexCount * vertexSize;
 	_vertexOffset = vertexOffset;
 
 	_indexCount = indexCount;

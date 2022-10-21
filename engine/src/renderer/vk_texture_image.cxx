@@ -6,45 +6,19 @@
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-void vk_texture_image::create()
+void vk_texture_image::create(const image_data& image)
 {
-	image_data imageData = image_data::createPlaceholderTexture();
-	create(imageData);
-}
-
-void vk_texture_image::create(const gltf::image& img)
-{
-	image_data imageData;
-	if (imageData.load(img._uri))
-	{
-		create(imageData);
-	}
-	else
-	{
-		DE_LOG(Error, "Failed to load texture from uri: %s; Loading default instead.", img._uri.data());
-		create();
-	}
-}
-
-void vk_texture_image::create(const image_data& textureData)
-{
-	if (!textureData.isLoaded())
+	if (!image.isValid())
 	{
 		DE_LOG(Error, "No valid texture data, using placeholder instead.");
-		create();
+		create(image_data::makePlaceholder(1024, 1024));
 		return;
 	}
-
-	uint16_t texWidth, texHeight;
-	uint8_t texChannels;
-	uint8_t* pixels{nullptr};
-	textureData.getData(&pixels, &texWidth, &texHeight, &texChannels);
-
 	vk_renderer* renderer{vk_renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
 	const vk::Format format = vk::Format::eR8G8B8A8Unorm;
-	createImage(device, format, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	createImage(device, format, static_cast<uint32_t>(image.getWidth()), static_cast<uint32_t>(image.getHeight()));
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
@@ -61,7 +35,7 @@ void vk_texture_image::create(const image_data& textureData)
 
 	vk_buffer stagingBuffer;
 	stagingBuffer.create(info);
-	stagingBuffer.getDeviceMemory().map(pixels, texWidth * texHeight * 4);
+	stagingBuffer.getDeviceMemory().map(image.getPixels(), image.getPixelCount());
 
 	// clang-format off
 	const std::array<vk::Semaphore, 2> semaphores =
@@ -87,7 +61,7 @@ void vk_texture_image::create(const image_data& textureData)
 	commandBuffers[0] = transitionImageLayout(transitionLayoutInfo);
 
 	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _image, vk::ImageLayout::eTransferDstOptimal,
-		static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+		static_cast<uint32_t>(image.getWidth()), static_cast<uint32_t>(image.getHeight()));
 
 	transitionLayoutInfo._layoutOld = vk::ImageLayout::eTransferDstOptimal;
 	transitionLayoutInfo._layoutNew = vk::ImageLayout::eShaderReadOnlyOptimal;

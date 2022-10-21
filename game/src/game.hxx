@@ -1,6 +1,7 @@
 #pragma once
 
-#include "game_objects/debug_camera.hxx"
+#include "game_objects/flying_camera.hxx"
+#include "game_objects/gltf_model.hxx"
 #include "game_objects/game_instance.hxx"
 #include "game_objects/world.hxx"
 
@@ -16,7 +17,9 @@ public:
 
 	void init() override
 	{
-		getGameInstance()->setActiveCamera(NewEntity<debug_camera>());
+		newNode<flying_camera>(this);
+		newNode<gltf_model>(this, nullptr, "mi-24d/scene.gltf");
+		newNode<gltf_model>(this, nullptr, "viking_room/scene.gltf");
 	}
 };
 
@@ -29,8 +32,8 @@ public:
 		loadWorld<launcher_world>();
 	}
 
-	virtual std::unique_ptr<game_instance> makeNew() const override 
+	virtual game_instance::unique makeNew() const override 
 	{
-		return std::unique_ptr<game_instance>(new launcher_gi());
+		return game_instance::unique(new launcher_gi());
 	}
 };

@@ -1,16 +1,11 @@
 #pragma once
 #include "math/mat4.hxx"
 
-#include "node_base.hxx"
+#include "node.hxx"
 
-class DRECO_API camera : public node_base
+class DRECO_API camera : public node
 {
 public:
-	camera(world& w, node_base* owner = nullptr)
-		: node_base(w, owner)
-	{
-	}
-
 	mat4 getView() const;
 
 	mat4 getProjection() const;

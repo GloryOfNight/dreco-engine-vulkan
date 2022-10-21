@@ -13,8 +13,8 @@ public:
 
 	struct event_binding_handle
 	{
-		const uint32_t event;
-		const std::forward_list<event_callback_func>::iterator elem;
+		const uint32_t event{};
+		const std::forward_list<event_callback_func>::iterator elem{};
 	};
 
 	event_manager() = default;
@@ -32,7 +32,7 @@ public:
 	void removeEventBinding(const event_binding_handle& handle);
 
 private:
-	std::map<uint32_t, std::forward_list<event_callback_func>> eventBindings = {};
+	std::map<uint32_t, std::forward_list<event_callback_func>> eventBindings{};
 };
 
 template <typename T, typename F>

@@ -9,6 +9,8 @@
 #include "math/rotator.hxx"
 #include "tinygltf/tiny_gltf.h"
 
+#include <algorithm>
+#include <execution>
 #include <filesystem>
 #include <iostream>
 #include <vector>
@@ -76,7 +78,7 @@ static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 		{
 			if (tNode.translation.size() == 3)
 			{
-				const vec3 translation = vec3(tNode.translation[0], tNode.translation[1], tNode.translation[2]);
+				const vec3 translation = vec3(tNode.translation);
 				dNode._matrix = dNode._matrix * mat4::makeTranslation(translation);
 			}
 			if (tNode.rotation.size() == 4)
@@ -86,7 +88,7 @@ static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 			}
 			if (tNode.scale.size() == 3)
 			{
-				const vec3 scale = vec3(tNode.scale[0], tNode.scale[1], tNode.scale[2]);
+				const vec3 scale = vec3(tNode.scale);
 				dNode._matrix = dNode._matrix * mat4::makeScale(scale);
 			}
 		}
@@ -242,11 +244,18 @@ static void parseMaterials(const tinygltf::Model& tModel, gltf::model& dModel)
 static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 {
 	const size_t totalImages = tModel.images.size();
+
 	dModel._images.resize(totalImages);
 	for (size_t i = 0; i < totalImages; ++i)
 	{
 		dModel._images[i]._uri = tModel.images[i].uri;
 	}
+
+	const auto asyncImageLoad = [&dModel](gltf::image& image)
+	{
+		image._image = image_data::load(dModel._rootPath + '/' + image._uri);
+	};
+	std::for_each(std::execution::par_unseq, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }
 
 gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
@@ -269,6 +278,7 @@ gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
 
 	gltf::model dModel;
 	dModel._rootPath = std::filesystem::path(sceneFile).parent_path().generic_string();
+
 	parseScenes(tModel, dModel);
 	parseNodes(tModel, dModel);
 	parseMaterials(tModel, dModel);

@@ -1,4 +1,4 @@
-#include "debug_camera.hxx"
+#include "flying_camera.hxx"
 
 #include "math/vec3.hxx"
 
@@ -6,12 +6,12 @@
 #include "core/engine.hxx"
 #include "renderer/vk_renderer.hxx"
 
-void debug_camera::tick(double deltaTime)
+void flying_camera::tick(double deltaTime)
 {
 	auto* engine = engine::get();
 	input_manager& inputManager = engine->getInputManager();
 
-	auto& transform = _transform;
+	auto& transform = getTransform();
 	const vec3 camFowVec = transform._rotation.toForwardVector();
 	const vec3 camRightVec = transform._rotation.toRightDirection();
 
@@ -55,7 +55,6 @@ void debug_camera::tick(double deltaTime)
 		rotatorDeg& rotation = transform._rotation;
 
 		const vk_renderer& renderer = engine->getRenderer();
-		SDL_Window* window = renderer.getWindow();
 
 		if (inputManager.isInMouseFocus())
 		{

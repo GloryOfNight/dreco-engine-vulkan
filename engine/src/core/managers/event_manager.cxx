@@ -13,7 +13,7 @@ void event_manager::tick()
 			{
 				try
 				{
-					bindFunc(event);
+					std::invoke(bindFunc, event);
 				}
 				catch (std::bad_function_call badFuncCall)
 				{

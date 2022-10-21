@@ -3,6 +3,7 @@
 #include "core/engine.hxx"
 
 #include "camera.hxx"
+#include "world.hxx"
 
 void game_instance::init()
 {
@@ -10,19 +11,27 @@ void game_instance::init()
 
 void game_instance::tick(double deltaTime)
 {
-	_currentWorld->tick(deltaTime);
-}
-
-const std::shared_ptr<camera>& game_instance::getActiveCamera() const
-{
-	return _activeCamera;
-}
-
-bool game_instance::setActiveCamera(const std::shared_ptr<camera>& cam)
-{
-	if (cam && cam->getWorld() == _currentWorld.get())
+	for (auto& world : _worlds)
 	{
-		_activeCamera = cam;
+		world->tick(deltaTime);
+	}
+}
+
+const std::vector<world::unique>& game_instance::getWorlds() const
+{
+	return _worlds;
+}
+
+world& game_instance::getCurrentWorld() const
+{
+	return *_worlds[_currentWorldIndex];
+}
+
+bool game_instance::setCurrentWorldIndex(const size_t index)
+{
+	if (_worlds.size() <= index)
+	{
+		_currentWorldIndex = index;
 		return true;
 	}
 	return false;

@@ -3,31 +3,34 @@
 
 #include <filesystem>
 #include <fstream>
-#include <string>
+#include <string_view>
 
 class file_utils
 {
 public:
-	static bool readFile(const std::string_view& path, std::string& data)
+	static std::string readFile(const std::string_view path)
 	{
-		data.clear();
-		std::ifstream file{path.data(), std::ifstream::binary | std::ifstream::ate};
-
-		const bool isFileRead = file.is_open();
-		if (isFileRead)
+		if (std::filesystem::is_regular_file(path))
 		{
-			const size_t len{static_cast<size_t>(file.tellg())};
-			file.seekg(0, file.beg);
-			data.reserve(len);
-			data.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+			std::ifstream file(path.data(), std::ifstream::binary);
+			if (file.is_open())
+			{
+				const auto fileSize = std::filesystem::file_size(path);
+				std::string fileContent = std::string(fileSize, '\0');
+				file.read(fileContent.data(), fileContent.size());
+				file.close();
+				DE_LOG(Verbose, "%s: read %i bytes from: %s", __FUNCTION__, fileContent.size(), path.data());
+				return fileContent;
+			}
+			else
+			{
+				DE_LOG(Error, "%s: failed to open file: %s", __FUNCTION__, path.data());
+			}
 		}
 		else
 		{
-			DE_LOG(Error, "Failed to load file: %s", path.data());
+			DE_LOG(Error, "%s: not a file: %s", __FUNCTION__, path.data());
 		}
-
-		file.close();
-
-		return isFileRead;
+		return std::string();
 	}
 };

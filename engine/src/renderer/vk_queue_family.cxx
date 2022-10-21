@@ -4,14 +4,6 @@
 
 #define IS_QUEUE_INDEX_VALID(index) (UINT32_MAX != index)
 
-vk_queue_family::vk_queue_family()
-	: graphicsIndex{UINT32_MAX}
-	, transferIndex{UINT32_MAX}
-	, presentIndex{UINT32_MAX}
-	, sharingMode{vk::SharingMode::eExclusive}
-{
-}
-
 void vk_queue_family::setup(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
 {
 	const auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();

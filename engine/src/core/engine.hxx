@@ -8,12 +8,17 @@
 #include "dreco.hxx"
 
 #include <cstdint>
+#include <utility>
 
 template <typename base>
 struct defaultObject
 {
 	template <typename T>
-	void init(T&& inObj) { obj = std::unique_ptr<base>(std::move(inObj)); }
+	void init()
+	{
+		decltype(std::declval<T>().makeNew()) val = T().makeNew();
+		obj = std::unique_ptr<base>(std::move(val));
+	}
 	bool isSet() const { return obj != nullptr; }
 	std::unique_ptr<base> makeNew() const { return obj->makeNew(); };
 
@@ -24,6 +29,24 @@ private:
 class DRECO_API engine
 {
 public:
+	enum class init_res
+	{
+		Ok,
+		AlreadyInitialized,
+		AlreadyRunning,
+		FailedInitSDL,
+		FailedFindCWD,
+	};
+
+	enum class run_res
+	{
+		Ok,
+		Unitialized,
+		InvalidGameInstance,
+		FailedMakeNewGameInstance
+	};
+
+
 	engine();
 	engine(const engine&) = delete;
 	engine(engine&&) = delete;
@@ -33,8 +56,6 @@ public:
 	engine& operator=(engine&&) = delete;
 
 	static engine* get();
-
-	const camera* getCamera() const;
 
 	const vk_renderer& getRenderer() const { return _renderer; };
 	vk_renderer& getRenderer() { return _renderer; };
@@ -48,15 +69,21 @@ public:
 	const input_manager& getInputManager() const { return _inputManager; };
 	input_manager& getInputManager() { return _inputManager; };
 
-	[[nodiscard]] int32_t initialize();
+	uint64_t getFrameCount() const { return _frameCounter; };
 
-	[[nodiscard]] int32_t run();
+	[[nodiscard]] init_res initialize();
+
+	[[nodiscard]] run_res run();
 
 	void stop();
 
 	defaultObject<game_instance> _defaultGameInstance;
 
 private:
+	static void onSystemSignal(int sig);
+
+	void registerSignals();
+
 	bool startRenderer();
 
 	void startMainLoop();
@@ -65,7 +92,7 @@ private:
 
 	void postMainLoop();
 
-	double calculateNewDeltaTime();
+	double calculateNewDeltaTime() noexcept;
 
 	event_manager _eventManager;
 
@@ -75,7 +102,9 @@ private:
 
 	vk_renderer _renderer;
 
-	bool _isRunning;
+	game_instance::unique _gameInstance;
 
-	std::unique_ptr<game_instance> _gameInstance;
+	uint64_t _frameCounter{};
+
+	bool _isRunning{};
 };

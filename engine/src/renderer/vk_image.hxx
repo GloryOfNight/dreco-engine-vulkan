@@ -21,8 +21,6 @@ public:
 	vk_image(vk_image&&) = default;
 	virtual ~vk_image() { destroy(); };
 
-	virtual void create() = 0;
-
 	virtual void destroy();
 
 	vk::Image getImage() const { return _image; };

@@ -8,11 +8,6 @@
 #include <cmath>
 #include <cstring>
 
-mat4::mat4()
-	: _mat{}
-{
-}
-
 mat4::mat4(const mat4d& mat)
 	: _mat{mat}
 {

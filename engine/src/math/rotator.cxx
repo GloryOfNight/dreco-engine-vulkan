@@ -3,7 +3,6 @@
 #include "mat4.hxx"
 #include "vec3.hxx"
 
-#include <SDL2/SDL_hints.h>
 #include <cmath>
 
 vec3 rotatorDeg::toForwardVector() const

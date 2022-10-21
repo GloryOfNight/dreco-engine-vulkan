@@ -13,11 +13,11 @@ struct DRECO_API vec2t
 
 	union
 	{
-		T _x, _u;
+		T _x{}, _u;
 	};
 	union
 	{
-		T _y, _v;
+		T _y{}, _v;
 	};
 
 	vec2t operator+(const vec2t<T>& other)

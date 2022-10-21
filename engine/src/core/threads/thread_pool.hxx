@@ -1,101 +1,98 @@
 #pragma once
 
+#include "dreco.hxx"
+#include "thread_task.hxx"
+
 #include <atomic>
-#include <chrono>
-#include <cstdint>
-#include <deque>
-#include <memory>
+#include <map>
 #include <mutex>
+#include <string_view>
 #include <thread>
-#include <vector>
 
 struct SDL_Thread;
-class thread_pool;
-
-enum class thread_priority : uint8_t
-{
-	low,
-	normal,
-	high,
-	timeCritical
-};
-
-struct thread_task
-{
-	friend thread_pool;
-
-	virtual ~thread_task() = default;
-
-	// in-sync with main
-	virtual void init() = 0;
-
-	// async
-	virtual void doJob() = 0;
-
-	// in-sync with main
-	virtual void completed() = 0;
-
-	uint64_t getId() const { return _id; }
-
-	bool useCompleted() const { return _useCompleted; }
-
-	double getTaskCompletionTime() const
-	{
-		return std::chrono::duration_cast<std::chrono::milliseconds>(_end - _begin).count() / 1000.0;
-	};
-
-protected:
-	bool _useCompleted{true};
-
-private:
-	void markStart() { _begin = std::chrono::steady_clock::now(); };
-	void markEnd() { _end = std::chrono::steady_clock::now(); };
-
-	uint64_t _id{UINT64_MAX};
-
-	std::chrono::steady_clock::time_point _begin;
-	std::chrono::steady_clock::time_point _end;
-};
-
-// empty thread task for testing
-struct empty_thread_task : public thread_task
-{
-	void init() override{};
-	void doJob() override{};
-	void completed() override{};
-};
+struct thread_task;
 
 class thread_pool
 {
-	friend class thread_pool_accessor;
+	enum class priority : uint8_t
+	{
+		low,
+		normal,
+		high,
+		timeCritical
+	};
+	enum class task_state : uint8_t
+	{
+		uninitialized, // never touched by threads
+		waiting,	   // waiting for execution
+		procesing,	   // is in execution
+		processed,	   // exection complete
+		done,		   // everything done
+	};
+	struct loop_info
+	{
+		thread_pool* _pool;
+		priority _priority;
+	};
 
 public:
-	thread_pool(const char* name, const uint32_t threadCount = 0, const thread_priority priority = thread_priority::normal);
+	thread_pool(const std::string_view name, const uint32_t threadCount, const priority priority = priority::normal);
 	~thread_pool();
 
-	void tick();
+	void tick(uint64_t frameCount);
 
-	void queueTask(thread_task* task);
+	template <typename Task, class... Args>
+	thread_task::shared queueTask(Args&&... args);
 
-	const std::atomic<bool>& getThreadLoopCondition() const { return _threadsLoopCondition; };
+	template <typename Task>
+	thread_task::shared queueTask(Task&& task);
 
-	const std::atomic<bool>& getThreadTaskAvaible() const { return _threadsTaskAwaible; };
+	void setCleanupFrame(uint64_t inValue);
+
+	bool getLoopCondition() const;
+
+	priority getPriority() const;
 
 	static uint32_t hardwareConcurrency();
 
+	uint64_t makeTaskId();
+
+	thread_task::shared findTask(const uint64_t taskId);
+
 private:
-	void processCompletedTasks();
+	static int threadsLoop(void* data);
 
-	std::atomic<bool> _threadsLoopCondition{true};
-	std::atomic<bool> _threadsTaskAwaible{false};
+	thread_task* beginTaskProcessing();
+	void endProcessingTask(thread_task* task);
 
-	std::mutex _waitingTasksMutex;
-	std::deque<std::unique_ptr<thread_task>> _waitingTasks;
+	std::mutex _tasksMutex{};
+	std::map<thread_task::shared, std::atomic<task_state>> _tasks{};
 
-	std::mutex _completedTasksMutex;
-	std::deque <std::unique_ptr<thread_task>> _completedTasks;
+	std::vector<SDL_Thread*> _threads{};
 
-	std::vector<SDL_Thread*> _threads;
+	uint64_t _totalTaskCount{};
 
-	uint64_t _totalTaskCount;
+	uint64_t _cleanupFrame{5000};
+
+	std::atomic<bool> _loopCondition{true};
+
+	priority _priority{priority::normal};
 };
+
+template <typename Task, class... Args>
+thread_task::shared thread_pool::queueTask(Args&&... args)
+{
+	static_assert(std::is_base_of<thread_task, Task>::value, "Task must be derived from thread_task");
+
+	auto task = thread_task::makeNew<Task>(makeTaskId(), std::forward<Args>(args)...);
+
+	std::scoped_lock<std::mutex> guard(_tasksMutex);
+	return _tasks.emplace(thread_task::shared(task), task_state::uninitialized).first->first;
+}
+
+template <typename Task>
+thread_task::shared thread_pool::queueTask(Task&& task)
+{
+	std::scoped_lock<std::mutex> guard(_tasksMutex);
+	return _tasks.emplace(thread_task::shared(std::forward<Task>(task)), task_state::uninitialized).first->first;
+}

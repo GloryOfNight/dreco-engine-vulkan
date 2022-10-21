@@ -3,12 +3,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-class vk_device;
-class vk_scene;
-class vk_queue_family;
-class vk_graphics_pipeline;
-class vk_physical_device;
-
 class vk_mesh final
 {
 public:
@@ -20,7 +14,7 @@ public:
 	vk_mesh& operator=(const vk_mesh&) = delete;
 	vk_mesh& operator=(vk_mesh&&) = delete;
 
-	void init(uint32_t vertexCount, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset);
+	void init(uint32_t vertexCount, size_t vertexSize, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset);
 
 	void bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const;
 

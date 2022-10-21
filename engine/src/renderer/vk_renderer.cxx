@@ -1,13 +1,11 @@
 #include "vk_renderer.hxx"
 
-#include "async_tasks/async_load_texture_task.hxx"
-#include "core/platform.h"
+#include "core/engine.hxx"
 #include "core/threads/thread_pool.hxx"
 #include "core/utils/file_utils.hxx"
-#include "core/engine.hxx"
 #include "game_objects/camera.hxx"
-#include "renderer/containers/camera_data.hxx"
 
+#include "dreco.hxx"
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
@@ -17,37 +15,15 @@
 #include <chrono>
 #include <stdexcept>
 
-#define VK_USE_DEBUG 1
+#define VK_USE_DEBUG true
 
 #if VK_USE_DEBUG
 #define VK_ENABLE_VALIDATION
-//disabled due to unstabilities on linux
 #if PLATFORM_WINDOWS
 #define VK_ENABLE_LUNAR_MONITOR
 #endif
 #define VK_ENABLE_MESA_OVERLAY
 #endif
-
-vk_renderer::vk_renderer()
-	: _apiVersion{0}
-	, _window{nullptr}
-	, _windowId{}
-	, _surface()
-	, _physicalDevice()
-	, _queueFamily()
-	, _device()
-	, _instance{}
-	, _swapchain{}
-	, _swapchainImageViews{}
-	, _framebuffers{}
-	, _renderPass{}
-	, _graphicsCommandPools{}
-	, _transferCommandPool{}
-	, _submitQueueFences{}
-	, _semaphoreImageAvaible{}
-	, _semaphoreRenderFinished{}
-{
-}
 
 vk_renderer::~vk_renderer()
 {
@@ -112,10 +88,7 @@ void vk_renderer::init()
 
 	createCameraBuffer();
 
-	_placeholderTextureImage.create();
-
-	registerShader<vk_shader_basic_vert>();
-	registerShader<vk_shader_basic_frag>();
+	_placeholderTextureImage.create(image_data::makePlaceholder());
 }
 
 void vk_renderer::exit()
@@ -138,7 +111,7 @@ void vk_renderer::exit()
 	cleanupSwapchain(_swapchain);
 
 	_placeholderTextureImage.destroy();
-	_cameraData.destroy();
+	_cameraDataBuffer.destroy();
 
 	_device.destroySemaphore(_semaphoreImageAvaible);
 	_device.destroySemaphore(_semaphoreRenderFinished);
@@ -163,7 +136,7 @@ void vk_renderer::exit()
 
 void vk_renderer::tick(double deltaTime)
 {
-	updateCameraData();
+	updateCameraBuffer();
 	if (updateExtent())
 	{
 		recreateSwapchain();
@@ -176,9 +149,15 @@ void vk_renderer::loadModel(const gltf::model& scn)
 	_scenes.emplace_back(new vk_scene())->create(scn);
 }
 
-const std::unique_ptr<vk_shader>& vk_renderer::findShader(const std::string_view& path)
+vk_shader::shared vk_renderer::loadShader(const std::string_view& path)
 {
-	return _shaders.at(path);
+	const auto shader = _shaders.try_emplace(path.data());
+	if (shader.second)
+	{
+		shader.first->second = vk_shader::shared(new vk_shader());
+		shader.first->second->create(path);
+	}
+	return shader.first->second;
 }
 
 uint32_t vk_renderer::getVersion(uint32_t& major, uint32_t& minor, uint32_t* patch)
@@ -592,7 +571,7 @@ void vk_renderer::createCameraBuffer()
 	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
 	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
 	bufferCreateInfo.size = sizeof(camera_data);
-	_cameraData.create(bufferCreateInfo);
+	_cameraDataBuffer.create(bufferCreateInfo);
 }
 
 void vk_renderer::drawFrame()
@@ -667,16 +646,15 @@ void vk_renderer::drawFrame()
 	}
 }
 
-void vk_renderer::updateCameraData()
+void vk_renderer::setCameraData(const mat4& inView, const mat4 inProj)
 {
-	const auto camera = engine::get()->getCamera();
-	if (camera)
-	{
-		camera_data data;
-		data.view = camera->getView();
-		data.viewProj = data.view * camera->getProjection();
-		_cameraData.getDeviceMemory().map(&data, sizeof(camera_data));
-	}
+	_cameraData.view = inView;
+	_cameraData.viewProj = inView * inProj;
+}
+
+void vk_renderer::updateCameraBuffer()
+{
+	_cameraDataBuffer.getDeviceMemory().map(&_cameraData, sizeof(_cameraData));
 }
 
 bool vk_renderer::updateExtent()
