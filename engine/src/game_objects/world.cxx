@@ -20,5 +20,5 @@ void world::tick(double deltaTime)
 
 node::unique world::makeRootNode()
 {
-	return node::unique(newNode<node>(this, nullptr));
+	return node::unique(newNode<node>(this));
 }

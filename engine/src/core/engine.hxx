@@ -29,6 +29,24 @@ private:
 class DRECO_API engine
 {
 public:
+	enum class init_res
+	{
+		Ok,
+		AlreadyInitialized,
+		AlreadyRunning,
+		FailedInitSDL,
+		FailedFindCWD,
+	};
+
+	enum class run_res
+	{
+		Ok,
+		Unitialized,
+		InvalidGameInstance,
+		FailedMakeNewGameInstance
+	};
+
+
 	engine();
 	engine(const engine&) = delete;
 	engine(engine&&) = delete;
@@ -53,9 +71,9 @@ public:
 
 	uint64_t getFrameCount() const { return _frameCounter; };
 
-	[[nodiscard]] int32_t initialize();
+	[[nodiscard]] init_res initialize();
 
-	[[nodiscard]] int32_t run();
+	[[nodiscard]] run_res run();
 
 	void stop();
 
@@ -86,7 +104,7 @@ private:
 
 	game_instance::unique _gameInstance;
 
-	uint64_t _frameCounter;
+	uint64_t _frameCounter{};
 
-	bool _isRunning;
+	bool _isRunning{};
 };

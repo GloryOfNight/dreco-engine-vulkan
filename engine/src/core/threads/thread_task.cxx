@@ -11,7 +11,7 @@ void thread_task::completed()
 	{
 		try
 		{
-			callback(this);
+			std::invoke(callback, this);
 		}
 		catch (std::bad_function_call badFuncCall)
 		{

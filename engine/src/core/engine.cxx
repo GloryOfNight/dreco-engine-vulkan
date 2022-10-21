@@ -27,7 +27,6 @@ engine::engine()
 	, _inputManager(_eventManager)
 	, _threadPool("dreco-worker", thread_pool::hardwareConcurrency() / 2)
 	, _renderer{}
-	, _isRunning{false}
 {
 	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
 }
@@ -45,14 +44,8 @@ engine* engine::get()
 	return gEngine;
 }
 
-int32_t engine::initialize()
+engine::init_res engine::initialize()
 {
-	if (_isRunning)
-	{
-		DE_LOG(Error, "Egnine already running, cannot init.");
-		return 1;
-	}
-
 	if (gEngine != nullptr)
 	{
 		if (gEngine == this)
@@ -64,53 +57,59 @@ int32_t engine::initialize()
 			DE_LOG(Error, "Another engine instance already initialized.");
 		}
 
-		return 2;
+		return init_res::AlreadyInitialized;
+	}
+
+	if (_isRunning)
+	{
+		DE_LOG(Error, "Egnine already running, cannot init.");
+		return init_res::AlreadyRunning;
 	}
 
 	registerSignals();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
-		return 3;
+		return init_res::FailedInitSDL;
 	}
 
 	if (!platform_paths::init())
 	{
 		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir().c_str());
-		return 4;
+		return init_res::FailedFindCWD;
 	}
 
 	gEngine = this;
 
-	return 0;
+	return init_res::Ok;
 }
 
-int32_t engine::run()
+engine::run_res engine::run()
 {
 	if (nullptr == engine::get())
 	{
 		DE_LOG(Error, "Init engine first. Cannot run.");
-		return 1;
+		return run_res::Unitialized;
 	}
 
 	if (!_defaultGameInstance.isSet())
 	{
 		DE_LOG(Error, "Game Instance isn't registred.");
-		return 2;
+		return run_res::InvalidGameInstance;
 	}
 
 	_gameInstance = _defaultGameInstance.makeNew();
 	if (nullptr == _gameInstance)
 	{
 		DE_LOG(Error, "Game Instance object nullptr, coundn't run");
-		return 3;
+		return run_res::FailedMakeNewGameInstance;
 	}
 
 	if (true == startRenderer())
 	{
 		startMainLoop();
 	}
-	return 0;
+	return run_res::Ok;
 }
 
 void engine::stop()

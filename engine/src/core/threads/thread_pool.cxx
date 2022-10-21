@@ -7,10 +7,10 @@
 thread_pool::thread_pool(const std::string_view name, const uint32_t threadCount, const priority priority)
 	: _priority{priority}
 {
-	_threads.resize(threadCount);
-	for (uint32_t i = 0U; i < threadCount; ++i)
+	_threads.reserve(threadCount);
+	for (uint32_t i = 0; i < threadCount; ++i)
 	{
-		_threads[i] = SDL_CreateThread(thread_pool::threadsLoop, name.data(), this);
+		_threads.emplace_back(SDL_CreateThread(thread_pool::threadsLoop, name.data(), this));
 	}
 	DE_LOG(Verbose, "%s: allocated %i threads", __FUNCTION__, _threads.size());
 }
@@ -18,7 +18,7 @@ thread_pool::thread_pool(const std::string_view name, const uint32_t threadCount
 thread_pool::~thread_pool()
 {
 	_loopCondition = false;
-	for (auto* thread : _threads)
+	for (auto thread : _threads)
 	{
 		int status{0};
 		SDL_WaitThread(thread, &status);

@@ -36,7 +36,7 @@ class thread_pool
 	};
 
 public:
-	thread_pool(const std::string_view name, const uint32_t threadCount = 0, const priority priority = priority::normal);
+	thread_pool(const std::string_view name, const uint32_t threadCount, const priority priority = priority::normal);
 	~thread_pool();
 
 	void tick(uint64_t frameCount);

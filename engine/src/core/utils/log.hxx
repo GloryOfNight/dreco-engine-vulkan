@@ -1,11 +1,23 @@
 #pragma once
 
 #include <SDL_log.h>
-#include <cstdarg>
+#include <string>
 
 namespace de
 {
-	enum class log_priority : uint8_t
+	enum class log_category
+	{
+		Application = SDL_LOG_CATEGORY_APPLICATION,
+		Error = SDL_LOG_CATEGORY_ERROR,
+		Assert = SDL_LOG_CATEGORY_ASSERT,
+		System = SDL_LOG_CATEGORY_SYSTEM,
+		Audio = SDL_LOG_CATEGORY_AUDIO,
+		Video = SDL_LOG_CATEGORY_VIDEO,
+		Render = SDL_LOG_CATEGORY_RENDER,
+		Input = SDL_LOG_CATEGORY_INPUT,
+		Test = SDL_LOG_CATEGORY_TEST,
+	};
+	enum class log_priority
 	{
 		Verbose = SDL_LOG_PRIORITY_VERBOSE,
 		Debug = SDL_LOG_PRIORITY_DEBUG,
@@ -14,13 +26,13 @@ namespace de
 		Error = SDL_LOG_PRIORITY_ERROR,
 		Critical = SDL_LOG_PRIORITY_CRITICAL
 	};
-	static void log(log_priority priority, const char* fmt, ...) noexcept
+
+	template <typename... Args>
+	static void log(log_category category, log_priority priority, std::string_view message, Args&&... args) noexcept
 	{
-		va_list list;
-		va_start(list, fmt);
-		SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, static_cast<SDL_LogPriority>(priority), fmt, list);
-		va_end(list);
+		SDL_LogMessage(static_cast<SDL_LogCategory>(category), static_cast<SDL_LogPriority>(priority), message.data(), std::forward<Args>(args)...);
 	}
 } // namespace de
 
-#define DE_LOG(priority, message, ...) de::log(de::log_priority::priority, message, ##__VA_ARGS__)
+#define DE_LOG(priority, message, ...) de::log(de::log_category::Application, de::log_priority::priority, message, ##__VA_ARGS__)
+#define DE_LOGC(category, priority, message, ...) de::log(de::log_category::category, de::log_priority::priority, message, ##__VA_ARGS__)

@@ -17,8 +17,7 @@ public:
 
 	void init() override
 	{
-		getRootNode()->makeChild<flying_camera>(this);
-
+		newNode<flying_camera>(this);
 		newNode<gltf_model>(this, nullptr, "mi-24d/scene.gltf");
 		newNode<gltf_model>(this, nullptr, "viking_room/scene.gltf");
 	}

@@ -5,7 +5,7 @@
 #include "dreco.hxx"
 
 #include <memory>
-#include <vector>
+#include <set>
 
 class world;
 class DRECO_API node
@@ -28,6 +28,9 @@ public:
 	template <typename NodeClass, typename... Args>
 	NodeClass* makeChild(world* inWorld, Args&&... args);
 
+	void destroy();
+	void destroyChild(node const* obj);
+
 	world* getWorld() const { return _world; };
 	node* getOwner() { return _owner; };
 
@@ -43,7 +46,7 @@ private:
 
 	transform _transform{};
 
-	std::vector<std::unique_ptr<node>> _children{};
+	std::set<std::unique_ptr<node>> _children{};
 };
 
 template <typename NodeClass, typename... Args>
@@ -55,14 +58,33 @@ static NodeClass* newNode(world* inWorld, node* inOwner = nullptr, Args&&... arg
 template <typename NodeClass, typename... Args>
 NodeClass* node::newNode(world* inWorld, node* inOwner, Args&&... args)
 {
+	static_assert(std::is_base_of<node, NodeClass>::value, "NodeClass should be direvied from node");
+	if (inWorld == nullptr)
+	{
+		DE_LOG(Error, "%s: Cannot create %s. World is null.", __FUNCTION__, typeid(NodeClass).name());
+		return nullptr;
+	}
+
 	auto newNode = new NodeClass(std::forward<Args>(args)...);
 	newNode->_world = inWorld;
-	newNode->_owner = inOwner;
-	if (!newNode->apply())
+	newNode->_owner = inOwner != nullptr ? inOwner : inWorld->getRootNode();
+
+	if (newNode->_owner == nullptr)
 	{
+		DE_LOG(Verbose, "%s: Creating root node %s.", __FUNCTION__, typeid(NodeClass).name());
+	}
+	else if (newNode->_owner->getWorld() != newNode->_world)
+	{
+		DE_LOG(Error, "%s: Cannot create %s. Owner world != this world.", __FUNCTION__, typeid(NodeClass).name());
 		delete newNode;
 		return nullptr;
 	}
+	else
+	{
+		newNode->_owner->_children.emplace(std::unique_ptr<node>(newNode));
+	}
+
+	newNode->init();
 	return newNode;
 }
 
