@@ -28,9 +28,9 @@ namespace de
 	};
 
 	template <typename... Args>
-	static void log(log_category category, log_priority priority, std::string_view message, Args&&... args) noexcept
+	static void log(log_category category, log_priority priority, const char* message, Args&&... args) noexcept
 	{
-		SDL_LogMessage(static_cast<SDL_LogCategory>(category), static_cast<SDL_LogPriority>(priority), message.data(), std::forward<Args>(args)...);
+		SDL_LogMessage(static_cast<SDL_LogCategory>(category), static_cast<SDL_LogPriority>(priority), message, std::forward<Args>(args)...);
 	}
 } // namespace de
 

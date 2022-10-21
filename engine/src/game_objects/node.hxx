@@ -38,7 +38,7 @@ public:
 	const transform& getTransform() const { return _transform; };
 
 private:
-	[[nodiscard]] bool apply();
+	[[nodiscard]] bool apply(node* inOwner);
 
 	world* _world{};
 
@@ -67,21 +67,12 @@ NodeClass* node::newNode(world* inWorld, node* inOwner, Args&&... args)
 
 	auto newNode = new NodeClass(std::forward<Args>(args)...);
 	newNode->_world = inWorld;
-	newNode->_owner = inOwner != nullptr ? inOwner : inWorld->getRootNode();
 
-	if (newNode->_owner == nullptr)
+	if (!newNode->apply(inOwner))
 	{
-		DE_LOG(Verbose, "%s: Creating root node %s.", __FUNCTION__, typeid(NodeClass).name());
-	}
-	else if (newNode->_owner->getWorld() != newNode->_world)
-	{
-		DE_LOG(Error, "%s: Cannot create %s. Owner world != this world.", __FUNCTION__, typeid(NodeClass).name());
+		DE_LOG(Error, "%s: Failed to create %s.", __FUNCTION__, typeid(NodeClass).name());
 		delete newNode;
 		return nullptr;
-	}
-	else
-	{
-		newNode->_owner->_children.emplace(std::unique_ptr<node>(newNode));
 	}
 
 	newNode->init();

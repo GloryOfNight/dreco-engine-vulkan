@@ -39,23 +39,18 @@ void node::destroyChild(node const* obj)
 	}
 }
 
-bool node::apply()
+bool node::apply(node* inOwner)
 {
-	if (_world)
+	_owner = inOwner != nullptr ? inOwner : _world->getRootNode();
+	if (_owner != nullptr && _owner->getWorld() != _world)
 	{
-		if (_owner && _owner->getWorld() != _world)
-		{
-			DE_LOG(Error, "%s: Failed to apply node. No world provided.", __FUNCTION__);
-			return false;
-		}
-		node* parent = _owner != nullptr ? _owner : _world->getRootNode();
-		if (parent)
-			parent->_children.emplace(std::unique_ptr<node>(this));
-
-		init();
-
-		return true;
+		DE_LOG(Error, "%s: Failed to apply node, owner world != this world.", __FUNCTION__);
+		return false;
 	}
-	DE_LOG(Error, "%s: Failed to apply node. No world provided.", __FUNCTION__);
-	return false;
+
+	node* parent = _owner != nullptr ? _owner : _world->getRootNode();
+	if (parent)
+		parent->_children.emplace(std::unique_ptr<node>(this));
+
+	return true;
 }
