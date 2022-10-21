@@ -10,7 +10,7 @@
 #include <thread>
 
 struct SDL_Thread;
-class thread_task;
+struct thread_task;
 
 class thread_pool
 {

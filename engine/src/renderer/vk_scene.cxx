@@ -177,8 +177,6 @@ void vk_scene::recreatePipelines()
 
 void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 {
-	vk::Device device = vk_renderer::get()->getDevice();
-
 	std::array<vk::DeviceSize, 1> offsets{0};
 	commandBuffer.bindVertexBuffers(0, _meshesVIBuffer.get(), offsets);
 	commandBuffer.bindIndexBuffer(_meshesVIBuffer.get(), _indexOffset, vk::IndexType::eUint32);

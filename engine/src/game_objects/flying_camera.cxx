@@ -55,7 +55,6 @@ void flying_camera::tick(double deltaTime)
 		rotatorDeg& rotation = transform._rotation;
 
 		const vk_renderer& renderer = engine->getRenderer();
-		SDL_Window* window = renderer.getWindow();
 
 		if (inputManager.isInMouseFocus())
 		{

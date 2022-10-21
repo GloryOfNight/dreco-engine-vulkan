@@ -6,8 +6,6 @@ void vk_msaa_image::create()
 {
 	const vk_renderer* renderer{vk_renderer::get()};
 	const vk::Device device = renderer->getDevice();
-	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
-	const vk::SurfaceKHR surface = renderer->getSurface();
 	
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::Format format = renderer->getSettings().getSurfaceFormat().format;

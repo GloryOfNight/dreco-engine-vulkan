@@ -89,7 +89,6 @@ image_data image_data::makePlaceholder(uint16_t width, uint16_t heigth, uint8_t 
 
 	for (uint32_t i = 0; i < wh; ++i)
 	{
-		auto dst = outData._pixels.data();
 		const auto src = i % 3 || i == 1 ? &pink[0] : &black[0];
 		memcpy(&outData._pixels[i * components], src, sizeof(pink));
 	}

@@ -18,7 +18,7 @@ public:
 	virtual void init() override;
 
 private:
-	void onModelLoaded(class thread_task* task);
+	void onModelLoaded(struct thread_task* task);
 
 	std::string _modelPath;
 

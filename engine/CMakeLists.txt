@@ -26,7 +26,7 @@ add_library(${PROJECT_NAME} STATIC ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_BUILD_STATIC)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2 Vulkan::Vulkan shader-compiler-static spirv-reflect)
+target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2 Vulkan::Vulkan shader-compiler-static spirv-reflect stb tinygltf)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS} )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -38,7 +38,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/)
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC 
 -DDRECO_ASSETS_DIR="${DRECO_ASSETS_DIR}"
