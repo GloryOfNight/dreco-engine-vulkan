@@ -4,8 +4,12 @@
 
 #include <algorithm>
 
-thread_pool::thread_pool(const std::string_view name, const uint32_t threadCount, const priority priority)
-	: _priority{priority}
+thread_pool::~thread_pool()
+{
+	freeThreads();
+}
+
+void thread_pool::allocateThreads(const std::string_view name, const uint32_t threadCount, const priority priority)
 {
 	_threads.reserve(threadCount);
 	for (uint32_t i = 0; i < threadCount; ++i)
@@ -15,8 +19,11 @@ thread_pool::thread_pool(const std::string_view name, const uint32_t threadCount
 	DE_LOG(Verbose, "%s: allocated %i threads", __FUNCTION__, _threads.size());
 }
 
-thread_pool::~thread_pool()
+void thread_pool::freeThreads()
 {
+	if (_threads.size() == 0)
+		return;
+
 	_loopCondition = false;
 	for (auto thread : _threads)
 	{
@@ -24,6 +31,8 @@ thread_pool::~thread_pool()
 		SDL_WaitThread(thread, &status);
 		DE_LOG(Verbose, "%s: thread %p exit with code: %i", __FUNCTION__, thread, status);
 	}
+	_loopCondition = true;
+	_threads.clear();
 }
 
 void thread_pool::setCleanupFrame(uint64_t inValue)

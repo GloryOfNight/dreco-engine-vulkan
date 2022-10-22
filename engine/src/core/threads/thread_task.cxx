@@ -15,12 +15,12 @@ void thread_task::completed()
 		}
 		catch (std::bad_function_call badFuncCall)
 		{
-			DE_LOG(Error, "%s: BadFunctionCall: %s", __FUNCTION__, badFuncCall.what());
+			DE_LOG(Error, "%s: caught exception bad_function_call: %s", __FUNCTION__, badFuncCall.what());
 		}
 	}
 	markEnd();
 
-	DE_LOG(Info, "%s: Completed async task with id: %u, took: %fs", __FUNCTION__, static_cast<unsigned int>(getId()), getTaskCompletionTime());
+	DE_LOG(Info, "%s: completed async task with id: %u, took: %fs", __FUNCTION__, static_cast<unsigned int>(getId()), getTaskCompletionTime());
 }
 
 void thread_task::bindCallback(callback&& inCallback)

@@ -12,7 +12,7 @@ int main()
 
 	registerGame(Engine._defaultGameInstance);
 
-	if (initRes == engine::init_res::Ok)
+	if (initRes == engine::init_res::ok)
 	{
 		if (const auto res = shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR); res != 0)
 		{
@@ -20,7 +20,7 @@ int main()
 		}
 
 		const auto runRes = Engine.run();
-		return runRes != engine::run_res::Ok ? 1 : 0;
+		return runRes != engine::run_res::ok ? 1 : 0;
 	}
 	return 1;
 }

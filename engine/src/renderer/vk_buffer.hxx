@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <vector>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 class vk_device;
 class vk_physical_device;

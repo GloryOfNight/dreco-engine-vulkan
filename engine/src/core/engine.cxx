@@ -25,7 +25,7 @@ static void onQuitEvent(const SDL_Event&)
 engine::engine()
 	: _eventManager{}
 	, _inputManager(_eventManager)
-	, _threadPool("dreco-worker", thread_pool::hardwareConcurrency() / 2)
+	, _threadPool()
 	, _renderer{}
 {
 	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
@@ -50,76 +50,79 @@ engine::init_res engine::initialize()
 	{
 		if (gEngine == this)
 		{
-			DE_LOG(Error, "This engine instance was already initialized.");
+			DE_LOG(Error, "%s: this engine instance was already initialized.", __FUNCTION__);
 		}
 		else
 		{
-			DE_LOG(Error, "Another engine instance already initialized.");
+			DE_LOG(Error, "%s: another engine instance already initialized.", __FUNCTION__);
 		}
 
-		return init_res::AlreadyInitialized;
+		return init_res::already_initialized;
 	}
 
 	if (_isRunning)
 	{
-		DE_LOG(Error, "Egnine already running, cannot init.");
-		return init_res::AlreadyRunning;
+		DE_LOG(Error, "%s: egnine already running, cannot init.", __FUNCTION__);
+		return init_res::failed_already_running;
 	}
 
 	registerSignals();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
-		DE_LOG(Error, "SDL Initialization error: %s", SDL_GetError());
-		return init_res::FailedInitSDL;
+		DE_LOG(Error, "%s: sdl initialization error: %s", __FUNCTION__, SDL_GetError());
+		return init_res::failed_init_sdl;
 	}
 
 	if (!platform_paths::init())
 	{
-		DE_LOG(Error, "Failed to locate proper Cwd, current working dir: %s", platform_paths::currentDir().c_str());
-		return init_res::FailedFindCWD;
+		DE_LOG(Error, "%s: failed to locate proper cwd, current working dir: %s", __FUNCTION__, platform_paths::currentDir().c_str());
+		return init_res::failed_find_cwd;
 	}
 
 	gEngine = this;
 
-	return init_res::Ok;
+	return init_res::ok;
 }
 
 engine::run_res engine::run()
 {
 	if (nullptr == engine::get())
 	{
-		DE_LOG(Error, "Init engine first. Cannot run.");
-		return run_res::Unitialized;
+		DE_LOG(Error, "%s: engine unitilized.", __FUNCTION__);
+		return run_res::failed_unitialized;
 	}
 
 	if (!_defaultGameInstance.isSet())
 	{
-		DE_LOG(Error, "Game Instance isn't registred.");
-		return run_res::InvalidGameInstance;
+		DE_LOG(Error, "%s: game instance isn't registred.", __FUNCTION__);
+		return run_res::failed_invalid_game_instance;
 	}
 
 	_gameInstance = _defaultGameInstance.makeNew();
 	if (nullptr == _gameInstance)
 	{
-		DE_LOG(Error, "Game Instance object nullptr, coundn't run");
-		return run_res::FailedMakeNewGameInstance;
+		DE_LOG(Error, "%s: game instance == nullptr, coundn't run", __FUNCTION__);
+		return run_res::failed_make_new_game_instance;
 	}
+
+	_threadPool.allocateThreads("dreco-engine-worker (low)", 2, thread_pool::priority::low);
 
 	if (true == startRenderer())
 	{
 		startMainLoop();
 	}
-	return run_res::Ok;
+	return run_res::ok;
 }
 
 void engine::stop()
 {
 	if (false == _isRunning)
 	{
-		DE_LOG(Error, "Run engine first. Cannot stop.");
+		DE_LOG(Error, "%s: engine not running, nothing to stop.", __FUNCTION__);
 		return;
 	}
 	_isRunning = false;
+	_threadPool.freeThreads();
 }
 
 void engine::registerSignals()
@@ -135,11 +138,11 @@ void engine::registerSignals()
 void engine::onSystemSignal(int sig)
 {
 	if (sig == SIGFPE)
-		DE_LOG(Info, "Engine recieved floating point excetion. . . Stopping engine.");
+		DE_LOG(Info, "%s: engine recieved floating point excetion. . . stopping.", __FUNCTION__);
 	else if (sig == SIGSEGV)
-		DE_LOG(Info, "Engine recieved segment violation. . . Stopping engine.");
+		DE_LOG(Info, "%s: engine recieved segment violation. . . stopping.", __FUNCTION__);
 	else if (sig == SIGABRT || sig == SIGTERM || sig == SIGINT)
-		DE_LOG(Info, "Engine stop signal. . . Stopping engine.");
+		DE_LOG(Info, "%s: engine stop signal. . . stopping.", __FUNCTION__);
 
 	auto* eng = engine::get();
 	if (eng)

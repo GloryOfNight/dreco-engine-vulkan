@@ -9,17 +9,16 @@
 #include <string_view>
 #include <thread>
 
-struct SDL_Thread;
 struct thread_task;
-
-class thread_pool
+class thread_pool final
 {
+public:
 	enum class priority : uint8_t
 	{
 		low,
 		normal,
 		high,
-		timeCritical
+		time_critical
 	};
 	enum class task_state : uint8_t
 	{
@@ -29,15 +28,13 @@ class thread_pool
 		processed,	   // exection complete
 		done,		   // everything done
 	};
-	struct loop_info
-	{
-		thread_pool* _pool;
-		priority _priority;
-	};
 
-public:
-	thread_pool(const std::string_view name, const uint32_t threadCount, const priority priority = priority::normal);
+	thread_pool() = default;
 	~thread_pool();
+
+	void allocateThreads(const std::string_view name, const uint32_t threadCount, const priority priority = priority::normal);
+	
+	void freeThreads();
 
 	void tick(uint64_t frameCount);
 
@@ -68,7 +65,7 @@ private:
 	std::mutex _tasksMutex{};
 	std::map<thread_task::shared, std::atomic<task_state>> _tasks{};
 
-	std::vector<SDL_Thread*> _threads{};
+	std::vector<struct SDL_Thread*> _threads{};
 
 	uint64_t _totalTaskCount{};
 

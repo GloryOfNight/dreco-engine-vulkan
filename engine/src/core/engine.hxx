@@ -31,21 +31,20 @@ class DRECO_API engine
 public:
 	enum class init_res
 	{
-		Ok,
-		AlreadyInitialized,
-		AlreadyRunning,
-		FailedInitSDL,
-		FailedFindCWD,
+		ok,
+		already_initialized,
+		failed_already_running,
+		failed_init_sdl,
+		failed_find_cwd,
 	};
 
 	enum class run_res
 	{
-		Ok,
-		Unitialized,
-		InvalidGameInstance,
-		FailedMakeNewGameInstance
+		ok,
+		failed_unitialized,
+		failed_invalid_game_instance,
+		failed_make_new_game_instance
 	};
-
 
 	engine();
 	engine(const engine&) = delete;
