@@ -28,6 +28,11 @@ void thread_task::bindCallback(callback&& inCallback)
 	_callbacks.emplace_back(inCallback);
 }
 
+void thread_task::unbindAll()
+{
+	_callbacks.clear();
+}
+
 uint64_t thread_task::getId() const
 {
 	return _id;

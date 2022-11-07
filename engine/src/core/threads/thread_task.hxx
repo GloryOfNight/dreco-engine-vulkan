@@ -32,6 +32,8 @@ public:
 
 	void bindCallback(callback&& inCallback);
 
+	void unbindAll();
+
 	uint64_t getId() const;
 
 	void abort();
