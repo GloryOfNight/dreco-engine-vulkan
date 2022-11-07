@@ -1,10 +1,10 @@
 #include "vk_texture_image.hxx"
 
 #include "core/utils/log.hxx"
-
-#include "dreco.hxx"
 #include "renderer/vk_renderer.hxx"
 #include "renderer/vk_utils.hxx"
+
+#include "dreco.hxx"
 
 void vk_texture_image::create(const image_data& image)
 {
@@ -21,20 +21,15 @@ void vk_texture_image::create(const image_data& image)
 	createImage(device, format, static_cast<uint32_t>(image.getWidth()), static_cast<uint32_t>(image.getHeight()));
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
-	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
+	_deviceMemory.allocate(memoryRequirements, vk_utils::memory_property::device);
 
 	bindToMemory(device, _deviceMemory.get(), 0);
 
 	createImageView(device, format);
 	createSampler(device);
 
-	vk_buffer::create_info info;
-	info.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
-	info.size = memoryRequirements.size;
-	info.usage = vk::BufferUsageFlagBits::eTransferSrc;
-
 	vk_buffer stagingBuffer;
-	stagingBuffer.create(info);
+	stagingBuffer.allocate(vk_utils::memory_property::host, vk::BufferUsageFlagBits::eTransferSrc, memoryRequirements.size);
 	stagingBuffer.getDeviceMemory().map(image.getPixels(), image.getPixelCount());
 
 	// clang-format off

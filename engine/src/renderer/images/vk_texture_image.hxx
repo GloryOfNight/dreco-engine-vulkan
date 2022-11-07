@@ -5,8 +5,6 @@
 
 #include "renderer/vk_image.hxx"
 
-#include <string_view>
-
 class vk_texture_image final : public vk_image
 {
 public:

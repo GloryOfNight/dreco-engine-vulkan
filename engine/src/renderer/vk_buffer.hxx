@@ -1,44 +1,22 @@
 #pragma once
 #include "vk_device_memory.hxx"
 
-#include <cstdint>
-#include <vector>
 #include <vulkan/vulkan.hpp>
-
-class vk_device;
-class vk_physical_device;
-class vk_queue_family;
 
 class vk_buffer final
 {
 public:
-	struct create_info
-	{
-		vk::BufferUsageFlags usage;
-		vk::MemoryPropertyFlags memoryPropertiesFlags;
-		vk::DeviceSize size;
-
-		static inline vk::MemoryPropertyFlags deviceMemoryPropertiesFlags =
-			vk::MemoryPropertyFlagBits::eDeviceLocal;
-
-		static inline vk::MemoryPropertyFlags hostMemoryPropertiesFlags =
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
-	};
-
 	vk_buffer() = default;
 	vk_buffer(const vk_buffer&) = delete;
 	vk_buffer(vk_buffer&&) = default;
 	~vk_buffer() { destroy(); };
 
-	void create(const create_info& createInfo);
-
+	void allocate(vk::MemoryPropertyFlags memoryPropertyFlags, vk::BufferUsageFlags usage, vk::DeviceSize size);
 	void destroy();
 
 	vk::Buffer get() const;
-
-	size_t getSize() const { return _size; };
-
-	inline size_t getOffset() const { return 0; };
+	vk::DeviceSize getSize() const;
+	vk::DeviceSize getOffset() const;
 
 	vk_device_memory& getDeviceMemory();
 
@@ -49,9 +27,9 @@ public:
 private:
 	vk_device_memory _deviceMemory;
 
-	vk::Buffer _buffer;
-
-	size_t _size;
+	vk::Buffer _buffer{};
+	vk::DeviceSize _size{};
+	vk::DeviceSize _offset{};
 };
 
 class vk_buffer_region final

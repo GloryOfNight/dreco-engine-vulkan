@@ -1,51 +1,57 @@
 #include "vk_buffer.hxx"
 
-#include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 
-#include <cstring>
-
-void vk_buffer::create(const create_info& createInfo)
+void vk_buffer::allocate(vk::MemoryPropertyFlags memoryPropertyFlags, vk::BufferUsageFlags usage, vk::DeviceSize size)
 {
-	vk_renderer* renderer = vk_renderer::get();
-	const vk::Device device = renderer->getDevice();
-
-	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-
-	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
-	const std::vector<uint32_t> queueIndexes = queueFamily.getUniqueQueueIndexes(sharingMode);
+	const vk_renderer* renderer = vk_renderer::get();
+	const auto device{renderer->getDevice()};
+	const auto& queueFamily{renderer->getQueueFamily()};
+	const auto sharingMode{queueFamily.getSharingMode()};
+	const auto queueIndexes{queueFamily.getUniqueQueueIndexes(sharingMode)};
 
 	const vk::BufferCreateInfo bufferCreateInfo =
 		vk::BufferCreateInfo()
-			.setSize(createInfo.size)
-			.setUsage(createInfo.usage)
+			.setSize(size)
+			.setUsage(usage)
 			.setSharingMode(sharingMode)
 			.setQueueFamilyIndices(queueIndexes);
 
 	_buffer = device.createBuffer(bufferCreateInfo);
 
-	const vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(_buffer);
-	_deviceMemory.allocate(memoryRequirements, createInfo.memoryPropertiesFlags);
+	const vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(get());
+	_deviceMemory.allocate(memoryRequirements, memoryPropertyFlags);
 
-	device.bindBufferMemory(_buffer, _deviceMemory.get(), getOffset());
+	device.bindBufferMemory(get(), _deviceMemory.get(), getOffset());
 
-	_size = createInfo.size;
+	_size = size;
 }
 
 void vk_buffer::destroy()
 {
+	auto device = vk_renderer::get()->getDevice();
+
 	if (_buffer)
-	{
-		vk_renderer::get()->getDevice().destroyBuffer(_buffer);
-		_buffer = nullptr;
-	}
+		device.destroyBuffer(_buffer);
+	_buffer = nullptr;
+
 	_deviceMemory.free();
 }
 
 vk::Buffer vk_buffer::get() const
 {
 	return _buffer;
+}
+
+vk::DeviceSize vk_buffer::getSize() const
+{
+	return _size;
+}
+
+vk::DeviceSize vk_buffer::getOffset() const
+{
+	return _offset;
 }
 
 vk_device_memory& vk_buffer::getDeviceMemory()

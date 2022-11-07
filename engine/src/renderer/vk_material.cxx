@@ -2,7 +2,6 @@
 
 #include "vk_renderer.hxx"
 
-
 vk_material_instance::vk_material_instance(vk_material* owner)
 {
 	_owner = owner;
@@ -130,7 +129,6 @@ void vk_material_instance::bindCmd(vk::CommandBuffer commandBuffer) const
 	pipeline.bindCmd(commandBuffer);
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.getLayout(), 0, _descriptorSets, nullptr);
 }
-
 
 vk_material::~vk_material()
 {

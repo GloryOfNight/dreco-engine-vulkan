@@ -26,7 +26,7 @@ private:
 	vk::PresentModeKHR _presentMode;
 
 	vk::SampleCountFlagBits _maxSampleCount{vk::SampleCountFlagBits::e1};
-	 
+
 	vk::SampleCountFlagBits _prefferedSampleCount{vk::SampleCountFlagBits::e1};
 
 	vk::PolygonMode _polygonMode{vk::PolygonMode::eFill};

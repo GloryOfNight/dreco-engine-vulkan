@@ -1,11 +1,5 @@
 #pragma once
-#include "core/containers/gltf/material.hxx"
 
-#include "vk_buffer.hxx"
-#include "vk_shader.hxx"
-
-#include <map>
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
 class vk_material;
@@ -31,7 +25,6 @@ public:
 	vk::Pipeline get() const;
 
 protected:
-
 	void createPipelineLayout(vk::Device device);
 
 	void createPipeline(vk::Device device);

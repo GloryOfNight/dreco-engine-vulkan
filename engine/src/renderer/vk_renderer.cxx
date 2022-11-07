@@ -567,11 +567,7 @@ void vk_renderer::createSemaphores()
 
 void vk_renderer::createCameraBuffer()
 {
-	vk_buffer::create_info bufferCreateInfo{};
-	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-	bufferCreateInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
-	bufferCreateInfo.size = sizeof(camera_data);
-	_cameraDataBuffer.create(bufferCreateInfo);
+	_cameraDataBuffer.allocate(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, vk::BufferUsageFlagBits::eUniformBuffer, sizeof(camera_data));
 }
 
 void vk_renderer::drawFrame()

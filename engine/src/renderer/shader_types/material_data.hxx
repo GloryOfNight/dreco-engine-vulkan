@@ -3,8 +3,6 @@
 #include "core/containers/gltf/material.hxx"
 #include "math/vec.hxx"
 
-#include <cstdint>
-
 struct material_data
 {
 	material_data() = default;

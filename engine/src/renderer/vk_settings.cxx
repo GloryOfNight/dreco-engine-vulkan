@@ -2,8 +2,6 @@
 
 #include "vk_renderer.hxx"
 
-#include <map>
-
 static vk::SampleCountFlagBits findMaxSampleCount(const vk::PhysicalDevice physicalDevice)
 {
 	const auto limits = physicalDevice.getProperties().limits;

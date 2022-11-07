@@ -1,6 +1,5 @@
 #include "vk_image.hxx"
 
-#include "vk_queue_family.hxx"
 #include "vk_renderer.hxx"
 #include "vk_utils.hxx"
 

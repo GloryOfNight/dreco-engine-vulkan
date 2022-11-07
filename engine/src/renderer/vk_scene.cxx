@@ -7,6 +7,7 @@
 #include "vk_graphics_pipeline.hxx"
 #include "vk_material.hxx"
 #include "vk_mesh.hxx"
+#include "vk_utils.hxx"
 
 #include <iostream>
 
@@ -128,42 +129,36 @@ void vk_scene::createMeshesBuffer(const scene_meshes_info& info)
 {
 	_indexOffset = info._totalVertexSize;
 
-	vk_buffer::create_info createInfo;
-	createInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
-	createInfo.size = info._totalVertexSize + info._totalIndexSize + info._totalMaterialsSize;
-	createInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
+	auto size = info._totalVertexSize + info._totalIndexSize + info._totalMaterialsSize;
+	auto usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
 
 	vk_buffer tempBuffer;
-	tempBuffer.create(createInfo);
-
-	createInfo.memoryPropertiesFlags = vk_buffer::create_info::deviceMemoryPropertiesFlags;
-	createInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-	_meshesVIBuffer.create(createInfo);
+	tempBuffer.allocate(vk_utils::memory_property::host, usage, size);
+	
+	usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+	_meshesVIBuffer.allocate(vk_utils::memory_property::device, usage, size);
 
 	tempBuffer.getDeviceMemory().map(info._vertexMemRegions);
 	tempBuffer.getDeviceMemory().map(info._indexMemRegions, _indexOffset);
 
-	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, createInfo.size);
+	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, size);
 	vk_buffer::copyBuffer(tempBuffer.get(), _meshesVIBuffer.get(), {copyRegion});
 }
 
 void vk_scene::createMaterialsBuffer(const scene_meshes_info& info)
 {
-	vk_buffer::create_info createInfo;
-	createInfo.memoryPropertiesFlags = vk_buffer::create_info::hostMemoryPropertiesFlags;
-	createInfo.size = info._totalMaterialsSize;
-	createInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc;
+	auto size = info._totalMaterialsSize;
+	auto usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc;
 
 	vk_buffer tempBuffer;
-	tempBuffer.create(createInfo);
+	tempBuffer.allocate(vk_utils::memory_property::host, usage, size);
 
-	createInfo.memoryPropertiesFlags = vk_buffer::create_info::deviceMemoryPropertiesFlags;
-	createInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
-	_materialsBuffer.create(createInfo);
+	usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
+	_materialsBuffer.allocate(vk_utils::memory_property::device, usage, size);
 
 	tempBuffer.getDeviceMemory().map(info._materialMemRegions);
 
-	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, createInfo.size);
+	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, size);
 	vk_buffer::copyBuffer(tempBuffer.get(), _materialsBuffer.get(), {copyRegion});
 }
 
@@ -201,10 +196,10 @@ bool vk_scene::isEmpty() const
 void vk_scene::destroy()
 {
 	_textureImages.clear();
-	
+
 	_material.reset();
 	_matInstances.clear();
-	
+
 	_meshes.clear();
 	_meshesVIBuffer.destroy();
 }

@@ -20,7 +20,7 @@ public:
 
 		std::vector<vk::DescriptorPoolSize> getDescriptorPoolSizes() const;
 	};
-	
+
 	struct vertex_input_info
 	{
 		std::array<vk::VertexInputBindingDescription, 1> _bindingDesc;

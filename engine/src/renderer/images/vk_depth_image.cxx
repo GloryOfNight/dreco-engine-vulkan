@@ -15,7 +15,7 @@ void vk_depth_image::create()
 	createImage(device, _format, extent.width, extent.height, renderer->getSettings().getPrefferedSampleCount());
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
-	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
+	_deviceMemory.allocate(memoryRequirements, vk_utils::memory_property::device);
 
 	bindToMemory(device, _deviceMemory.get(), 0);
 

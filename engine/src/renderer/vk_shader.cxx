@@ -4,8 +4,6 @@
 #include "renderer/vk_renderer.hxx"
 
 #include "dreco.hxx"
-#include "vk_graphics_pipeline.hxx"
-#include "vk_mesh.hxx"
 
 #include <spirv-reflect/spirv_reflect.h>
 

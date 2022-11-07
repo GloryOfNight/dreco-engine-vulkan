@@ -1,6 +1,7 @@
 #include "vk_msaa_image.hxx"
 
 #include "renderer/vk_renderer.hxx"
+#include "renderer/vk_utils.hxx"
 
 void vk_msaa_image::create()
 {
@@ -14,7 +15,7 @@ void vk_msaa_image::create()
 	createImage(device, format, extent.width, extent.height, samples);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
-	_deviceMemory.allocate(memoryRequirements, vk_buffer::create_info::deviceMemoryPropertiesFlags);
+	_deviceMemory.allocate(memoryRequirements, vk_utils::memory_property::device);
 
 	bindToMemory(device, _deviceMemory.get(), 0);
 

@@ -29,9 +29,14 @@
 		}                                                                                    \
 	}
 
-class vk_utils
+struct vk_utils
 {
-public:
+	struct memory_property
+	{
+		constexpr static inline vk::MemoryPropertyFlags host = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+		constexpr static inline vk::MemoryPropertyFlags device = vk::MemoryPropertyFlagBits::eDeviceLocal;
+	};
+
 	struct find_supported_format_info
 	{
 		std::vector<vk::Format> _formatCandidates;

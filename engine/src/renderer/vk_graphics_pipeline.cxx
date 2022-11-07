@@ -1,17 +1,6 @@
 #include "vk_graphics_pipeline.hxx"
 
-#include "core/utils/file_utils.hxx"
-#include "math/vec3.hxx"
-
-#include "dreco.hxx"
-#include "vk_material.hxx"
-#include "vk_mesh.hxx"
 #include "vk_renderer.hxx"
-#include "vk_shader.hxx"
-#include "vk_utils.hxx"
-
-#include <array>
-#include <vector>
 
 void vk_graphics_pipeline::create(const vk_material& material)
 {

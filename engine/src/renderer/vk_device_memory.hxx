@@ -1,5 +1,4 @@
 #pragma once
-#include <vector>
 #include <vulkan/vulkan.hpp>
 
 class vk_device_memory final
