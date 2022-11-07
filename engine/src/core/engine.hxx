@@ -2,6 +2,7 @@
 #include "core/managers/event_manager.hxx"
 #include "core/managers/input_manager.hxx"
 #include "core/threads/thread_pool.hxx"
+#include "core/utils/fps_counter.hxx"
 #include "game_objects/game_instance.hxx"
 #include "renderer/vk_renderer.hxx"
 
@@ -104,6 +105,8 @@ private:
 	game_instance::unique _gameInstance;
 
 	uint64_t _frameCounter{};
+
+	fps_counter _fpsCounter;
 
 	bool _isRunning{};
 };

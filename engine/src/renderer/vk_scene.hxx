@@ -51,7 +51,10 @@ private:
 	void createMaterialsBuffer(const scene_meshes_info& info);
 
 	std::vector<std::unique_ptr<vk_texture_image>> _textureImages;
-	std::vector<std::unique_ptr<vk_material>> _materials;
+
+	vk_material::unique _material;
+	std::vector<vk_material_instance*> _matInstances;
+
 	std::vector<std::vector<std::unique_ptr<vk_mesh>>> _meshes;
 
 	uint32_t _indexOffset;

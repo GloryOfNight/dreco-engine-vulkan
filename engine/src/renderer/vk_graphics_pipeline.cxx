@@ -43,7 +43,7 @@ void vk_graphics_pipeline::destroy()
 	}
 }
 
-void vk_graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer)
+void vk_graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer) const
 {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 }

@@ -24,7 +24,7 @@ public:
 
 	void destroy();
 
-	void bindCmd(vk::CommandBuffer commandBuffer);
+	void bindCmd(vk::CommandBuffer commandBuffer) const;
 
 	vk::PipelineLayout getLayout() const;
 

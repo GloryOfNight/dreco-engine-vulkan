@@ -53,7 +53,6 @@ void vk_scene::create(const gltf::model& m)
 	}
 
 	info._materialMemRegions.reserve(totalPipelines);
-	_materials.reserve(totalPipelines);
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
 		materialsData[i] = material_data(m._materials[i]);
@@ -65,12 +64,15 @@ void vk_scene::create(const gltf::model& m)
 	createMeshesBuffer(info);
 	createMaterialsBuffer(info);
 
+	auto vert = renderer->loadShader(DRECO_SHADER("basic.vert.spv"));
+	auto frag = renderer->loadShader(DRECO_SHADER("basic.frag.spv"));
+	_material = vk_material::makeNew(vert, frag, totalPipelines);
+
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
 		const auto& matData = materialsData[i];
-		auto& mat = _materials.emplace_back(new vk_material());
-		mat->setShaderVert(renderer->loadShader(DRECO_SHADER("basic.vert.spv")));
-		mat->setShaderFrag(renderer->loadShader(DRECO_SHADER("basic.frag.spv")));
+
+		auto& mat = _matInstances.emplace_back(&_material->makeInstance());
 
 		mat->setBufferDependency("cameraData", renderer->getCameraDataBuffer());
 
@@ -89,8 +91,6 @@ void vk_scene::create(const gltf::model& m)
 			mat->setImageDependecy("normal", _textureImages[normalIndex].get());
 
 		mat->setBufferDependency("mat", _materialsBuffer);
-
-		mat->init();
 		mat->updateDescriptorSets();
 	}
 }
@@ -169,10 +169,7 @@ void vk_scene::createMaterialsBuffer(const scene_meshes_info& info)
 
 void vk_scene::recreatePipelines()
 {
-	for (auto& mat : _materials)
-	{
-		mat->recreatePipeline();
-	}
+	_material->recreatePipeline();
 }
 
 void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
@@ -181,10 +178,10 @@ void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 	commandBuffer.bindVertexBuffers(0, _meshesVIBuffer.get(), offsets);
 	commandBuffer.bindIndexBuffer(_meshesVIBuffer.get(), _indexOffset, vk::IndexType::eUint32);
 
-	const size_t totalMaterials = _materials.size();
+	const size_t totalMaterials = _matInstances.size();
 	for (size_t i = 0; i < totalMaterials; ++i)
 	{
-		auto& mat = _materials[i];
+		auto& mat = _matInstances[i];
 		auto& meshes = _meshes[i];
 
 		mat->bindCmd(commandBuffer);
@@ -204,7 +201,10 @@ bool vk_scene::isEmpty() const
 void vk_scene::destroy()
 {
 	_textureImages.clear();
-	_materials.clear();
+	
+	_material.reset();
+	_matInstances.clear();
+	
 	_meshes.clear();
 	_meshesVIBuffer.destroy();
 }
