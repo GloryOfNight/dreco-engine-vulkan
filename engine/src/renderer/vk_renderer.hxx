@@ -1,15 +1,15 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
+#include "images/vk_depth_image.hxx"
+#include "images/vk_msaa_image.hxx"
+#include "images/vk_texture_image.hxx"
 #include "renderer/shader_types/camera_data.hxx"
 
 #include "vk_buffer.hxx"
-#include "vk_depth_image.hxx"
 #include "vk_graphics_pipeline.hxx"
-#include "vk_msaa_image.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_scene.hxx"
 #include "vk_settings.hxx"
-#include "vk_texture_image.hxx"
 
 #include <map>
 #include <memory>

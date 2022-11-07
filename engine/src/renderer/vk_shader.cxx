@@ -9,6 +9,20 @@
 
 #include <spirv-reflect/spirv_reflect.h>
 
+
+std::vector<vk::DescriptorPoolSize> vk_shader::descripted_data::getDescriptorPoolSizes() const
+{
+	std::vector<vk::DescriptorPoolSize> poolSizes(_descriptorSetLayoutBindings.size(), vk::DescriptorPoolSize());
+	for (uint8_t i = 0; i < poolSizes.size(); i++)
+	{
+		const auto& binding = _descriptorSetLayoutBindings[i];
+		poolSizes[i] = vk::DescriptorPoolSize()
+						   .setType(binding.descriptorType)
+						   .setDescriptorCount(binding.descriptorCount);
+	}
+	return poolSizes;
+}
+
 vk_shader::~vk_shader()
 {
 	destroy();
@@ -64,9 +78,9 @@ vk::PipelineShaderStageCreateInfo vk_shader::getPipelineShaderStageCreateInfo() 
 		.setPName(_reflModule.entry_point_name);
 }
 
-std::vector<vk_descriptor_shader_data> vk_shader::getDescirptorShaderData() const noexcept
+std::vector<vk_shader::descripted_data> vk_shader::getDescirptorShaderData() const noexcept
 {
-	std::vector<vk_descriptor_shader_data> out(_reflModule.descriptor_set_count, vk_descriptor_shader_data());
+	std::vector<descripted_data> out(_reflModule.descriptor_set_count, descripted_data());
 	for (uint8_t i = 0; i < _reflModule.descriptor_set_count; i++)
 	{
 		const auto& reflDescSet = _reflModule.descriptor_sets[i];
@@ -106,9 +120,9 @@ std::vector<vk::PushConstantRange> vk_shader::getPushConstantRanges() const noex
 	return out;
 }
 
-vk_shader::vk_vertex_input_info vk_shader::getVertexInputInfo() const noexcept
+vk_shader::vertex_input_info vk_shader::getVertexInputInfo() const noexcept
 {
-	vk_vertex_input_info out;
+	vertex_input_info out;
 	out._attributeDesc.resize(_reflModule.input_variable_count);
 
 	std::vector<size_t> sizes(_reflModule.input_variable_count, size_t());
@@ -133,17 +147,4 @@ vk_shader::vk_vertex_input_info vk_shader::getVertexInputInfo() const noexcept
 		out._bindingDesc[0].stride += sizes[i];
 	}
 	return out;
-}
-
-std::vector<vk::DescriptorPoolSize> vk_descriptor_shader_data::getDescriptorPoolSizes() const
-{
-	std::vector<vk::DescriptorPoolSize> poolSizes(_descriptorSetLayoutBindings.size(), vk::DescriptorPoolSize());
-	for (uint8_t i = 0; i < poolSizes.size(); i++)
-	{
-		const auto& binding = _descriptorSetLayoutBindings[i];
-		poolSizes[i] = vk::DescriptorPoolSize()
-						   .setType(binding.descriptorType)
-						   .setDescriptorCount(binding.descriptorCount);
-	}
-	return poolSizes;
 }

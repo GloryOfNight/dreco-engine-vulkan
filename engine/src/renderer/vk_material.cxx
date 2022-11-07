@@ -92,7 +92,7 @@ void vk_material::createDescriptorSets()
 {
 	auto device = vk_renderer::get()->getDevice();
 
-	std::vector<vk_descriptor_shader_data> shadersDataSets;
+	std::vector<vk_shader::descripted_data> shadersDataSets;
 	{
 		auto dataSets = _vert->getDescirptorShaderData();
 		std::move(dataSets.begin(), dataSets.end(), std::back_inserter(shadersDataSets));

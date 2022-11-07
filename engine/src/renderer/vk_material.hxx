@@ -1,9 +1,10 @@
 #pragma once
 
+#include "images/vk_texture_image.hxx"
+
 #include "vk_buffer.hxx"
 #include "vk_graphics_pipeline.hxx"
 #include "vk_shader.hxx"
-#include "vk_texture_image.hxx"
 
 #include <map>
 #include <memory>
@@ -11,7 +12,7 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-class vk_material
+class vk_material final
 {
 public:
 	vk_material() = default;
@@ -33,9 +34,9 @@ public:
 	template <typename Str>
 	void setBufferDependencySize(Str&& inName, size_t size);
 
-	template<typename Str>
+	template <typename Str>
 	void setImageDependecy(Str&& inName, const vk_texture_image* inImage, size_t arrayIndex = 0);
-		
+
 	template <typename Str>
 	void setImageDependecySize(Str&& inName, size_t size);
 

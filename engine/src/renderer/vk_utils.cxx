@@ -4,17 +4,17 @@ vk::Format vk_utils::findSupportedFormat(const vk::PhysicalDevice physicalDevice
 {
 	if (physicalDevice)
 	{
-		for (const vk::Format format : info.formatCandidates)
+		for (const vk::Format format : info._formatCandidates)
 		{
 			const vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
 
-			if (info.imageTiling == vk::ImageTiling::eLinear &&
-				(formatProperties.linearTilingFeatures & info.formatFeatureFlags) == info.formatFeatureFlags)
+			if (info._imageTiling == vk::ImageTiling::eLinear &&
+				(formatProperties.linearTilingFeatures & info._formatFeatureFlags) == info._formatFeatureFlags)
 			{
 				return format;
 			}
-			else if (info.imageTiling == vk::ImageTiling::eOptimal &&
-					 (formatProperties.optimalTilingFeatures & info.formatFeatureFlags) == info.formatFeatureFlags)
+			else if (info._imageTiling == vk::ImageTiling::eOptimal &&
+					 (formatProperties.optimalTilingFeatures & info._formatFeatureFlags) == info._formatFeatureFlags)
 			{
 				return format;
 			}

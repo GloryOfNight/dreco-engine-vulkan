@@ -1,7 +1,7 @@
 #include "vk_depth_image.hxx"
 
-#include "vk_renderer.hxx"
-#include "vk_utils.hxx"
+#include "renderer/vk_renderer.hxx"
+#include "renderer/vk_utils.hxx"
 
 void vk_depth_image::create()
 {
@@ -63,9 +63,9 @@ vk::Format vk_depth_image::findSupportedDepthFormat() const
 {
 	const vk::PhysicalDevice physicalDevice = vk_renderer::get()->getPhysicalDevice();
 	vk_utils::find_supported_format_info findSupportedFormatInfo{};
-	findSupportedFormatInfo.formatCandidates = {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
-	findSupportedFormatInfo.imageTiling = vk::ImageTiling::eOptimal;
-	findSupportedFormatInfo.formatFeatureFlags = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+	findSupportedFormatInfo._formatCandidates = {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
+	findSupportedFormatInfo._imageTiling = vk::ImageTiling::eOptimal;
+	findSupportedFormatInfo._formatFeatureFlags = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
 
 	return vk_utils::findSupportedFormat(physicalDevice, findSupportedFormatInfo);
 }

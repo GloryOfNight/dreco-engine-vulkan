@@ -1,12 +1,12 @@
 #include "vk_scene.hxx"
 
 #include "core/engine.hxx"
+#include "images/vk_texture_image.hxx"
 #include "shader_types/material_data.hxx"
 
 #include "vk_graphics_pipeline.hxx"
 #include "vk_material.hxx"
 #include "vk_mesh.hxx"
-#include "vk_texture_image.hxx"
 
 #include <iostream>
 

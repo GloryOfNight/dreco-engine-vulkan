@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_image.hxx"
+#include "renderer/vk_image.hxx"
 
 class vk_depth_image final : public vk_image
 {

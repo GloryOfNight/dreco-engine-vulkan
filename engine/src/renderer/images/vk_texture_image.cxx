@@ -3,8 +3,8 @@
 #include "core/utils/log.hxx"
 
 #include "dreco.hxx"
-#include "vk_renderer.hxx"
-#include "vk_utils.hxx"
+#include "renderer/vk_renderer.hxx"
+#include "renderer/vk_utils.hxx"
 
 void vk_texture_image::create(const image_data& image)
 {

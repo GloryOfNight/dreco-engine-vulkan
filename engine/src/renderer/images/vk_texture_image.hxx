@@ -3,11 +3,11 @@
 #include "core/containers/gltf/image.hxx"
 #include "core/containers/image_data.hxx"
 
-#include "vk_image.hxx"
+#include "renderer/vk_image.hxx"
 
 #include <string_view>
 
-class vk_texture_image : public vk_image
+class vk_texture_image final : public vk_image
 {
 public:
 	vk_texture_image() = default;

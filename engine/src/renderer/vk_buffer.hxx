@@ -54,7 +54,7 @@ private:
 	size_t _size;
 };
 
-class vk_buffer_region
+class vk_buffer_region final
 {
 public:
 	vk_buffer_region() = default;

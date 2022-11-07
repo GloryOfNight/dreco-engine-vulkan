@@ -1,7 +1,8 @@
 #pragma once
-#include "vk_image.hxx"
 
-class vk_msaa_image : public vk_image
+#include "renderer/vk_image.hxx"
+
+class vk_msaa_image final : public vk_image
 {
 public:
 	void create();

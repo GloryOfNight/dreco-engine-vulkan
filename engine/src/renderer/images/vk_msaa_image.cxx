@@ -1,12 +1,12 @@
 #include "vk_msaa_image.hxx"
 
-#include "vk_renderer.hxx"
+#include "renderer/vk_renderer.hxx"
 
 void vk_msaa_image::create()
 {
 	const vk_renderer* renderer{vk_renderer::get()};
 	const vk::Device device = renderer->getDevice();
-	
+
 	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::Format format = renderer->getSettings().getSurfaceFormat().format;
 	const vk::SampleCountFlagBits samples = renderer->getSettings().getPrefferedSampleCount();
@@ -21,7 +21,7 @@ void vk_msaa_image::create()
 	createImageView(device, format);
 }
 
-void vk_msaa_image::recreate() 
+void vk_msaa_image::recreate()
 {
 	destroy();
 	create();
