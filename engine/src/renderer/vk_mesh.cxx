@@ -11,7 +11,7 @@ void vk_mesh::init(uint32_t vertexCount, size_t vertexSize, uint32_t vertexOffse
 	_indexOffset = indexOffset;
 }
 
-void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const
+void vk_mesh::drawCmd(vk::CommandBuffer commandBuffer) const
 {
 	// draw indexed or draw just verts
 	if (_indexCount)
@@ -22,4 +22,14 @@ void vk_mesh::bindToCmdBuffer(const vk::CommandBuffer commandBuffer) const
 	{
 		commandBuffer.draw(_vertexSize, 1, _vertexOffset, 0);
 	}
+}
+
+vk::DeviceSize vk_mesh::getVertexSize() const
+{
+	return _vertexSize;
+}
+
+vk::DeviceSize vk_mesh::getIndexSize() const
+{
+	return _indexSize;
 }

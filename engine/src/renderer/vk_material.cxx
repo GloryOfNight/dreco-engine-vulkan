@@ -70,9 +70,9 @@ std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material_instanc
 		{
 			const auto buffer = bufferBind[k];
 			auto info = vk::DescriptorBufferInfo()
-							.setBuffer(buffer.getBuffer().get())
+							.setBuffer(buffer->get())
 							.setOffset(0)
-							.setRange(buffer.getSize());
+							.setRange(buffer->getSize());
 			descBufferInfo.first->second.push_back(info);
 		}
 	}
@@ -186,7 +186,7 @@ void vk_material::recreatePipeline()
 	_pipeline.recreatePipeline();
 }
 
-void vk_material::resizeDescriptorPool(size_t newSize)
+void vk_material::resizeDescriptorPool(uint32_t newSize)
 {
 	auto device = vk_renderer::get()->getDevice();
 

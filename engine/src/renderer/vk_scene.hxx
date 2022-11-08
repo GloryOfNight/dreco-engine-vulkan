@@ -58,6 +58,6 @@ private:
 	std::vector<std::vector<std::unique_ptr<vk_mesh>>> _meshes;
 
 	uint32_t _indexOffset;
-	vk_buffer_pool::buffer_id _meshesVIBufferId;
-	vk_buffer_pool::buffer_id _materialsBufferId;
+	vk_buffer::id _meshesVIBufferId;
+	vk_buffer::id _materialsBufferId;
 };

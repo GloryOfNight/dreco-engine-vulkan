@@ -118,7 +118,7 @@ void vk_buffer_pool::destroy()
 	_deviceMemory.free();
 }
 
-vk_buffer_pool::buffer_id vk_buffer_pool::makeBuffer(vk::DeviceSize size)
+vk_buffer::id vk_buffer_pool::makeBuffer(vk::DeviceSize size)
 {
 	// emplacing ruins everything
 	auto buffer = std::make_unique<vk_buffer>();
@@ -130,7 +130,7 @@ vk_buffer_pool::buffer_id vk_buffer_pool::makeBuffer(vk::DeviceSize size)
 	if (std::numeric_limits<vk::DeviceSize>::max() == offset)
 	{
 		throw vk_except::out_of_space();
-		return std::numeric_limits<buffer_id>::max();
+		return std::numeric_limits<vk_buffer::id>::max();
 	}
 
 	buffer->bind(_deviceMemory, offset);
@@ -139,7 +139,7 @@ vk_buffer_pool::buffer_id vk_buffer_pool::makeBuffer(vk::DeviceSize size)
 	return id;
 }
 
-void* vk_buffer_pool::map(buffer_id id)
+void* vk_buffer_pool::map(vk_buffer::id id)
 {
 	const auto& buffer = _buffers.at(id);
 
@@ -147,18 +147,18 @@ void* vk_buffer_pool::map(buffer_id id)
 	return device.mapMemory(_deviceMemory.get(), buffer->getOffset(), buffer->getSize());
 }
 
-void vk_buffer_pool::unmap(buffer_id id)
+void vk_buffer_pool::unmap(vk_buffer::id id)
 {
 	const vk::Device device{vk_renderer::get()->getDevice()};
 	device.unmapMemory(_deviceMemory.get());
 }
 
-void vk_buffer_pool::freeBuffer(buffer_id id)
+void vk_buffer_pool::freeBuffer(vk_buffer::id id)
 {
 	_buffers.erase(id);
 }
 
-const vk_buffer& vk_buffer_pool::getBuffer(buffer_id id) const
+const vk_buffer& vk_buffer_pool::getBuffer(vk_buffer::id id) const
 {
 	return *_buffers.at(id);
 }

@@ -255,7 +255,7 @@ static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 	{
 		image._image = image_data::load(dModel._rootPath + '/' + image._uri);
 	};
-	std::for_each(std::execution::par_unseq, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
+	std::for_each(std::execution::par, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }
 
 gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)

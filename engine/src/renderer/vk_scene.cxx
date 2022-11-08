@@ -75,7 +75,7 @@ void vk_scene::create(const gltf::model& m)
 
 		auto& mat = _matInstances.emplace_back(&_material->makeInstance());
 
-		mat->setBufferDependency("cameraData", renderer->getCameraDataBuffer());
+		mat->setBufferDependency("cameraData", &renderer->getCameraDataBuffer());
 
 		const auto baseColorIndex = m._materials[i]._pbrMetallicRoughness._baseColorTexture._index;
 		const auto metallicRoughnessIndex = m._materials[i]._pbrMetallicRoughness._metallicRoughnessTexture._index;
@@ -91,7 +91,7 @@ void vk_scene::create(const gltf::model& m)
 		if (matData._hasNormal)
 			mat->setImageDependecy("normal", _textureImages[normalIndex].get());
 
-		mat->setBufferDependency("mat", renderer->getUniformBufferPool().getBuffer(_materialsBufferId));
+		mat->setBufferDependency("mat", &renderer->getUniformBufferPool().getBuffer(_materialsBufferId));
 		mat->updateDescriptorSets();
 	}
 }
@@ -202,7 +202,7 @@ void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 		for (auto& mesh : meshes)
 		{
 			commandBuffer.pushConstants(mat->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(mat4), &mesh->_mat);
-			mesh->bindToCmdBuffer(commandBuffer);
+			mesh->drawCmd(commandBuffer);
 		}
 	}
 }

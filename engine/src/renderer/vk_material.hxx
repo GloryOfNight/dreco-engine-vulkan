@@ -22,8 +22,8 @@ public:
 
 	vk::PipelineLayout getPipelineLayout() const;
 
-	template <typename Str, typename Buf>
-	void setBufferDependency(Str&& inName, Buf& inBuffer, size_t arrayIndex = 0);
+	template <typename Str>
+	void setBufferDependency(Str&& inName, const vk_buffer* inBuffer, size_t arrayIndex = 0);
 
 	template <typename Str>
 	void setBufferDependencySize(Str&& inName, size_t size);
@@ -47,7 +47,7 @@ private:
 
 	std::vector<vk::DescriptorSet> _descriptorSets;
 
-	std::map<std::string, std::vector<vk_buffer_region>> _buffers;
+	std::map<std::string, std::vector<const vk_buffer*>> _buffers;
 	std::map<std::string, std::vector<const vk_texture_image*>> _images;
 	std::map<std::string, std::vector<vk_buffer*>> _ownedBuffers;
 };
@@ -68,7 +68,7 @@ public:
 
 	void recreatePipeline();
 
-	void resizeDescriptorPool(size_t newSize);
+	void resizeDescriptorPool(uint32_t newSize);
 
 	const std::vector<vk::DescriptorSetLayout>& getDescriptorSetLayouts() const;
 	vk::DescriptorPool getDescriptorPool() const;
@@ -101,11 +101,11 @@ private:
 	std::vector<vk_material_instance> _instances;
 };
 
-template <typename Str, typename Buf>
-void vk_material_instance::setBufferDependency(Str&& inName, Buf& inBuffer, size_t arrayIndex)
+template <typename Str>
+void vk_material_instance::setBufferDependency(Str&& inName, const vk_buffer* inBuffer, size_t arrayIndex)
 {
-	auto it = _buffers.try_emplace(std::forward<Str>(inName), std::vector<vk_buffer_region>(1, vk_buffer_region()));
-	it.first->second[arrayIndex] = vk_buffer_region(std::forward<Buf>(inBuffer));
+	auto it = _buffers.try_emplace(std::forward<Str>(inName), std::vector<const vk_buffer*>(1, nullptr));
+	it.first->second[arrayIndex] = inBuffer;
 }
 
 template <typename Str>

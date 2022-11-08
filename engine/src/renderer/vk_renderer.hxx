@@ -172,7 +172,7 @@ private:
 	vk_depth_image _depthImage;
 
 	camera_data _cameraData;
-	vk_buffer_pool::buffer_id _cameraDataBufferId{std::numeric_limits<vk_buffer_pool::buffer_id>::max()};
+	vk_buffer::id _cameraDataBufferId{std::numeric_limits<vk_buffer::id>::max()};
 
 	vk_buffer_pool _bpVertIndx;
 	vk_buffer_pool _bpUniforms;
