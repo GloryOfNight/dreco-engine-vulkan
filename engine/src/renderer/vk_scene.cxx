@@ -91,7 +91,7 @@ void vk_scene::create(const gltf::model& m)
 		if (matData._hasNormal)
 			mat->setImageDependecy("normal", _textureImages[normalIndex].get());
 
-		mat->setBufferDependency("mat", _materialsBuffer);
+		mat->setBufferDependency("mat", renderer->getUniformBufferPool().getBuffer(_materialsBufferId));
 		mat->updateDescriptorSets();
 	}
 }
@@ -129,37 +129,54 @@ void vk_scene::createMeshesBuffer(const scene_meshes_info& info)
 {
 	_indexOffset = info._totalVertexSize;
 
-	auto size = info._totalVertexSize + info._totalIndexSize + info._totalMaterialsSize;
-	auto usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferSrc;
+	const auto size = info._totalVertexSize + info._totalIndexSize + info._totalMaterialsSize;
 
-	vk_buffer tempBuffer;
-	tempBuffer.allocate(vk_utils::memory_property::host, usage, size);
-	
-	usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-	_meshesVIBuffer.allocate(vk_utils::memory_property::device, usage, size);
+	auto renderer = vk_renderer::get();
+	auto& bpTransfer = renderer->getTransferBufferPool();
+	auto& bpVertIndx = renderer->getVertIndxBufferPool();
 
-	tempBuffer.getDeviceMemory().map(info._vertexMemRegions);
-	tempBuffer.getDeviceMemory().map(info._indexMemRegions, _indexOffset);
+	const auto transferBufferId = bpTransfer.makeBuffer(size);
+	auto region = bpTransfer.map(transferBufferId);
+	for (const auto& reg : info._vertexMemRegions)
+	{
+		memcpy(reinterpret_cast<uint8_t*>(region) + reg.offset, reg.data, reg.size);
+	}
+	for (const auto& reg : info._indexMemRegions)
+	{
+		memcpy(reinterpret_cast<uint8_t*>(region) + reg.offset + _indexOffset, reg.data, reg.size);
+	}
+	bpTransfer.unmap(transferBufferId);
+
+	_meshesVIBufferId = bpVertIndx.makeBuffer(size);
 
 	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, size);
-	vk_buffer::copyBuffer(tempBuffer.get(), _meshesVIBuffer.get(), {copyRegion});
+	vk_buffer::copyBuffer(bpTransfer.getBuffer(transferBufferId).get(), bpVertIndx.getBuffer(_meshesVIBufferId).get(), {copyRegion});
+
+	bpTransfer.freeBuffer(transferBufferId);
 }
 
 void vk_scene::createMaterialsBuffer(const scene_meshes_info& info)
 {
 	auto size = info._totalMaterialsSize;
-	auto usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferSrc;
 
-	vk_buffer tempBuffer;
-	tempBuffer.allocate(vk_utils::memory_property::host, usage, size);
+	auto renderer = vk_renderer::get();
+	auto& bpTransfer = renderer->getTransferBufferPool();
+	auto& bpUniform = renderer->getUniformBufferPool();
 
-	usage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
-	_materialsBuffer.allocate(vk_utils::memory_property::device, usage, size);
+	const auto transferBufferId = bpTransfer.makeBuffer(size);
+	auto region = bpTransfer.map(transferBufferId);
+	for (const auto& reg : info._materialMemRegions)
+	{
+		memcpy(reinterpret_cast<uint8_t*>(region) + reg.offset, reg.data, reg.size);
+	}
+	bpTransfer.unmap(transferBufferId);
 
-	tempBuffer.getDeviceMemory().map(info._materialMemRegions);
+	_materialsBufferId = bpUniform.makeBuffer(size);
 
 	const vk::BufferCopy copyRegion = vk::BufferCopy(0, 0, size);
-	vk_buffer::copyBuffer(tempBuffer.get(), _materialsBuffer.get(), {copyRegion});
+	vk_buffer::copyBuffer(bpTransfer.getBuffer(transferBufferId).get(), bpUniform.getBuffer(_materialsBufferId).get(), {copyRegion});
+
+	bpTransfer.freeBuffer(transferBufferId);
 }
 
 void vk_scene::recreatePipelines()
@@ -169,9 +186,11 @@ void vk_scene::recreatePipelines()
 
 void vk_scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 {
+	const auto vertIndexBuffer = vk_renderer::get()->getVertIndxBufferPool().getBuffer(_meshesVIBufferId).get();
+
 	std::array<vk::DeviceSize, 1> offsets{0};
-	commandBuffer.bindVertexBuffers(0, _meshesVIBuffer.get(), offsets);
-	commandBuffer.bindIndexBuffer(_meshesVIBuffer.get(), _indexOffset, vk::IndexType::eUint32);
+	commandBuffer.bindVertexBuffers(0, vertIndexBuffer, offsets);
+	commandBuffer.bindIndexBuffer(vertIndexBuffer, _indexOffset, vk::IndexType::eUint32);
 
 	const size_t totalMaterials = _matInstances.size();
 	for (size_t i = 0; i < totalMaterials; ++i)
@@ -201,7 +220,10 @@ void vk_scene::destroy()
 	_matInstances.clear();
 
 	_meshes.clear();
-	_meshesVIBuffer.destroy();
+
+	auto renderer = vk_renderer::get();
+	renderer->getVertIndxBufferPool().freeBuffer(_meshesVIBufferId);
+	renderer->getUniformBufferPool().freeBuffer(_materialsBufferId);
 }
 
 const vk_texture_image& vk_scene::getTextureImageFromIndex(uint32_t index) const

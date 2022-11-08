@@ -78,7 +78,16 @@ public:
 
 	const vk_texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
-	const vk_buffer& getCameraDataBuffer() const { return _cameraDataBuffer; };
+	const vk_buffer_pool& getVertIndxBufferPool() const { return _bpVertIndx; };
+	vk_buffer_pool& getVertIndxBufferPool() { return _bpVertIndx; };
+
+	const vk_buffer_pool& getUniformBufferPool() const { return _bpUniforms; };
+	vk_buffer_pool& getUniformBufferPool() { return _bpUniforms; };
+
+	const vk_buffer_pool& getTransferBufferPool() const { return _bpTransfer; };
+	vk_buffer_pool& getTransferBufferPool() { return _bpTransfer; };
+
+	const vk_buffer& getCameraDataBuffer() const { return getUniformBufferPool().getBuffer(_cameraDataBufferId); };
 
 	vk::CommandBuffer beginSingleTimeTransferCommands();
 
@@ -121,6 +130,8 @@ protected:
 
 	void createSemaphores();
 
+	void createBufferPools();
+
 	void createCameraBuffer();
 
 	void cleanupSwapchain(vk::SwapchainKHR swapchain);
@@ -161,7 +172,11 @@ private:
 	vk_depth_image _depthImage;
 
 	camera_data _cameraData;
-	vk_buffer _cameraDataBuffer;
+	vk_buffer_pool::buffer_id _cameraDataBufferId{std::numeric_limits<vk_buffer_pool::buffer_id>::max()};
+
+	vk_buffer_pool _bpVertIndx;
+	vk_buffer_pool _bpUniforms;
+	vk_buffer_pool _bpTransfer;
 
 	std::map<std::string, vk_shader::shared> _shaders;
 

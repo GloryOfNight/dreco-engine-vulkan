@@ -28,9 +28,11 @@ void vk_texture_image::create(const image_data& image)
 	createImageView(device, format);
 	createSampler(device);
 
-	vk_buffer stagingBuffer;
-	stagingBuffer.allocate(vk_utils::memory_property::host, vk::BufferUsageFlagBits::eTransferSrc, memoryRequirements.size);
-	stagingBuffer.getDeviceMemory().map(image.getPixels(), image.getPixelCount());
+	auto& bpTransfer = renderer->getTransferBufferPool();
+	const auto transferBufferId = bpTransfer.makeBuffer(memoryRequirements.size);
+	auto region = bpTransfer.map(transferBufferId);
+	std::memcpy(region, image.getPixels(), image.getPixelCount());
+	bpTransfer.unmap(transferBufferId);
 
 	// clang-format off
 	const std::array<vk::Semaphore, 2> semaphores =
@@ -55,7 +57,7 @@ void vk_texture_image::create(const image_data& image)
 
 	commandBuffers[0] = transitionImageLayout(transitionLayoutInfo);
 
-	commandBuffers[1] = vk_buffer::copyBufferToImage(stagingBuffer.get(), _image, vk::ImageLayout::eTransferDstOptimal,
+	commandBuffers[1] = vk_buffer::copyBufferToImage(bpTransfer.getBuffer(transferBufferId), _image, vk::ImageLayout::eTransferDstOptimal,
 		static_cast<uint32_t>(image.getWidth()), static_cast<uint32_t>(image.getHeight()));
 
 	transitionLayoutInfo._layoutOld = vk::ImageLayout::eTransferDstOptimal;
@@ -99,6 +101,8 @@ void vk_texture_image::create(const image_data& image)
 	device.destroySemaphore(semaphores[1]);
 
 	device.freeCommandBuffers(renderer->getTransferCommandPool(), commandBuffers);
+
+	bpTransfer.freeBuffer(transferBufferId);
 }
 
 void vk_texture_image::destroy()

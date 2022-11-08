@@ -6,6 +6,7 @@
 #include "game_objects/camera.hxx"
 
 #include "dreco.hxx"
+#include "vk_exceptions.hxx"
 #include "vk_mesh.hxx"
 #include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
@@ -13,7 +14,6 @@
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
 #include <chrono>
-#include <stdexcept>
 
 #define VK_USE_DEBUG true
 
@@ -86,6 +86,7 @@ void vk_renderer::init()
 	createFences();
 	createSemaphores();
 
+	createBufferPools();
 	createCameraBuffer();
 
 	_placeholderTextureImage.create(image_data::makePlaceholder());
@@ -111,7 +112,6 @@ void vk_renderer::exit()
 	cleanupSwapchain(_swapchain);
 
 	_placeholderTextureImage.destroy();
-	_cameraDataBuffer.destroy();
 
 	_device.destroySemaphore(_semaphoreImageAvaible);
 	_device.destroySemaphore(_semaphoreRenderFinished);
@@ -124,6 +124,9 @@ void vk_renderer::exit()
 
 	_depthImage.destroy();
 	_msaaImage.destroy();
+	_bpVertIndx.destroy();
+	_bpUniforms.destroy();
+	_bpTransfer.destroy();
 	_device.destroy();
 
 	_instance.destroy(_surface);
@@ -307,7 +310,7 @@ void vk_renderer::createPhysicalDevice()
 
 	if (!_physicalDevice)
 	{
-		throw std::runtime_error("No supported GPU found!");
+		throw vk_except::no_gpu();
 	}
 }
 
@@ -565,9 +568,24 @@ void vk_renderer::createSemaphores()
 	_semaphoreRenderFinished = _device.createSemaphore(vk::SemaphoreCreateInfo());
 }
 
+void vk_renderer::createBufferPools()
+{
+	constexpr auto vertIndxUsage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+	constexpr auto vertIndxSize = 256 * 1024 * 1024;
+	_bpVertIndx.allocate(vk_utils::memory_property::device, vertIndxUsage, vertIndxSize);
+
+	constexpr auto uniformsUsage = vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst;
+	constexpr auto uniformsSize = 64 * 1024 * 1024;
+	_bpUniforms.allocate(vk_utils::memory_property::device, vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst, uniformsSize);
+
+	constexpr auto transferUsage = vk::BufferUsageFlagBits::eTransferSrc;
+	constexpr auto transferSize = 256 * 1024 * 1024;
+	_bpTransfer.allocate(vk_utils::memory_property::host, transferUsage, transferSize);
+}
+
 void vk_renderer::createCameraBuffer()
 {
-	_cameraDataBuffer.allocate(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, vk::BufferUsageFlagBits::eUniformBuffer, sizeof(camera_data));
+	_cameraDataBufferId = getUniformBufferPool().makeBuffer(sizeof(camera_data));
 }
 
 void vk_renderer::drawFrame()
@@ -650,7 +668,16 @@ void vk_renderer::setCameraData(const mat4& inView, const mat4 inProj)
 
 void vk_renderer::updateCameraBuffer()
 {
-	_cameraDataBuffer.getDeviceMemory().map(&_cameraData, sizeof(_cameraData));
+	constexpr auto size = sizeof(_cameraData);
+
+	static const auto id = _bpTransfer.makeBuffer(size);
+
+	auto region = _bpTransfer.map(id);
+	std::memcpy(region, &_cameraData, size);
+	_bpTransfer.unmap(id);
+
+	const auto copyRegion = vk::BufferCopy(0, 0, size);
+	vk_buffer::copyBuffer(_bpTransfer.getBuffer(id).get(), _bpUniforms.getBuffer(_cameraDataBufferId).get(), {copyRegion});
 }
 
 bool vk_renderer::updateExtent()

@@ -71,7 +71,7 @@ std::map<std::string, std::vector<vk::DescriptorBufferInfo>> vk_material_instanc
 			const auto buffer = bufferBind[k];
 			auto info = vk::DescriptorBufferInfo()
 							.setBuffer(buffer.getBuffer().get())
-							.setOffset(buffer.getOffset())
+							.setOffset(0)
 							.setRange(buffer.getSize());
 			descBufferInfo.first->second.push_back(info);
 		}
