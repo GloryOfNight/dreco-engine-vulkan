@@ -324,11 +324,11 @@ void vk_renderer::createDevice()
 
 	for (size_t i = 0; i < queueFamilyProperties.size(); ++i)
 	{
-		constexpr float priority = 1.F;
+		constexpr std::array<float, 1> priorities{1.F};
 		queueCreateInfoList.emplace_back()
 			.setQueueFamilyIndex(i)
-			.setQueueCount(1)
-			.setQueuePriorities(priority);
+			.setQueueCount(priorities.size())
+			.setQueuePriorities(priorities);
 	}
 
 	const std::vector<const char*> enabledExtensions{"VK_KHR_swapchain"};
