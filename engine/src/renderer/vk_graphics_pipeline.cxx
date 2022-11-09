@@ -115,7 +115,7 @@ void vk_graphics_pipeline::createPipeline(vk::Device device)
 										.setMinSampleShading(1.0F)
 										.setPSampleMask(nullptr)
 										.setAlphaToCoverageEnable(VK_TRUE)
-										.setAlphaToOneEnable(VK_TRUE);
+										.setAlphaToOneEnable(VK_FALSE);
 
 	const auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
 									   .setDepthTestEnable(VK_TRUE)

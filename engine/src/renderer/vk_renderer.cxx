@@ -8,22 +8,11 @@
 #include "dreco.hxx"
 #include "vk_exceptions.hxx"
 #include "vk_mesh.hxx"
-#include "vk_queue_family.hxx"
 #include "vk_utils.hxx"
 
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
 #include <chrono>
-
-#define VK_USE_DEBUG true
-
-#if VK_USE_DEBUG
-#define VK_ENABLE_VALIDATION
-#if PLATFORM_WINDOWS
-#define VK_ENABLE_LUNAR_MONITOR
-#endif
-#define VK_ENABLE_MESA_OVERLAY
-#endif
 
 vk_renderer::~vk_renderer()
 {
@@ -67,14 +56,15 @@ void vk_renderer::init()
 	updateExtent();
 	_settings.init(this);
 
-	_queueFamily.setup(_physicalDevice, _surface);
 	createDevice();
+
+	createQueues();
 
 	createSwapchain();
 	createImageViews();
 
 	createCommandPools();
-	createPrimaryCommandBuffers();
+	createCommandBuffers();
 
 	_depthImage.create();
 	_msaaImage.create();
@@ -116,10 +106,7 @@ void vk_renderer::exit()
 	_device.destroySemaphore(_semaphoreImageAvaible);
 	_device.destroySemaphore(_semaphoreRenderFinished);
 
-	for (auto graphicsCommandPool : _graphicsCommandPools)
-	{
-		_device.destroyCommandPool(graphicsCommandPool);
-	}
+	_device.destroyCommandPool(_graphicsCommandPool);
 	_device.destroyCommandPool(_transferCommandPool);
 
 	_depthImage.destroy();
@@ -179,6 +166,20 @@ uint32_t vk_renderer::getImageCount() const
 	return _swapchainImageViews.size();
 }
 
+vk::SharingMode vk_renderer::getSharingMode() const
+{
+	return vk::SharingMode::eExclusive;
+}
+
+std::vector<uint32_t> vk_renderer::getQueueFamilyIndices() const
+{
+	if (_graphicsQueueIndex == _transferQueueIndex)
+	{
+		return std::vector<uint32_t>{_graphicsQueueIndex};
+	}
+	return std::vector<uint32_t>{_graphicsQueueIndex, _transferQueueIndex};
+}
+
 vk::CommandBuffer vk_renderer::beginSingleTimeTransferCommands()
 {
 	const vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
@@ -236,21 +237,21 @@ void vk_renderer::createInstance()
 	std::vector<const char*> instanceLayers{};
 	for (const auto& layerProperty : allInstanceLayers)
 	{
-		const auto push_layer_if_available_lam = [&instanceLayers, &layerProperty](const std::string_view& layer) -> void
+		const auto push_layer_if_available_lam = [&instanceLayers, &layerProperty](const std::string_view layer) -> void
 		{
 			if (layerProperty.layerName == layer)
 				instanceLayers.push_back(layer.data());
 		};
 
-#ifdef VK_ENABLE_VALIDATION
+#ifdef DRECO_VK_USE_VALIDATION
 		push_layer_if_available_lam("VK_LAYER_KHRONOS_validation");
 #endif
 
-#ifdef VK_ENABLE_MESA_OVERLAY
+#ifdef DRECO_VK_USE_MESA_OVERLAY
 		push_layer_if_available_lam("VK_LAYER_MESA_overlay");
 #endif
 
-#ifdef VK_ENABLE_LUNAR_MONITOR
+#ifdef DRECO_VK_USE_LUNAR_MONITOR
 		push_layer_if_available_lam("VK_LAYER_LUNARG_monitor");
 #endif
 	}
@@ -316,42 +317,68 @@ void vk_renderer::createPhysicalDevice()
 
 void vk_renderer::createDevice()
 {
-	const auto uniqueQueueIndexes = _queueFamily.getUniqueQueueIndexes();
-	const size_t uniqueQueueIndexesNum = uniqueQueueIndexes.size();
-	const std::array<float, 1> priorities{1.0F};
+	const auto queueFamilyProperties = _physicalDevice.getQueueFamilyProperties();
 
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfoList;
-	queueCreateInfoList.reserve(3);
+	queueCreateInfoList.reserve(queueFamilyProperties.size());
 
-	for (size_t i = 0; i < uniqueQueueIndexesNum; ++i)
+	for (size_t i = 0; i < queueFamilyProperties.size(); ++i)
 	{
+		constexpr float priority = 1.F;
 		queueCreateInfoList.emplace_back()
-			.setQueueFamilyIndex(uniqueQueueIndexes[i])
+			.setQueueFamilyIndex(i)
 			.setQueueCount(1)
-			.setQueuePriorities(priorities);
+			.setQueuePriorities(priority);
 	}
 
-	const std::array<const char*, 1> deviceExtensions{"VK_KHR_swapchain"};
+	const std::vector<const char*> enabledExtensions{"VK_KHR_swapchain"};
+	const std::vector<const char*> enabledLayers{
+#ifdef DRECO_VK_USE_MESA_OVERLAY
+		"VK_LAYER_MESA_overlay",
+#endif
+#ifdef DRECO_VK_USE_LUNAR_MONITOR
+		"VK_LAYER_LUNARG_monitor",
+#endif
+	};
 
 	const vk::PhysicalDeviceFeatures physicalDeviceFeatures = _physicalDevice.getFeatures();
 
 	const vk::DeviceCreateInfo deviceCreateInfo =
 		vk::DeviceCreateInfo()
 			.setQueueCreateInfos(queueCreateInfoList)
-			.setPEnabledLayerNames(nullptr)
-			.setPEnabledExtensionNames(deviceExtensions)
+			.setPEnabledLayerNames(enabledLayers)
+			.setPEnabledExtensionNames(enabledExtensions)
 			.setPEnabledFeatures(&physicalDeviceFeatures);
 
 	_device = _physicalDevice.createDevice(deviceCreateInfo);
-	_graphicsQueue = _device.getQueue(_queueFamily.getGraphicsIndex(), 0);
-	_presentQueue = _device.getQueue(_queueFamily.getPresentIndex(), 0);
-	_transferQueue = _device.getQueue(_queueFamily.getTransferIndex(), 0);
+}
+
+void vk_renderer::createQueues()
+{
+	const auto queueFamilyProperties = _physicalDevice.getQueueFamilyProperties();
+	const size_t queueFamilyPropertiesSize = queueFamilyProperties.size();
+	for (size_t i = 0; i < queueFamilyPropertiesSize; ++i)
+	{
+		const vk::Bool32 isSupported = _physicalDevice.getSurfaceSupportKHR(i, _surface);
+		if (isSupported)
+		{
+			const auto queueFlags = queueFamilyProperties[i].queueFlags;
+			if ((queueFlags & vk::QueueFlagBits::eGraphics) && (queueFlags & vk::QueueFlagBits::eTransfer))
+			{
+				_graphicsQueueIndex = i;
+				_transferQueueIndex = i;
+				break;
+			}
+		}
+	}
+	_graphicsQueue = _device.getQueue(_graphicsQueueIndex, 0);
+	_transferQueue = _device.getQueue(_transferQueueIndex, 0);
 }
 
 void vk_renderer::createSwapchain()
 {
-	const vk::SharingMode sharingMode{_queueFamily.getSharingMode()};
-	const std::vector<uint32_t> queueFamilyIndexes = _queueFamily.getUniqueQueueIndexes(sharingMode);
+	const auto sharingMode{getSharingMode()};
+	const auto queueFamilyIndexes{getQueueFamilyIndices()};
 
 	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
 	const vk::PresentModeKHR presentMode = _settings.getPresentMode();
@@ -524,32 +551,25 @@ void vk_renderer::createFramebuffers()
 
 void vk_renderer::createCommandPools()
 {
-	vk::CommandPoolCreateInfo commandPoolCreateInfo({}, _queueFamily.getGraphicsIndex());
+	const vk::CommandPoolCreateInfo graphicsCreateInfo = vk::CommandPoolCreateInfo()
+															 .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+															 .setQueueFamilyIndex(_graphicsQueueIndex);
+	_graphicsCommandPool = _device.createCommandPool(graphicsCreateInfo);
 
-	_graphicsCommandPools.resize(getImageCount());
-	for (auto& pool : _graphicsCommandPools)
-	{
-		pool = _device.createCommandPool(commandPoolCreateInfo);
-	}
-
-	commandPoolCreateInfo.setQueueFamilyIndex(_queueFamily.getTransferIndex());
-	_transferCommandPool = _device.createCommandPool(commandPoolCreateInfo);
+	const vk::CommandPoolCreateInfo transferCreateInfo = vk::CommandPoolCreateInfo()
+															 .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
+															 .setQueueFamilyIndex(_transferQueueIndex);
+	_transferCommandPool = _device.createCommandPool(transferCreateInfo);
 }
 
-void vk_renderer::createPrimaryCommandBuffers()
+void vk_renderer::createCommandBuffers()
 {
-	const size_t size = _graphicsCommandPools.size();
-	_graphicsCommandBuffers.resize(size);
-	for (size_t i = 0; i < size; ++i)
-	{
-		vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
-			vk::CommandBufferAllocateInfo()
-				.setLevel(vk::CommandBufferLevel::ePrimary)
-				.setCommandBufferCount(1)
-				.setCommandPool(_graphicsCommandPools[i]);
-
-		_graphicsCommandBuffers[i] = _device.allocateCommandBuffers(commandBufferAllocateInfo)[0];
-	}
+	const vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
+		vk::CommandBufferAllocateInfo()
+			.setLevel(vk::CommandBufferLevel::ePrimary)
+			.setCommandBufferCount(getImageCount())
+			.setCommandPool(_transferCommandPool);
+	_imageCommandBuffers = _device.allocateCommandBuffers(commandBufferAllocateInfo);
 }
 
 inline void vk_renderer::createFences()
@@ -617,7 +637,6 @@ void vk_renderer::drawFrame()
 		return;
 
 	_device.resetFences(waitFences);
-	_device.resetCommandPool(_graphicsCommandPools[imageIndex], {});
 
 	vk::CommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
 
@@ -643,7 +662,7 @@ void vk_renderer::drawFrame()
 
 	try
 	{
-		const vk::Result presentResult = _presentQueue.presentKHR(presentInfo);
+		const vk::Result presentResult = _graphicsQueue.presentKHR(presentInfo);
 
 		if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
 			vk::Result::eSuboptimalKHR == presentResult)
@@ -737,7 +756,7 @@ void vk_renderer::recreateSwapchain()
 
 vk::CommandBuffer vk_renderer::prepareCommandBuffer(uint32_t imageIndex)
 {
-	vk::CommandBuffer commandBuffer = _graphicsCommandBuffers[imageIndex];
+	vk::CommandBuffer commandBuffer = _imageCommandBuffers[imageIndex];
 
 	const vk::CommandBufferBeginInfo commandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 	commandBuffer.begin(commandBufferBeginInfo);

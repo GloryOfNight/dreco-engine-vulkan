@@ -30,6 +30,8 @@ public:
 	using shared = std::shared_ptr<vk_shader>;
 
 	vk_shader() = default;
+	vk_shader(vk_shader&) = delete;
+	vk_shader(vk_shader&&) = default;
 	~vk_shader();
 
 	void create(const std::string_view inShaderPath);

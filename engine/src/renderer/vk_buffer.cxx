@@ -12,9 +12,8 @@ void vk_buffer::create(vk::MemoryPropertyFlags memoryPropertyFlags, vk::BufferUs
 
 	const vk_renderer* renderer = vk_renderer::get();
 	const auto device{renderer->getDevice()};
-	const auto& queueFamily{renderer->getQueueFamily()};
-	const auto sharingMode{queueFamily.getSharingMode()};
-	const auto queueIndexes{queueFamily.getUniqueQueueIndexes(sharingMode)};
+	const auto sharingMode{renderer->getSharingMode()};
+	const auto queueIndexes{renderer->getQueueFamilyIndices()};
 
 	const vk::BufferCreateInfo bufferCreateInfo =
 		vk::BufferCreateInfo()
@@ -69,6 +68,7 @@ void vk_buffer::copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer bufferDs
 	commandBuffer.end();
 
 	renderer->submitSingleTimeTransferCommands(commandBuffer);
+	renderer->getDevice().freeCommandBuffers(renderer->getTransferCommandPool(), commandBuffer);
 }
 
 vk::CommandBuffer vk_buffer::copyBufferToImage(const vk_buffer& buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height)

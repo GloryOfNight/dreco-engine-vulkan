@@ -7,7 +7,6 @@
 
 #include "vk_buffer.hxx"
 #include "vk_graphics_pipeline.hxx"
-#include "vk_queue_family.hxx"
 #include "vk_scene.hxx"
 #include "vk_settings.hxx"
 
@@ -51,6 +50,10 @@ public:
 
 	uint32_t getImageCount() const;
 
+	vk::SharingMode getSharingMode() const;
+
+	std::vector<uint32_t> getQueueFamilyIndices() const;
+
 	vk::RenderPass getRenderPass() const { return _renderPass; };
 
 	vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; };
@@ -66,9 +69,6 @@ public:
 	vk::SurfaceKHR getSurface() const { return _surface; }
 
 	vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
-
-	const vk_queue_family& getQueueFamily() const { return _queueFamily; }
-	vk_queue_family& getQueueFamily() { return _queueFamily; }
 
 	const vk_settings& getSettings() const { return _settings; }
 	vk_settings& getSettings() { return _settings; }
@@ -113,6 +113,8 @@ protected:
 	void createPhysicalDevice();
 
 	void createDevice();
+	
+	void createQueues();
 
 	void createSwapchain();
 
@@ -123,8 +125,8 @@ protected:
 	void createFramebuffers();
 
 	void createCommandPools();
-
-	void createPrimaryCommandBuffers();
+	
+	void createCommandBuffers();
 
 	void createFences();
 
@@ -161,9 +163,9 @@ private:
 
 	vk::Device _device;
 
-	vk::Queue _graphicsQueue, _presentQueue, _transferQueue;
-
-	vk_queue_family _queueFamily;
+	uint32_t _graphicsQueueIndex, _transferQueueIndex;
+	vk::Queue _graphicsQueue, _transferQueue;
+	vk::CommandPool _graphicsCommandPool, _transferCommandPool;
 
 	vk_settings _settings;
 
@@ -183,15 +185,11 @@ private:
 	vk::SwapchainKHR _swapchain;
 
 	std::vector<vk::ImageView> _swapchainImageViews;
+	std::vector<vk::CommandBuffer> _imageCommandBuffers;
 
 	vk::RenderPass _renderPass;
 
 	std::vector<vk::Framebuffer> _framebuffers;
-
-	std::vector<vk::CommandPool> _graphicsCommandPools;
-	std::vector<vk::CommandBuffer> _graphicsCommandBuffers;
-
-	vk::CommandPool _transferCommandPool;
 
 	std::vector<vk::Fence> _submitQueueFences;
 

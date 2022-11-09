@@ -26,6 +26,8 @@ add_library(${PROJECT_NAME} STATIC ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_BUILD_STATIC)
 endif()
 
+target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_VK_USE_VALIDATION DRECO_VK_USE_MESA_OVERLAY DRECO_VK_USE_LUNAR_MONITOR)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2 Vulkan::Vulkan shader-compiler-static spirv-reflect stb tinygltf)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS} )
 

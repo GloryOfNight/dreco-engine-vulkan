@@ -32,10 +32,9 @@ vk::ImageUsageFlags vk_image::getImageUsageFlags() const
 
 void vk_image::createImage(const vk::Device device, const vk::Format format, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples)
 {
-	const vk_queue_family& queueFamily{vk_renderer::get()->getQueueFamily()};
-
-	const vk::SharingMode sharingMode = queueFamily.getSharingMode();
-	const std::vector<uint32_t> queueIndexes = queueFamily.getUniqueQueueIndexes(sharingMode);
+	const auto renderer{vk_renderer::get()};
+	const auto sharingMode{renderer->getSharingMode()};
+	const auto queueIndexes{renderer->getQueueFamilyIndices()};
 
 	const vk::ImageCreateInfo imageCreateInfo =
 		vk::ImageCreateInfo()
@@ -82,14 +81,8 @@ void vk_image::createImageView(const vk::Device device, const vk::Format format)
 
 VkCommandBuffer vk_image::transitionImageLayout(const vk_image_transition_layout_info& info)
 {
-	vk_renderer* renderer{vk_renderer::get()};
-	const vk_queue_family& queueFamily{renderer->getQueueFamily()};
-	const bool isQueueFamilyConcurrent = queueFamily.getSharingMode() == vk::SharingMode::eConcurrent;
+	const auto renderer{vk_renderer::get()};
 	vk::CommandBuffer commandBuffer = renderer->beginSingleTimeTransferCommands();
-
-	const uint32_t srcQueueFamilyIndex = isQueueFamilyConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-	const uint32_t dstQueueFamilyIndex = isQueueFamilyConcurrent ? VK_QUEUE_FAMILY_IGNORED : queueFamily.getGraphicsIndex();
-
 	const vk::ImageSubresourceRange imageSubresourceRange =
 		vk::ImageSubresourceRange()
 			.setAspectMask(info._imageAspectFlags)
@@ -102,8 +95,8 @@ VkCommandBuffer vk_image::transitionImageLayout(const vk_image_transition_layout
 		vk::ImageMemoryBarrier()
 			.setOldLayout(info._layoutOld)
 			.setNewLayout(info._layoutNew)
-			.setSrcQueueFamilyIndex(srcQueueFamilyIndex)
-			.setDstQueueFamilyIndex(dstQueueFamilyIndex)
+			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setImage(info._image)
 			.setSubresourceRange(imageSubresourceRange)
 			.setSrcAccessMask(info._accessFlagsSrc)
