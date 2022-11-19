@@ -6,5 +6,5 @@
 class gltf_loader
 {
 public:
-	static gltf::model loadModel(const std::string_view& sceneFile);
+	static gltf::model loadModel(const std::string_view sceneFile);
 };

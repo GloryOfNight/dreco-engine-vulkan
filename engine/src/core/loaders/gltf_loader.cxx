@@ -258,7 +258,7 @@ static void parseImages(const tinygltf::Model& tModel, gltf::model& dModel)
 	std::for_each(std::execution::par, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }
 
-gltf::model gltf_loader::loadModel(const std::string_view& sceneFile)
+gltf::model gltf_loader::loadModel(const std::string_view sceneFile)
 {
 	tinygltf::Model tModel;
 	tinygltf::TinyGLTF loader;

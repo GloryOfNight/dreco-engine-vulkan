@@ -5,8 +5,7 @@
 
 struct async_load_image : public thread_task
 {
-	template<typename Str>
-	async_load_texture_task(Str&& imageUri)
+	async_load_texture_task(const std::string_view imageUri)
 		: _imageUri(imageUri)
 		, _image{}
 	{
@@ -14,8 +13,10 @@ struct async_load_image : public thread_task
 
 	virtual void doJob() override
 	{
-		_texData.load(_texUri);
+		_image.load(_imageUri);
 	};
+
+	image_data extract() { return std::move(_image); };
 
 private:
 	std::string _imageUri;

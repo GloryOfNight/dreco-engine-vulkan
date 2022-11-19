@@ -4,14 +4,13 @@
 #include "core/loaders/gltf_loader.hxx"
 #include "core/threads/thread_pool.hxx"
 
-#include <string_view>
+#include <string>
 
 struct async_load_gltf : public thread_task
 {
 	using callback = std::function<void(const gltf::model&)>;
 
-	template <typename Str>
-	async_load_gltf(Str&& sceneUri)
+	async_load_gltf(const std::string_view sceneUri)
 		: _file(sceneUri)
 	{
 	}
