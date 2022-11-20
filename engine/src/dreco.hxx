@@ -5,11 +5,11 @@
 #include <string>
 
 // clang-format off
+#define DRECO_API
 #if PLATFORM_WINDOWS
 	#if DRECO_LIBRARY_TYPE_SHARED
+		#undef DRECO_API
 		#define DRECO_API __declspec(dllexport)
-	#else 
-		#define DRECO_API
 	#endif
 #endif
 // clang-format on
