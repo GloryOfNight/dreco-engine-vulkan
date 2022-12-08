@@ -1,14 +1,24 @@
 #pragma once
 #include "vec.hxx"
 
+#include <type_traits>
+
 template <typename T>
 struct DRECO_API vec2t
 {
+	static_assert(std::is_trivial<T>::value, "T must be trivial");
+
 	vec2t() = default;
-	vec2t(const T& a, const T& b)
+	explicit vec2t(T a, T b)
 		: _x{a}
 		, _y{b}
 	{
+	}
+
+	template <typename K>
+	static vec2t narrow_construct(K a, K b)
+	{
+		return vec2t(static_cast<T>(a), static_cast<T>(b));
 	}
 
 	union

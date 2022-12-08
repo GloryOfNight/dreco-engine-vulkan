@@ -25,7 +25,7 @@ constexpr float mat4::size() noexcept
 
 mat4 mat4::makeTransform(const transform& t)
 {
-	return makeScale(t._scale) * makeTranslation(t._translation) * makeRotation(t._rotation.toRadians());
+	return makeScale(t._scale) * makeTranslation(t._translation) * makeRotation(t._rotation);
 }
 
 mat4 mat4::makeTranslation(const vec3& vec)
@@ -42,16 +42,18 @@ mat4 mat4::makeTranslation(const vec3& vec)
 	return mat4(mat);
 }
 
-mat4 mat4::makeRotation(const rotatorRad& rot)
+mat4 mat4::makeRotation(const rotator& rot)
 {
-	float cos_x = std::cos(rot._pitch);
-	float sin_x = std::sin(rot._pitch);
+	const auto rotRad = rot.toRadians();
 
-	float cos_y = std::cos(rot._yaw);
-	float sin_y = std::sin(rot._yaw);
+	float cos_x = std::cos(rotRad._x);
+	float sin_x = std::sin(rotRad._x);
 
-	float cos_z = std::cos(rot._roll);
-	float sin_z = std::sin(rot._roll);
+	float cos_y = std::cos(rotRad._y);
+	float sin_y = std::sin(rotRad._y);
+
+	float cos_z = std::cos(rotRad._z);
+	float sin_z = std::sin(rotRad._z);
 
 	mat4 matX;
 	mat4 matY;
@@ -95,21 +97,21 @@ mat4 mat4::makeRotation(const rotatorRad& rot)
 	return matZ * matY * matX;
 }
 
-mat4 mat4::makeRotationQ(const quaternion& q)
+mat4 mat4::makeRotation(const quaternion& q)
 {
 	mat4 ret{};
 
-	ret[0][0] = 2 * (q.w * q.w + q.x * q.x) - 1;
-	ret[0][1] = 2 * (q.x * q.y + q.w * q.z);
-	ret[0][2] = 2 * (q.x * q.z + q.w * q.y);
+	ret[0][0] = 2 * (q._w * q._w + q._x * q._x) - 1;
+	ret[0][1] = 2 * (q._x * q._y + q._w * q._z);
+	ret[0][2] = 2 * (q._x * q._z + q._w * q._y);
 
-	ret[1][0] = 2 * (q.x * q.y + q.w * q.z);
-	ret[1][1] = 2 * (q.w * q.w + q.y * q.y) - 1;
-	ret[1][2] = 2 * (q.y * q.z + q.w * q.x);
+	ret[1][0] = 2 * (q._x * q._y + q._w * q._z);
+	ret[1][1] = 2 * (q._w * q._w + q._y * q._y) - 1;
+	ret[1][2] = 2 * (q._y * q._z + q._w * q._x);
 
-	ret[2][0] = 2 * (q.x * q.z + q.w * q.y);
-	ret[2][1] = 2 * (q.y * q.z + q.w * q.x);
-	ret[2][2] = 2 * (q.w * q.w + q.z * q.z) - 1;
+	ret[2][0] = 2 * (q._x * q._z + q._w * q._y);
+	ret[2][1] = 2 * (q._y * q._z + q._w * q._x);
+	ret[2][2] = 2 * (q._w * q._w + q._z * q._z) - 1;
 
 	ret[3][3] = 1;
 	return ret;

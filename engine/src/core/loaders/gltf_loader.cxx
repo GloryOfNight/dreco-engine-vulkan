@@ -78,17 +78,17 @@ static void parseNodes(const tinygltf::Model& tModel, gltf::model& dModel)
 		{
 			if (tNode.translation.size() == 3)
 			{
-				const vec3 translation = vec3(tNode.translation);
+				const vec3 translation = vec3(tNode.translation[0], tNode.translation[1], tNode.translation[2]);
 				dNode._matrix = dNode._matrix * mat4::makeTranslation(translation);
 			}
 			if (tNode.rotation.size() == 4)
 			{
-				const quaternion quat = quaternion{tNode.rotation[0], tNode.rotation[1], tNode.rotation[2], tNode.rotation[3]};
-				dNode._matrix = dNode._matrix * mat4::makeRotationQ(quat);
+				const quaternion quat = quaternion(tNode.rotation[0], tNode.rotation[1], tNode.rotation[2], tNode.rotation[3]);
+				dNode._matrix = dNode._matrix * mat4::makeRotation(quat);
 			}
 			if (tNode.scale.size() == 3)
 			{
-				const vec3 scale = vec3(tNode.scale);
+				const vec3 scale = vec3::narrow_construct(tNode.scale[0], tNode.scale[1], tNode.scale[2]);
 				dNode._matrix = dNode._matrix * mat4::makeScale(scale);
 			}
 		}

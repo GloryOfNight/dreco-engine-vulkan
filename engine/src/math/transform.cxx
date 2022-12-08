@@ -7,7 +7,7 @@ transform::transform()
 {
 }
 
-transform::transform(const vec3& translation, const rotatorDeg& rotation, const vec3& scale)
+transform::transform(const vec3& translation, const rotator& rotation, const vec3& scale)
 	: _translation(translation)
 	, _rotation(rotation)
 	, _scale(scale)

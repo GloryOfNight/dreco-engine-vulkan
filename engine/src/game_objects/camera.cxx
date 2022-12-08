@@ -1,6 +1,7 @@
 #include "camera.hxx"
 
 #include "core/engine.hxx"
+#include "math/math.hxx"
 #include "renderer/vk_renderer.hxx"
 
 mat4 camera::getView() const
@@ -30,7 +31,7 @@ void camera::tick(double deltaTime)
 
 	{ // update projection
 		const vk::Extent2D currentExtent = vk_renderer::get()->getCurrentExtent();
-		_projection = mat4::makeProjection(1.F, 10000.F, static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), 45.F);
+		_projection = mat4::makeProjection(1.F, std::numeric_limits<float>::max(), static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), math::degreesToRadians(75.F));
 	}
 	engine::get()->getRenderer().setCameraData(_view, _projection);
 }

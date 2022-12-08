@@ -6,20 +6,20 @@
 template <typename T>
 struct DRECO_API vec3t
 {
+	static_assert(std::is_trivial<T>::value, "T must be trivial");
+
 	vec3t() = default;
-	vec3t(const T& a, const T& b, const T& c)
+	explicit vec3t(T a, T b, T c)
 		: _x{a}
 		, _y{b}
 		, _z{c}
 	{
 	}
 
-	template <typename Arr>
-	vec3t(Arr&& arr)
-		: _x{static_cast<T>(arr[0])}
-		, _y{static_cast<T>(arr[1])}
-		, _z{static_cast<T>(arr[2])}
+	template<typename K>
+	static vec3t narrow_construct(K a, K b, K c) 
 	{
+		return vec3t(static_cast<T>(a), static_cast<T>(b), static_cast<T>(c));
 	}
 
 	union

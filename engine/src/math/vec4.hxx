@@ -6,21 +6,21 @@
 template <typename T>
 struct DRECO_API vec4t
 {
+	static_assert(std::is_trivial<T>::value, "T must be trivial");
+
 	vec4t() = default;
-	vec4t(const T& a, const T& b, const T& c, const T& d)
+	explicit vec4t(T a, T b, T c, T d)
 		: _x{a}
 		, _y{b}
 		, _z{c}
 		, _w{d}
 	{
 	}
-	template <typename Arr>
-	vec4t(Arr&& arr)
-		: _x{static_cast<T>(arr[0])}
-		, _y{static_cast<T>(arr[1])}
-		, _z{static_cast<T>(arr[2])}
-		, _w{static_cast<T>(arr[3])}
+
+	template <typename K>
+	static vec4t narrow_construct(K a, K b, K c, K d)
 	{
+		return vec4t(static_cast<T>(a), static_cast<T>(b), static_cast<T>(c), static_cast<T>(d));
 	}
 
 	union

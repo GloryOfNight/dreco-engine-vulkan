@@ -1,22 +1,47 @@
 #pragma once
+#include "math.hxx"
 #include "vec.hxx"
 
 template <typename T>
-struct irotatorT
+struct rotator3t
 {
-	irotatorT() = default;
-	irotatorT(const T pitch, const T yaw, const T roll)
+	rotator3t() = default;
+	rotator3t(const T pitch, const T yaw, const T roll)
 		: _pitch{pitch}
 		, _yaw{yaw}
 		, _roll{roll}
 	{
 	}
 
-	virtual vec3 toForwardVector() const = 0;
+	vec3 toForwardVector() const
+	{
+		const auto rPitch = math::degreesToRadians(_pitch);
+		const auto rYaw = math::degreesToRadians(_yaw);
 
-	virtual vec3 toRightDirection() const = 0;
+		const auto sPitch = std::sin(rPitch);
+		const auto cPitch = std::cos(rPitch);
+		const auto sYaw = std::sin(rYaw);
+		const auto cYaw = std::cos(rYaw);
+		return vec3(cPitch * sYaw, sPitch, cPitch * cYaw);
+	}
 
-	virtual void clamp() = 0;
+	vec3 toRightDirection() const
+	{
+		return rotator3t(static_cast<T>(0), _yaw + static_cast<T>(90), static_cast<T>(0)).toForwardVector();
+	}
+
+	vec3 toRadians() const
+	{
+		return vec3(math::degreesToRadians(_pitch), math::degreesToRadians(_yaw), math::degreesToRadians(_roll));
+	}
+
+	void clamp()
+	{
+		_pitch = fmodf(_pitch, 360.F);
+		_yaw = fmodf(_yaw, 360.F);
+		_roll = fmodf(_roll, 360.F);
+	}
+
 	void max(const T pitch, const T yaw, const T roll)
 	{
 		if (_pitch > pitch)
@@ -43,40 +68,4 @@ struct irotatorT
 	T _roll;
 };
 
-using irotator_base = irotatorT<float>;
-struct rotatorDeg;
-struct rotatorRad;
-
-struct DRECO_API rotatorDeg : irotator_base
-{
-	rotatorDeg() = default;
-	rotatorDeg(const float pitch, const float yaw, const float roll)
-		: irotator_base(pitch, yaw, roll)
-	{
-	}
-
-	vec3 toForwardVector() const override;
-
-	vec3 toRightDirection() const override;
-
-	void clamp() override;
-
-	rotatorRad toRadians() const;
-};
-
-struct DRECO_API rotatorRad : irotator_base
-{
-	rotatorRad() = default;
-	rotatorRad(const float pitch, const float yaw, const float roll)
-		: irotator_base(pitch, yaw, roll)
-	{
-	}
-
-	vec3 toForwardVector() const override;
-
-	vec3 toRightDirection() const override;
-
-	void clamp() override;
-
-	rotatorDeg toDegrees() const;
-};
+using rotator = rotator3t<float>;

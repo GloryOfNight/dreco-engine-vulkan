@@ -6,11 +6,11 @@
 struct DRECO_API transform
 {
 	transform();
-	transform(const vec3& translation, const rotatorDeg& rotation, const vec3& scale);
+	transform(const vec3& translation, const rotator& rotation, const vec3& scale);
 
 	vec3 _translation;
 
-	rotatorDeg _rotation;
+	rotator _rotation;
 
 	vec3 _scale;
 };

@@ -1,12 +1,13 @@
 #pragma once
+
+#include "quaternion.hxx"
+#include "rotator.hxx"
 #include "vec.hxx"
 
 #include <array>
 #include <cstddef>
 
-struct rotatorRad;
 struct transform;
-struct quaternion;
 
 template <typename T, uint8_t dim>
 struct matrix
@@ -51,9 +52,9 @@ struct DRECO_API mat4
 
 	static mat4 makeTranslation(const vec3& vec);
 
-	static mat4 makeRotation(const rotatorRad& rot);
+	static mat4 makeRotation(const rotator& rot);
 
-	static mat4 makeRotationQ(const quaternion& q);
+	static mat4 makeRotation(const quaternion& q);
 
 	static mat4 makeScale(const vec3& vec);
 
