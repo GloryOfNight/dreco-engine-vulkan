@@ -2,7 +2,10 @@
 
 #include "core/engine.hxx"
 
-DRECO_API void registerGame(de::defaultObject<de::gf::game_instance>& defaultGameInstance)
+static de::engine* gEngine = nullptr;
+
+DRECO_API void registerGame(de::engine* engine)
 {
-	defaultGameInstance.init<launcher_gi>();
+	gEngine = engine;
+	gEngine->setGameInstance(de::gf::game_instance::unique(new launcher_gi()));
 }

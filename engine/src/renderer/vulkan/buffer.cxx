@@ -129,7 +129,7 @@ de::vulkan::buffer::id de::vulkan::buffer_pool::makeBuffer(vk::DeviceSize size)
 
 	if (std::numeric_limits<vk::DeviceSize>::max() == offset)
 	{
-		throw de::vulkan::exept::out_of_space();
+		throw de::except::out_of_space();
 		return std::numeric_limits<buffer::id>::max();
 	}
 

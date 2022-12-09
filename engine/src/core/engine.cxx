@@ -42,7 +42,7 @@ de::engine* de::engine::get()
 	return gEngine;
 }
 
-de::engine::init_res de::engine::initialize()
+void de::engine::initialize()
 {
 	if (gEngine != nullptr)
 	{
@@ -55,52 +55,47 @@ de::engine::init_res de::engine::initialize()
 			DE_LOG(Error, "%s: another engine instance already initialized.", __FUNCTION__);
 		}
 
-		return init_res::already_initialized;
+		throw de::except::initialization_error();
+		return;
 	}
 
 	if (_isRunning)
 	{
 		DE_LOG(Error, "%s: egnine already running, cannot init.", __FUNCTION__);
-		return init_res::failed_already_running;
+		throw de::except::initialization_error();
+		return;
 	}
 
 	registerSignals();
 	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "%s: sdl initialization error: %s", __FUNCTION__, SDL_GetError());
-		return init_res::failed_init_sdl;
+		throw de::except::initialization_error();
+		return;
 	}
 
 	if (!de::platform::path::init())
 	{
 		DE_LOG(Error, "%s: failed to locate proper cwd, current working dir: %s", __FUNCTION__, de::platform::path::currentDir().c_str());
-		return init_res::failed_find_cwd;
+		throw de::except::initialization_error();
+		return;
 	}
 
 	gEngine = this;
-
-	return init_res::ok;
 }
 
-de::engine::run_res de::engine::run()
+void de::engine::run()
 {
 	if (nullptr == de::engine::get())
 	{
 		DE_LOG(Error, "%s: engine unitilized.", __FUNCTION__);
-		return run_res::failed_unitialized;
+		return;
 	}
 
-	if (!_defaultGameInstance.isSet())
-	{
-		DE_LOG(Error, "%s: game instance isn't registred.", __FUNCTION__);
-		return run_res::failed_invalid_game_instance;
-	}
-
-	_gameInstance = _defaultGameInstance.makeNew();
 	if (nullptr == _gameInstance)
 	{
 		DE_LOG(Error, "%s: game instance == nullptr, coundn't run", __FUNCTION__);
-		return run_res::failed_make_new_game_instance;
+		return;
 	}
 
 	_threadPool.allocateThreads("dreco-engine-worker (low)", 2, de::async::thread_pool::priority::low);
@@ -109,7 +104,11 @@ de::engine::run_res de::engine::run()
 	{
 		startMainLoop();
 	}
-	return run_res::ok;
+}
+
+void de::engine::setGameInstance(de::gf::game_instance::unique&& gameInstance)
+{
+	_gameInstance = std::move(gameInstance);
 }
 
 void de::engine::stop()

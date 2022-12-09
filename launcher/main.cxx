@@ -3,24 +3,29 @@
 #include "dreco.hxx"
 #include "shader_compiler.hxx"
 
-extern "C++" void registerGame(de::defaultObject<de::gf::game_instance>&);
+extern "C++" void registerGame(de::engine*);
 
 int main()
 {
-	de::engine Engine;
-	const auto initRes = Engine.initialize();
-
-	registerGame(Engine._defaultGameInstance);
-
-	if (initRes == de::engine::init_res::ok)
+	de::engine engine;
+	try
 	{
-		if (const auto res = shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR); res != 0)
-		{
-			DE_LOG(Error, "Shader compilation failed with: %i", res);
-		}
-
-		const auto runRes = Engine.run();
-		return runRes != de::engine::run_res::ok ? 1 : 0;
+		engine.initialize();
 	}
-	return 1;
+	catch (de::except::initialization_error& e)
+	{
+		DE_LOG(Error, "%s: %s", __FUNCTION__, e.what());
+		return 1;
+	}
+
+	registerGame(&engine);
+
+	if (const auto res = shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR); res != 0)
+	{
+		DE_LOG(Error, "Shader compilation failed with: %i", res);
+	}
+
+	engine.run();
+
+	return 0;
 }

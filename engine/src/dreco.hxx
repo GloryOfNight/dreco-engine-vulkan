@@ -1,4 +1,5 @@
 #pragma once
+#include "core/misc/exceptions.hxx"
 #include "core/misc/log.hxx"
 #include "platforms/platform.h"
 
