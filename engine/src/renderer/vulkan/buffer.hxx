@@ -2,6 +2,7 @@
 #include "device_memory.hxx"
 
 #include <map>
+#include <memory>
 #include <vulkan/vulkan.hpp>
 
 namespace de::vulkan
