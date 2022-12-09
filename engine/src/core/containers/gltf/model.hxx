@@ -8,21 +8,21 @@
 
 #include <vector>
 
-namespace gltf
+namespace de::gltf
 {
 	struct model
 	{
 		std::string _rootPath;
 
-		std::vector<mesh> _meshes;
+		std::vector<de::gltf::mesh> _meshes;
 
-		std::vector<material> _materials;
+		std::vector<de::gltf::material> _materials;
 
-		std::vector<image> _images;
+		std::vector<de::gltf::image> _images;
 
 		uint32_t _sceneIndex{UINT32_MAX};
-		std::vector<scene> _scenes;
+		std::vector<de::gltf::scene> _scenes;
 
-		std::vector<node> _nodes;
+		std::vector<de::gltf::node> _nodes;
 	};
-} // namespace gltf
+} // namespace de::gltf

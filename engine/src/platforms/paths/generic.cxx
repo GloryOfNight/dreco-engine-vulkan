@@ -6,7 +6,7 @@
 
 using namespace std::filesystem;
 
-bool generic_paths::init()
+bool de::paths::generic::init()
 {
 	if (checkCorePaths())
 	{
@@ -29,27 +29,27 @@ bool generic_paths::init()
 	return false;
 }
 
-std::string generic_paths::currentDir()
+std::string de::paths::generic::currentDir()
 {
 	return current_path().generic_string();
 }
 
-std::string generic_paths::assetsDir()
+std::string de::paths::generic::assetsDir()
 {
 	return (current_path() / DRECO_ASSETS_DIR).generic_string();
 }
 
-std::string generic_paths::shadersBinDir()
+std::string de::paths::generic::shadersBinDir()
 {
 	return (current_path() / DRECO_SHADERS_BINARY_DIR).generic_string();
 }
 
-std::string generic_paths::shadersSrcDir()
+std::string de::paths::generic::shadersSrcDir()
 {
 	return (current_path() / DRECO_SHADERS_SOURCE_DIR).generic_string();
 }
 
-bool generic_paths::checkCorePaths()
+bool de::paths::generic::checkCorePaths()
 {
 	return is_directory(assetsDir()) && (is_directory(shadersBinDir()) || is_directory(shadersSrcDir()));
 }
