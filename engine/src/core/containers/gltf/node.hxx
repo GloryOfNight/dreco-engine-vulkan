@@ -5,15 +5,19 @@
 #include "math/vec3.hxx"
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
-namespace gltf
+namespace de::gltf
 {
 	struct node
 	{
+		std::string _name;
+
 		std::vector<uint32_t> _children;
 
 		uint32_t _mesh{UINT32_MAX};
 
-		mat4 _matrix;
+		math::mat4 _matrix;
 	};
-} // namespace gltf
+} // namespace de::gltf

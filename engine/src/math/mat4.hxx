@@ -2,80 +2,83 @@
 
 #include "quaternion.hxx"
 #include "rotator.hxx"
-#include "vec.hxx"
+#include "vectors.hxx"
 
 #include <array>
 #include <cstddef>
 
-struct transform;
-
-template <typename T, uint8_t dim>
-struct matrix
+namespace de::math
 {
-	struct collumn
+	struct transform;
+
+	template <typename T, uint8_t dim>
+	struct matrix
 	{
-		float _c[dim]{};
-		const float& operator[](uint8_t index) const
+		struct collumn
 		{
-			return _c[index];
+			float _c[dim]{};
+			const float& operator[](uint8_t index) const
+			{
+				return _c[index];
+			}
+			float& operator[](uint8_t index)
+			{
+				return _c[index];
+			}
+		};
+
+		collumn _rc[dim]{};
+		const collumn& operator[](uint8_t index) const
+		{
+			return _rc[index];
 		}
-		float& operator[](uint8_t index)
+		collumn& operator[](uint8_t index)
 		{
-			return _c[index];
+			return _rc[index];
 		}
 	};
 
-	collumn _rc[dim]{};
-	const collumn& operator[](uint8_t index) const
+	struct DRECO_API mat4
 	{
-		return _rc[index];
-	}
-	collumn& operator[](uint8_t index)
-	{
-		return _rc[index];
-	}
-};
+		using mat4d = matrix<float, 4>;
 
-struct DRECO_API mat4
-{
-	using mat4d = matrix<float, 4>;
+		mat4() = default;
 
-	mat4() = default;
+		explicit mat4(const mat4d& mat);
 
-	explicit mat4(const mat4d& mat);
+		explicit mat4(mat4d&& mat);
 
-	explicit mat4(mat4d&& mat);
+		static constexpr float size() noexcept;
 
-	static constexpr float size() noexcept;
+		static mat4 makeTransform(const transform& t);
 
-	static mat4 makeTransform(const transform& t);
+		static mat4 makeTranslation(const vec3& vec);
 
-	static mat4 makeTranslation(const vec3& vec);
+		static mat4 makeRotation(const rotator& rot);
 
-	static mat4 makeRotation(const rotator& rot);
+		static mat4 makeRotation(const quaternion& q);
 
-	static mat4 makeRotation(const quaternion& q);
+		static mat4 makeScale(const vec3& vec);
 
-	static mat4 makeScale(const vec3& vec);
+		static mat4 makeIdentity();
 
-	static mat4 makeIdentity();
+		static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
 
-	static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
+		static mat4 makeInverse(const mat4& mat);
 
-	static mat4 makeInverse(const mat4& mat);
+		mat4d _mat{};
 
-	mat4d _mat{};
+		const mat4d::collumn& operator[](uint8_t index) const
+		{
+			return _mat[index];
+		}
+		mat4d::collumn& operator[](uint8_t index)
+		{
+			return _mat[index];
+		}
+	};
 
-	const mat4d::collumn& operator[](uint8_t index) const
-	{
-		return _mat[index];
-	}
-	mat4d::collumn& operator[](uint8_t index)
-	{
-		return _mat[index];
-	}
-};
+	mat4 operator*(const mat4& a, const mat4& b);
 
-mat4 operator*(const mat4& a, const mat4& b);
-
-mat4 operator*(const mat4& mat, const float val);
+	mat4 operator*(const mat4& mat, const float val);
+} // namespace de::math

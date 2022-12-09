@@ -1,10 +1,8 @@
 #include "engine.hxx"
 
-#include "core/loaders/gltf_loader.hxx"
-#include "core/threads/async_tasks/async_load_gltf.hxx"
-#include "core/utils/file_utils.hxx"
-#include "renderer/vk_mesh.hxx"
-#include "renderer/vk_renderer.hxx"
+#include "core/containers/gltf/gltf.hxx"
+#include "core/misc/file.hxx"
+#include "core/async/async_tasks/async_load_gltf.hxx"
 
 #include "engine.hxx"
 
@@ -13,16 +11,16 @@
 #include <csignal>
 #include <shader_compiler.hxx>
 
-static inline engine* gEngine{nullptr};
+static inline de::engine* gEngine{nullptr};
 
 static void onQuitEvent(const SDL_Event&)
 {
-	auto engine = engine::get();
+	auto engine = de::engine::get();
 	if (engine)
 		engine->stop();
 }
 
-engine::engine()
+de::engine::engine()
 	: _eventManager{}
 	, _inputManager(_eventManager)
 	, _threadPool()
@@ -31,7 +29,7 @@ engine::engine()
 	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
 }
 
-engine::~engine()
+de::engine::~engine()
 {
 	if (_isRunning)
 	{
@@ -39,12 +37,12 @@ engine::~engine()
 	}
 }
 
-engine* engine::get()
+de::engine* de::engine::get()
 {
 	return gEngine;
 }
 
-engine::init_res engine::initialize()
+de::engine::init_res de::engine::initialize()
 {
 	if (gEngine != nullptr)
 	{
@@ -73,9 +71,9 @@ engine::init_res engine::initialize()
 		return init_res::failed_init_sdl;
 	}
 
-	if (!platform_paths::init())
+	if (!de::platform::path::init())
 	{
-		DE_LOG(Error, "%s: failed to locate proper cwd, current working dir: %s", __FUNCTION__, platform_paths::currentDir().c_str());
+		DE_LOG(Error, "%s: failed to locate proper cwd, current working dir: %s", __FUNCTION__, de::platform::path::currentDir().c_str());
 		return init_res::failed_find_cwd;
 	}
 
@@ -84,9 +82,9 @@ engine::init_res engine::initialize()
 	return init_res::ok;
 }
 
-engine::run_res engine::run()
+de::engine::run_res de::engine::run()
 {
-	if (nullptr == engine::get())
+	if (nullptr == de::engine::get())
 	{
 		DE_LOG(Error, "%s: engine unitilized.", __FUNCTION__);
 		return run_res::failed_unitialized;
@@ -105,7 +103,7 @@ engine::run_res engine::run()
 		return run_res::failed_make_new_game_instance;
 	}
 
-	_threadPool.allocateThreads("dreco-engine-worker (low)", 2, thread_pool::priority::low);
+	_threadPool.allocateThreads("dreco-engine-worker (low)", 2, de::async::thread_pool::priority::low);
 
 	if (true == startRenderer())
 	{
@@ -114,7 +112,7 @@ engine::run_res engine::run()
 	return run_res::ok;
 }
 
-void engine::stop()
+void de::engine::stop()
 {
 	if (false == _isRunning)
 	{
@@ -125,7 +123,7 @@ void engine::stop()
 	_threadPool.freeThreads();
 }
 
-void engine::registerSignals()
+void de::engine::registerSignals()
 {
 	std::signal(SIGINT, engine::onSystemSignal);
 	std::signal(SIGILL, engine::onSystemSignal);
@@ -135,7 +133,7 @@ void engine::registerSignals()
 	std::signal(SIGABRT, engine::onSystemSignal);
 }
 
-void engine::onSystemSignal(int sig)
+void de::engine::onSystemSignal(int sig)
 {
 	if (sig == SIGFPE)
 		DE_LOG(Info, "%s: engine recieved floating point excetion. . . stopping.", __FUNCTION__);
@@ -149,9 +147,9 @@ void engine::onSystemSignal(int sig)
 		eng->stop();
 }
 
-bool engine::startRenderer()
+bool de::engine::startRenderer()
 {
-	if (vk_renderer::isSupported())
+	if (de::vulkan::renderer::isSupported())
 	{
 		_renderer.init();
 
@@ -171,12 +169,12 @@ bool engine::startRenderer()
 	return false;
 }
 
-void engine::preMainLoop()
+void de::engine::preMainLoop()
 {
 	_gameInstance->init();
 }
 
-void engine::startMainLoop()
+void de::engine::startMainLoop()
 {
 	preMainLoop();
 
@@ -202,14 +200,14 @@ void engine::startMainLoop()
 	postMainLoop();
 }
 
-void engine::postMainLoop()
+void de::engine::postMainLoop()
 {
 	_renderer.exit();
 	_gameInstance.reset();
 	SDL_Quit();
 }
 
-double engine::calculateNewDeltaTime() noexcept
+double de::engine::calculateNewDeltaTime() noexcept
 {
 	const auto frametime_from_fps_lam = [](const double fps) constexpr noexcept
 	{

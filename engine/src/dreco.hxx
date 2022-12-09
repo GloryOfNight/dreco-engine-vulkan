@@ -1,5 +1,5 @@
 #pragma once
-#include "core/utils/log.hxx"
+#include "core/misc/log.hxx"
 #include "platforms/platform.h"
 
 #include <string>

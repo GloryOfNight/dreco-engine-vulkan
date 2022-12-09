@@ -4,9 +4,10 @@
 #include "math/vec4.hxx"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
-namespace gltf
+namespace de::gltf
 {
 	struct mesh
 	{
@@ -14,13 +15,13 @@ namespace gltf
 		{
 			struct vertex
 			{
-				vec3 _pos;
+				math::vec3 _pos;
 
-				vec3 _normal;
+				math::vec3 _normal;
 
-				vec2 _texCoord;
+				math::vec2 _texCoord;
 
-				vec4 _color;
+				math::vec4 _color;
 			};
 
 			std::vector<vertex> _vertexes;
@@ -28,6 +29,7 @@ namespace gltf
 
 			uint32_t _material{UINT32_MAX};
 		};
+		std::string _name;
 		std::vector<primitive> _primitives;
 	};
-} // namespace gltf
+} // namespace de::gltf

@@ -1,8 +1,8 @@
 #include "event_manager.hxx"
 
-#include "core/utils/log.hxx"
+#include "dreco.hxx"
 
-void event_manager::tick()
+void de::event_manager::tick()
 {
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
@@ -24,7 +24,7 @@ void event_manager::tick()
 	}
 }
 
-event_manager::event_binding_handle event_manager::addEventBinding(uint32_t event, event_callback_func callback)
+de::event_manager::event_binding_handle de::event_manager::addEventBinding(uint32_t event, event_callback_func callback)
 {
 	auto binding = eventBindings.try_emplace(event);
 	binding.first->second.push_front(callback);
@@ -32,7 +32,7 @@ event_manager::event_binding_handle event_manager::addEventBinding(uint32_t even
 	return {event, binding.first->second.before_begin()};
 }
 
-void event_manager::removeEventBinding(const event_binding_handle& handle)
+void de::event_manager::removeEventBinding(const event_binding_handle& handle)
 {
 	if (const auto bindIt = eventBindings.find(handle.event); bindIt != eventBindings.end())
 	{

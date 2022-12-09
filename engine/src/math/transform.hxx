@@ -1,16 +1,19 @@
 #pragma once
 
-#include "vec3.hxx"
 #include "rotator.hxx"
+#include "vectors.hxx"
 
-struct DRECO_API transform
+namespace de::math
 {
-	transform();
-	transform(const vec3& translation, const rotator& rotation, const vec3& scale);
+	struct DRECO_API transform
+	{
+		transform();
+		transform(const vec3& translation, const rotator& rotation, const vec3& scale);
 
-	vec3 _translation;
+		vec3 _translation;
 
-	rotator _rotation;
+		rotator _rotation;
 
-	vec3 _scale;
-};
+		vec3 _scale;
+	};
+} // namespace de::math

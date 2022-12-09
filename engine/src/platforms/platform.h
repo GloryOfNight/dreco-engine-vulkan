@@ -6,4 +6,8 @@
 #define PLATFORM_WINDOWS __WINDOWS__
 
 #include "paths/generic.hxx"
-using platform_paths = generic_paths;
+
+namespace de::platform
+{
+	using path = de::paths::generic;
+} // namespace de::platform

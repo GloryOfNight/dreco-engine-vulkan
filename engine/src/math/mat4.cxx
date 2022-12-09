@@ -8,27 +8,27 @@
 #include <cmath>
 #include <cstring>
 
-mat4::mat4(const mat4d& mat)
+de::math::mat4::mat4(const mat4d& mat)
 	: _mat{mat}
 {
 }
 
-mat4::mat4(mat4d&& mat)
+de::math::mat4::mat4(mat4d&& mat)
 	: _mat{std::move(mat)}
 {
 }
 
-constexpr float mat4::size() noexcept
+constexpr float de::math::mat4::size() noexcept
 {
 	return 16;
 }
 
-mat4 mat4::makeTransform(const transform& t)
+de::math::mat4 de::math::mat4::makeTransform(const transform& t)
 {
 	return makeScale(t._scale) * makeTranslation(t._translation) * makeRotation(t._rotation);
 }
 
-mat4 mat4::makeTranslation(const vec3& vec)
+de::math::mat4 de::math::mat4::makeTranslation(const vec3& vec)
 {
 	// clang-format off
 	const mat4d mat =
@@ -42,7 +42,7 @@ mat4 mat4::makeTranslation(const vec3& vec)
 	return mat4(mat);
 }
 
-mat4 mat4::makeRotation(const rotator& rot)
+de::math::mat4 de::math::mat4::makeRotation(const rotator& rot)
 {
 	const auto rotRad = rot.toRadians();
 
@@ -97,7 +97,7 @@ mat4 mat4::makeRotation(const rotator& rot)
 	return matZ * matY * matX;
 }
 
-mat4 mat4::makeRotation(const quaternion& q)
+de::math::mat4 de::math::mat4::makeRotation(const quaternion& q)
 {
 	mat4 ret{};
 
@@ -117,7 +117,7 @@ mat4 mat4::makeRotation(const quaternion& q)
 	return ret;
 }
 
-mat4 mat4::makeScale(const vec3& vec)
+de::math::mat4 de::math::mat4::makeScale(const vec3& vec)
 {
 	// clang-format off
 	const mat4d mat =
@@ -131,7 +131,7 @@ mat4 mat4::makeScale(const vec3& vec)
 	return mat4(mat);
 }
 
-mat4 mat4::makeIdentity()
+de::math::mat4 de::math::mat4::makeIdentity()
 {
 	// clang-format off
 	const mat4d mat = 
@@ -145,7 +145,7 @@ mat4 mat4::makeIdentity()
 	return mat4(mat);
 }
 
-mat4 mat4::makeProjection(const float near, const float far, const float aspect, const float fov)
+de::math::mat4 de::math::mat4::makeProjection(const float near, const float far, const float aspect, const float fov)
 {
 	const float tanHalfFov = std::tan(fov / 2.F);
 
@@ -160,11 +160,11 @@ mat4 mat4::makeProjection(const float near, const float far, const float aspect,
 	return ret;
 }
 
-mat4 operator*(const mat4& a, const mat4& b)
+de::math::mat4 de::math::operator*(const de::math::mat4& a, const de::math::mat4& b)
 {
 	constexpr size_t N = 4;
 
-	mat4 ret;
+	de::math::mat4 ret;
 	for (size_t i = 0; i < N; i++)
 	{
 		for (size_t j = 0; j < N; j++)
@@ -181,9 +181,9 @@ mat4 operator*(const mat4& a, const mat4& b)
 	return ret;
 }
 
-mat4 operator*(const mat4& o, const float val)
+de::math::mat4 de::math::operator*(const de::math::mat4& o, const float val)
 {
-	mat4 ret;
+	de::math::mat4 ret;
 	ret[0][0] = o[0][0] * val;
 	ret[0][1] = o[0][1] * val;
 	ret[0][2] = o[0][2] * val;
@@ -207,7 +207,7 @@ mat4 operator*(const mat4& o, const float val)
 	return ret;
 }
 
-mat4 mat4::makeInverse(const mat4& mat)
+de::math::mat4 de::math::mat4::makeInverse(const mat4& mat)
 {
 	const float* m = &mat._mat[0][0];
 

@@ -1,8 +1,8 @@
 #pragma once
-#include <cstdint>
 #include <array>
+#include <cstdint>
 
-namespace gltf
+namespace de::gltf
 {
 	struct base_texture
 	{
@@ -49,4 +49,4 @@ namespace gltf
 
 		pbr_metallic_roughness _pbrMetallicRoughness;
 	};
-} // namespace gltf
+} // namespace de::gltf
