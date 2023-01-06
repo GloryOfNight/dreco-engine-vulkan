@@ -2,6 +2,7 @@
 
 #include <SDL_log.h>
 #include <string>
+#include <type_traits>
 
 namespace de
 {
@@ -28,9 +29,16 @@ namespace de
 	};
 
 	template <typename... Args>
-	static void log(log_category category, log_priority priority, const std::string_view message, Args&&... args) noexcept
+	static void log(log_category category, log_priority priority, const std::string_view message, Args&&... args)
 	{
-		SDL_LogMessage(static_cast<SDL_LogCategory>(category), static_cast<SDL_LogPriority>(priority), message.data(), std::forward<Args>(args)...);
+		if constexpr (sizeof...(args) == 0)
+		{
+			SDL_LogMessage(static_cast<SDL_LogCategory>(category), static_cast<SDL_LogPriority>(priority), "%s", message.data());
+		}
+		else
+		{
+			SDL_LogMessage(static_cast<SDL_LogCategory>(category), static_cast<SDL_LogPriority>(priority), message.data(), std::forward<Args>(args)...);
+		}
 	}
 } // namespace de
 
