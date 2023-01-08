@@ -11,6 +11,12 @@
 #include <cstdint>
 #include <utility>
 
+#define DRECO_REGISTER_GAME_INSTANCE_CLASS(GameInstanceClass)                   \
+	extern "C++" DRECO_API de::gf::game_instance::unique __createGameInstance() \
+	{                                                                           \
+		return de::gf::game_instance::unique(new GameInstanceClass());          \
+	}
+
 namespace de
 {
 	class DRECO_API engine
@@ -43,7 +49,7 @@ namespace de
 
 		void stop();
 
-		void setGameInstance(de::gf::game_instance::unique&& gameInstance);
+		void setCreateGameInstanceFunc(std::function<de::gf::game_instance::unique()> func);
 
 	private:
 		static void onSystemSignal(int sig);
@@ -69,6 +75,8 @@ namespace de
 		de::renderer _renderer;
 
 		de::gf::game_instance::unique _gameInstance;
+
+		std::function<de::gf::game_instance::unique()> _createGameInstanceFunc;
 
 		uint64_t _frameCounter{};
 

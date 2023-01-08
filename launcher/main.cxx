@@ -1,9 +1,10 @@
 #include "core/engine.hxx"
+#include "game_framework/game_instance.hxx"
 
 #include "dreco.hxx"
 #include "shader_compiler.hxx"
 
-extern "C++" void registerGame(de::engine*);
+extern "C++" DRECO_API de::gf::game_instance::unique __createGameInstance();
 
 int main()
 {
@@ -18,7 +19,7 @@ int main()
 		return 1;
 	}
 
-	registerGame(&engine);
+	engine.setCreateGameInstanceFunc(__createGameInstance);
 
 	if (const auto res = shader_compiler::attemptCompileShaders(DRECO_SHADERS_SOURCE_DIR, DRECO_SHADERS_BINARY_DIR); res != 0)
 	{

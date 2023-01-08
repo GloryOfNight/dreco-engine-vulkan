@@ -1,8 +1,8 @@
 #include "engine.hxx"
 
+#include "core/async/async_tasks/async_load_gltf.hxx"
 #include "core/containers/gltf/gltf.hxx"
 #include "core/misc/file.hxx"
-#include "core/async/async_tasks/async_load_gltf.hxx"
 
 #include "engine.hxx"
 
@@ -92,6 +92,16 @@ void de::engine::run()
 		return;
 	}
 
+	try
+	{
+		_gameInstance = _createGameInstanceFunc();
+	}
+	catch (std::bad_function_call)
+	{
+		DE_LOG(Error, "%s: __createGameInstance bad call, coundn't run", __FUNCTION__);
+		return;
+	}
+
 	if (nullptr == _gameInstance)
 	{
 		DE_LOG(Error, "%s: game instance == nullptr, coundn't run", __FUNCTION__);
@@ -106,9 +116,9 @@ void de::engine::run()
 	}
 }
 
-void de::engine::setGameInstance(de::gf::game_instance::unique&& gameInstance)
+void de::engine::setCreateGameInstanceFunc(std::function<de::gf::game_instance::unique()> func)
 {
-	_gameInstance = std::move(gameInstance);
+	_createGameInstanceFunc = func;
 }
 
 void de::engine::stop()
