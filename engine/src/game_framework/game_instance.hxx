@@ -29,8 +29,6 @@ namespace de::gf
 		world& getCurrentWorld() const;
 		bool setCurrentWorldIndex(const size_t index);
 
-		virtual game_instance::unique makeNew() const = 0;
-
 	private:
 		std::vector<world::unique> _worlds;
 		size_t _currentWorldIndex{};

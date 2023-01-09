@@ -5,6 +5,12 @@
 
 #include <string>
 
+#define DRECO_IMPLEMENT_PRIMARY_GAME_INSTANCE_CLASS(GameInstanceClass)          \
+	extern "C++" DRECO_API de::gf::game_instance::unique __createGameInstance() \
+	{                                                                           \
+		return de::gf::game_instance::unique(new GameInstanceClass());          \
+	}
+
 // clang-format off
 #define DRECO_API
 #if PLATFORM_WINDOWS

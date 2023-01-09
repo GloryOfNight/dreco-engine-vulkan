@@ -31,9 +31,4 @@ public:
 	{
 		loadWorld<launcher_world>();
 	}
-
-	virtual game_instance::unique makeNew() const override 
-	{
-		return game_instance::unique(new launcher_gi());
-	}
 };

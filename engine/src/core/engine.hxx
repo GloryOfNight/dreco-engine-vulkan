@@ -11,12 +11,6 @@
 #include <cstdint>
 #include <utility>
 
-#define DRECO_REGISTER_GAME_INSTANCE_CLASS(GameInstanceClass)                   \
-	extern "C++" DRECO_API de::gf::game_instance::unique __createGameInstance() \
-	{                                                                           \
-		return de::gf::game_instance::unique(new GameInstanceClass());          \
-	}
-
 namespace de
 {
 	class DRECO_API engine
