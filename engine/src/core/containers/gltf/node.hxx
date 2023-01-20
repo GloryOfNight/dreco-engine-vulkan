@@ -1,8 +1,7 @@
 #pragma once
 
+#include "math/transform.hxx"
 #include "math/mat4.hxx"
-#include "math/quaternion.hxx"
-#include "math/vec3.hxx"
 
 #include <cstdint>
 #include <string>
@@ -18,6 +17,7 @@ namespace de::gltf
 
 		uint32_t _mesh{UINT32_MAX};
 
+		math::transform _transform;
 		math::mat4 _matrix;
 	};
 } // namespace de::gltf

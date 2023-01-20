@@ -1,7 +1,7 @@
 #include "camera.hxx"
 
 #include "core/engine.hxx"
-#include "math/math.hxx"
+#include "math/casts.hxx"
 
 de::math::mat4 de::gf::camera::getView() const
 {
@@ -17,20 +17,15 @@ void de::gf::camera::tick(double deltaTime)
 {
 	node::tick(deltaTime);
 
-	{ // update view
-		de::math::transform viewTransform = getTransform();
-		viewTransform._translation._x = -viewTransform._translation._x;
-		viewTransform._translation._y = -viewTransform._translation._y;
-		viewTransform._translation._z = -viewTransform._translation._z;
-		viewTransform._rotation._pitch = -viewTransform._rotation._pitch;
-		viewTransform._scale._x = -viewTransform._scale._x;
+	const auto& transform = getTransform();
 
-		_view = de::math::mat4::makeTransform(viewTransform);
-	}
+	const auto rotMat = de::math::mat4::makeRotation(de::math::quat_cast(transform._rotation));
+	const auto camFowVec = rotMat.forward();
 
-	{ // update projection
-		const auto currentExtent = de::renderer::get()->getCurrentExtent();
-		_projection = de::math::mat4::makeProjection(1.F, std::numeric_limits<float>::max(), static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), math::degreesToRadians(75.F));
-	}
+	_view = de::math::mat4::lookAt(transform._translation, transform._translation + camFowVec, de::math::vec3(0, -1, 0));
+
+	const auto currentExtent = de::renderer::get()->getCurrentExtent();
+	_projection = de::math::mat4::makeProjection(0.1f, 1000.f, static_cast<float>(currentExtent.width) / static_cast<float>(currentExtent.height), math::deg_to_rad(75.F));
+
 	de::engine::get()->getRenderer().setCameraData(_view, _projection);
 }

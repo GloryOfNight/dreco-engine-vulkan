@@ -1,5 +1,6 @@
 #pragma once
 #include "core/containers/gltf/model.hxx"
+#include "math/transform.hxx"
 #include "vulkan/vulkan.h"
 
 #include "buffer.hxx"
@@ -14,8 +15,31 @@ namespace de::vulkan
 	class material;
 	class mesh;
 
-	class scene
+	class scene final
 	{
+		class mesh final
+		{
+		public:
+			void init(uint32_t vertexCount, size_t vertexSize, uint32_t vertexOffset, uint32_t indexCount, uint32_t indexOffset);
+
+			void drawCmd(vk::CommandBuffer commandBuffer) const;
+
+			// temporal hold of the mesh matrix (transform)
+			de::math::mat4 _mat;
+
+			vk::DeviceSize getVertexSize() const;
+			vk::DeviceSize getIndexSize() const;
+
+		private:
+			uint32_t _vertexOffset{0};
+			vk::DeviceSize _vertexSize{0};
+			vk::DeviceSize _vertexCount{0};
+
+			uint32_t _indexOffset{0};
+			vk::DeviceSize _indexSize{0};
+			vk::DeviceSize _indexCount{0};
+		};
+
 	public:
 		scene() = default;
 		~scene();
@@ -47,7 +71,7 @@ namespace de::vulkan
 			std::vector<device_memory::map_memory_region> _materialMemRegions;
 		};
 
-		void recurseSceneNodes(const de::gltf::model& m, const de::gltf::node& selfNode, const de::math::mat4& rootMat, scene_meshes_info& info);
+		void recurseSceneNodes(const de::gltf::model& m, const de::gltf::node& selfNode, const de::math::transform& rootTransform, scene_meshes_info& info);
 
 		void createMeshesBuffer(const scene_meshes_info& info);
 		void createMaterialsBuffer(const scene_meshes_info& info);

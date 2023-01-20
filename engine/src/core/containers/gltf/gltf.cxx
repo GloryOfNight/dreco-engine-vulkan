@@ -1,7 +1,8 @@
 #include "gltf.hxx"
 
 #include "core/misc/log.hxx"
-#include "math/rotator.hxx"
+#include "math/casts.hxx"
+#include "math/mat4.hxx"
 
 #include <algorithm>
 #include <execution>
@@ -26,10 +27,10 @@ static de::math::mat4 parseMatrix(const std::vector<double>& matrix)
 		for (uint8_t i = 0; i < 4; ++i)
 		{
 			const uint8_t indx = i * 4;
-			out._mat[i][0] = matrix[indx];
-			out._mat[i][1] = matrix[indx + 1];
-			out._mat[i][2] = matrix[indx + 2];
-			out._mat[i][3] = matrix[indx + 3];
+			out[i][0] = matrix[indx];
+			out[i][1] = matrix[indx + 1];
+			out[i][2] = matrix[indx + 2];
+			out[i][3] = matrix[indx + 3];
 		}
 	}
 	return out;
@@ -82,23 +83,25 @@ static void parseNodes(const tinygltf::Model& tModel, de::gltf::model& dModel)
 		{
 			if (tNode.translation.size() == 3)
 			{
-				const de::math::vec3 translation = de::math::vec3(tNode.translation[0], tNode.translation[1], tNode.translation[2]);
-				dNode._matrix = dNode._matrix * de::math::mat4::makeTranslation(translation);
+				const auto translation = de::math::vec3(tNode.translation[0], tNode.translation[1], tNode.translation[2]);
+				dNode._transform._translation = translation;
 			}
 			if (tNode.rotation.size() == 4)
 			{
-				const de::math::quaternion quat = de::math::quaternion(tNode.rotation[0], tNode.rotation[1], tNode.rotation[2], tNode.rotation[3]);
-				dNode._matrix = dNode._matrix * de::math::mat4::makeRotation(quat);
+				const auto quat = de::math::quaternion(tNode.rotation[0], tNode.rotation[1], tNode.rotation[2], tNode.rotation[3]);
+				dNode._transform._rotation = de::math::euler_cast(quat);
 			}
 			if (tNode.scale.size() == 3)
 			{
-				const de::math::vec3 scale = de::math::vec3::narrow_construct(tNode.scale[0], tNode.scale[1], tNode.scale[2]);
-				dNode._matrix = dNode._matrix * de::math::mat4::makeScale(scale);
+				const auto scale = de::math::vec3::narrow_construct(tNode.scale[0], tNode.scale[1], tNode.scale[2]);
+				dNode._transform._scale = scale;
 			}
+			dNode._matrix = de::math::mat4::makeTransform(dNode._transform);
 		}
 		else
 		{
 			dNode._matrix = parseMatrix(tNode.matrix);
+			dNode._transform = de::math::transform_cast<de::math::transform>(dNode._matrix);
 		}
 	}
 }

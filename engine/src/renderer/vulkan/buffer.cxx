@@ -1,6 +1,5 @@
 #include "buffer.hxx"
 
-#include "exceptions.hxx"
 #include "renderer.hxx"
 #include "utils.hxx"
 

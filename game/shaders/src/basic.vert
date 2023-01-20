@@ -12,7 +12,7 @@ layout(location = 2) out vec4 outColor;
 layout(set = 0, binding = 0) uniform readonly Camera 
 {
     mat4 view;
-    mat4 viewProj;
+    mat4 proj;
 } cameraData;
 
 layout( push_constant ) uniform readonly constants
@@ -25,5 +25,5 @@ void main() {
     outColor = inColor;
     outNormal = mat3(cameraData.view * modelData.model) * inNormal;
 
-    gl_Position = cameraData.viewProj * modelData.model * vec4(inPosition, 1.0);
+    gl_Position = cameraData.proj * cameraData.view * modelData.model * vec4(inPosition, 1.0);
 }

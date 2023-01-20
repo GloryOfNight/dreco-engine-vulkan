@@ -1,6 +1,7 @@
 #pragma once
 #include "vectors.hxx"
 
+#include <array>
 #include <type_traits>
 
 namespace de::math
@@ -15,6 +16,13 @@ namespace de::math
 			: _x{a}
 			, _y{b}
 			, _z{c}
+		{
+		}
+
+		explicit vec3t(const std::array<T, 4>& matCollumn)
+			: _x{matCollumn[0]}
+			, _y{matCollumn[1]}
+			, _z{matCollumn[2]}
 		{
 		}
 
@@ -37,12 +45,30 @@ namespace de::math
 			T _z{}, _b;
 		};
 
+		static vec3t normalize(const vec3t& v)
+		{
+			const auto len = length(v);
+			return vec3t(v._x / len, v._y / len, v._z / len);
+		}
+
+		static vec3t cross(const vec3t& f, const vec3t& s)
+		{
+			return vec3t(f._y * s._z - f._z * s._y,
+				f._z * s._x - f._x * s._z,
+				f._x * s._y - f._y * s._x);
+		}
+
 		static float dot(const vec3t<T>& first, const vec3t<T>& second)
 		{
 			return (first._x * second._x) + (first._y * second._y) + (first._z * second._z);
 		}
 
-		vec3t operator+(const vec3t<T>& other)
+		static float length(const vec3t<T>& value)
+		{
+			return std::sqrt(value._x * value._x + value._y * value._y + value._z * value._z);
+		}
+
+		vec3t operator+(const vec3t<T>& other) const
 		{
 			return vec3t{this->_x + other._x, this->_y + other._y, this->_z + other._z};
 		}

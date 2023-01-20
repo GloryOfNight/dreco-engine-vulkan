@@ -4,8 +4,6 @@
 #include "game_framework/camera.hxx"
 
 #include "dreco.hxx"
-#include "exceptions.hxx"
-#include "mesh.hxx"
 #include "utils.hxx"
 
 #include <SDL_video.h>
@@ -309,7 +307,7 @@ void de::vulkan::renderer::createPhysicalDevice()
 
 	if (!_physicalDevice)
 	{
-		throw de::vulkan::exept::no_gpu();
+		throw std::runtime_error("No Vulkan supported GPU");
 	}
 }
 
@@ -679,8 +677,14 @@ void de::vulkan::renderer::drawFrame()
 
 void de::vulkan::renderer::setCameraData(const de::math::mat4& inView, const de::math::mat4 inProj)
 {
+	de::math::mat4 cor;
+	cor[0][0] = 1.0f;
+	cor[1][1] = -1.0f;
+	cor[2][2] = 0.5f;
+	cor[2][3] = 0.5f;
+	cor[3][3] = 1.0f;
 	_cameraData.view = inView;
-	_cameraData.viewProj = inView * inProj;
+	_cameraData.proj = inProj;
 }
 
 void de::vulkan::renderer::updateCameraBuffer()

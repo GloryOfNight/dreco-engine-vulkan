@@ -1,8 +1,8 @@
 #include "flying_camera.hxx"
 
-#include "math/vec3.hxx"
-
 #include "core/engine.hxx"
+#include "math/casts.hxx"
+#include "math/vec3.hxx"
 
 void de::gf::flying_camera::tick(double deltaTime)
 {
@@ -10,8 +10,10 @@ void de::gf::flying_camera::tick(double deltaTime)
 	auto& inputManager = engine->getInputManager();
 
 	auto& transform = getTransform();
-	const de::math::vec3 camFowVec = transform._rotation.toForwardVector();
-	const de::math::vec3 camRightVec = transform._rotation.toRightDirection();
+
+	const auto rotMat = de::math::mat4::makeRotation(de::math::quat_cast(transform._rotation));
+	const auto camFowVec = rotMat.forward();
+	const auto camRightVec = rotMat.right();
 
 	{ // camera WASDQE movement
 		float camMoveSpeed = 50.F;
@@ -50,8 +52,6 @@ void de::gf::flying_camera::tick(double deltaTime)
 	}
 
 	{
-		auto& rotation = transform._rotation;
-
 		const auto& renderer = engine->getRenderer();
 
 		if (inputManager.isInMouseFocus())
@@ -66,16 +66,16 @@ void de::gf::flying_camera::tick(double deltaTime)
 				const int halfExtentY = extent.height * 0.5;
 				if (isMouseRightButtonRepeated)
 				{
-					const double cameraRotSpeed = 45.0;
+					const auto cameraRotSpeed = de::math::deg_to_rad(45.f);
 					if (x && halfExtentX != x)
 					{
 						const auto coefDistX = (static_cast<float>(halfExtentX) / static_cast<float>(x) - 1);
-						rotation._yaw = rotation._yaw - (cameraRotSpeed * coefDistX);
+						transform._rotation._yaw = transform._rotation._yaw - (cameraRotSpeed * coefDistX);
 					}
 					if (y && halfExtentY != y)
 					{
 						const auto coefDistY = (static_cast<float>(halfExtentY) / static_cast<float>(y) - 1);
-						rotation._pitch = rotation._pitch + (cameraRotSpeed * coefDistY);
+						transform._rotation._pitch = transform._rotation._pitch + (cameraRotSpeed * coefDistY);
 					}
 				}
 				else // on first button press
@@ -91,9 +91,9 @@ void de::gf::flying_camera::tick(double deltaTime)
 				isMouseRightButtonRepeated = false;
 			}
 		}
-		rotation.clamp();
-		rotation.max(90.F, 360.F, 360.F);
-		rotation.min(-90.F, -360.F, -360.F);
+		transform._rotation.clamp();
+		transform._rotation.max(M_PI * 0.5f, M_PI * 2.f, M_PI * 2.f);
+		transform._rotation.min(-M_PI * 0.5f, -M_PI * 2.f, -M_PI * 2.f);
 	}
 
 	camera::tick(deltaTime);
