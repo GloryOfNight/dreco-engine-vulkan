@@ -3,6 +3,7 @@
 #include "euler.hxx"
 #include "mat4.hxx"
 #include "quaternion.hxx"
+#include "transform.hxx"
 #include "vec3.hxx"
 
 #include <cmath>
@@ -37,7 +38,7 @@ namespace de::math
 			else
 				rx = atan2f(y, x);
 		}
-		{ // yaw 
+		{ // yaw
 			auto v = -2.f * (q._x * q._z - q._w * q._y);
 			if (v > 1.f)
 				v = 1.f;
