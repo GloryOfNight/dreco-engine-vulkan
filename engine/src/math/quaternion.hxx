@@ -72,7 +72,7 @@ namespace de::math
 		void normalize()
 		{
 			constexpr float EPSILON = 1e-6;
-			const float magnitude = std::sqrtf(_x * _x + _y * _y + _z * _z + _w * _w);
+			const float magnitude = sqrtf(_x * _x + _y * _y + _z * _z + _w * _w);
 			if (std::isnan(magnitude) || magnitude == static_cast<T>(0))
 			{
 				*this = identity();

@@ -35,7 +35,7 @@ namespace de::math
 			if (vec2(x, y) == vec2(0.f, 0.f))
 				rx = 0.f;
 			else
-				rx = std::atan2f(y, x);
+				rx = atan2f(y, x);
 		}
 		{ // yaw 
 			auto v = -2.f * (q._x * q._z - q._w * q._y);
@@ -43,7 +43,7 @@ namespace de::math
 				v = 1.f;
 			else if (v < -1.f)
 				v = -1.f;
-			ry = std::asinf(v);
+			ry = asinf(v);
 		}
 		{ // roll
 			const auto y = 2.f * (q._x * q._y + q._w * q._z);
@@ -51,7 +51,7 @@ namespace de::math
 			if (vec2(x, y) == vec2(0.f, 0.f))
 				rz = 0.f;
 			else
-				rz = std::atan2f(y, x);
+				rz = atan2f(y, x);
 		}
 		return euler(rx, ry, rz);
 	}
@@ -60,13 +60,13 @@ namespace de::math
 	{
 		const auto r = rotation * 0.5f;
 
-		const auto cx = std::cosf(r._x);
-		const auto cy = std::cosf(r._y);
-		const auto cz = std::cosf(r._z);
+		const auto cx = cosf(r._x);
+		const auto cy = cosf(r._y);
+		const auto cz = cosf(r._z);
 
-		const auto sx = std::sinf(r._x);
-		const auto sy = std::sinf(r._y);
-		const auto sz = std::sinf(r._z);
+		const auto sx = sinf(r._x);
+		const auto sy = sinf(r._y);
+		const auto sz = sinf(r._z);
 
 		quaternion q;
 		q._w = cx * cy * cz + sx * sy * sz;
