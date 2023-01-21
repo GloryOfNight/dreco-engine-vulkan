@@ -48,7 +48,7 @@ namespace de::math
 		static vec3t normalize(const vec3t& v)
 		{
 			const auto len = length(v);
-			return vec3t(v._x / len, v._y / len, v._z / len);
+			return len == static_cast<T>(0) ? vec3t() : vec3t(v._x / len, v._y / len, v._z / len);
 		}
 
 		static vec3t cross(const vec3t& f, const vec3t& s)
@@ -70,7 +70,7 @@ namespace de::math
 
 		vec3t operator+(const vec3t<T>& other) const
 		{
-			return vec3t{this->_x + other._x, this->_y + other._y, this->_z + other._z};
+			return vec3t{_x + other._x, _y + other._y, _z + other._z};
 		}
 		vec3t& operator+=(const vec3t<T>& other)
 		{
@@ -78,9 +78,13 @@ namespace de::math
 			return *this;
 		}
 
+		vec3t operator-() const
+		{
+			return vec3t{-_x, -_y, -_z};
+		}
 		vec3t operator-(const vec3t<T>& other) const
 		{
-			return vec3t{this->_x - other._x, this->_y - other._y, this->_z - other._z};
+			return vec3t{_x - other._x, _y - other._y, _z - other._z};
 		}
 		vec3t& operator-=(const vec3t<T>& other)
 		{
@@ -90,7 +94,7 @@ namespace de::math
 
 		vec3t operator*(const T other) const
 		{
-			return vec3t{this->_x * other, this->_y * other, this->_z * other};
+			return vec3t{_x * other, _y * other, _z * other};
 		}
 		vec3t& operator*=(const T other)
 		{
@@ -100,7 +104,7 @@ namespace de::math
 
 		vec3t operator*(const vec3t<T>& other) const
 		{
-			return vec3t{this->_x * other._x, this->_y * other._y, this->_z * other._z};
+			return vec3t{_x * other._x, _y * other._y, _z * other._z};
 		}
 		vec3t& operator*=(const vec3t<T>& other)
 		{

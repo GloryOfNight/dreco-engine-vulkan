@@ -1,7 +1,5 @@
 #pragma once
 
-#include "glm/gtx/quaternion.hpp"
-
 #include "euler.hxx"
 #include "mat4.hxx"
 #include "quaternion.hxx"
@@ -27,8 +25,35 @@ namespace de::math
 
 	inline euler euler_cast(const quaternion& q)
 	{
-		const auto r = glm::eulerAngles(glm::quat(q._w, q._x, q._y, q._z));
-		return euler(r.x, r.y, r.z);
+		//const auto r = glm::eulerAngles(glm::quat(q._w, q._x, q._y, q._z));
+
+		float rx, ry, rz;
+
+		{ // pitch
+			const auto y = 2.f * (q._y * q._z + q._w * q._x);
+			const auto x = q._w * q._w - q._x * q._x - q._y * q._y + q._z * q._z;
+			if (vec2(x, y) == vec2(0.f, 0.f))
+				rx = 0.f;
+			else
+				rx = std::atan2f(y, x);
+		}
+		{ // yaw 
+			auto v = -2.f * (q._x * q._z - q._w * q._y);
+			if (v > 1.f)
+				v = 1.f;
+			else if (v < -1.f)
+				v = -1.f;
+			ry = std::asinf(v);
+		}
+		{ // roll
+			const auto y = 2.f * (q._x * q._y + q._w * q._z);
+			const auto x = q._w * q._w + q._x * q._x - q._y * q._y - q._z * q._z;
+			if (vec2(x, y) == vec2(0.f, 0.f))
+				rz = 0.f;
+			else
+				rz = std::atan2f(y, x);
+		}
+		return euler(rx, ry, rz);
 	}
 
 	inline quaternion quat_cast(const euler& rotation)

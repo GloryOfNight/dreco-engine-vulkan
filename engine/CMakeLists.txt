@@ -3,7 +3,7 @@ project(dreco-engine)
 
 find_package(Vulkan REQUIRED)
 find_package(SDL2 REQUIRED)
-find_package(glm REQUIRED)
+find_package(glm QUIET)
 
 set(DRECO_ASSETS_DIR "assets")
 set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
@@ -23,8 +23,14 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_VK_USE_VALIDATION DRECO_VK_USE_MESA_OVERLAY DRECO_VK_USE_LUNAR_MONITOR)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL2::SDL2 glm::glm shader-compiler-static spirv-reflect stb tinygltf)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS} ${glm_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL2::SDL2 shader-compiler-static spirv-reflect stb tinygltf)
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
+
+if (${glm_FOUND})
+target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
+target_include_directories(${PROJECT_NAME} PUBLIC ${glm_INCLUDE_DIRS})
+target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_HAS_GLM)
+endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17

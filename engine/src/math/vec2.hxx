@@ -71,5 +71,10 @@ namespace de::math
 			*this = *this * other;
 			return *this;
 		}
+
+		bool operator==(const vec2t<T>& other) const 
+		{
+			return _x == other._x && _y == other._y;
+		}
 	};
 } // namespace de::math

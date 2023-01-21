@@ -11,9 +11,9 @@ void de::gf::flying_camera::tick(double deltaTime)
 
 	auto& transform = getTransform();
 
-	const auto rotMat = de::math::mat4::makeRotation(de::math::quat_cast(transform._rotation));
-	const auto camFowVec = rotMat.forward();
-	const auto camRightVec = rotMat.right();
+	const auto quatRot = de::math::quat_cast(transform._rotation);
+	const auto camFowVec = de::math::quaternion::forwardVector(quatRot);
+	const auto camRightVec = de::math::quaternion::rightVector(quatRot);
 
 	{ // camera WASDQE movement
 		float camMoveSpeed = 50.F;
@@ -62,15 +62,15 @@ void de::gf::flying_camera::tick(double deltaTime)
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
 				const auto extent = renderer.getCurrentExtent();
-				const int halfExtentX = extent.width * 0.5;
-				const int halfExtentY = extent.height * 0.5;
+				const auto halfExtentX = static_cast<uint32_t>(extent.width * 0.5f);
+				const auto halfExtentY = static_cast<uint32_t>(extent.height * 0.5f);
 				if (isMouseRightButtonRepeated)
 				{
 					const auto cameraRotSpeed = de::math::deg_to_rad(45.f);
 					if (x && halfExtentX != x)
 					{
 						const auto coefDistX = (static_cast<float>(halfExtentX) / static_cast<float>(x) - 1);
-						transform._rotation._yaw = transform._rotation._yaw - (cameraRotSpeed * coefDistX);
+						transform._rotation._yaw = transform._rotation._yaw + (cameraRotSpeed * coefDistX);
 					}
 					if (y && halfExtentY != y)
 					{

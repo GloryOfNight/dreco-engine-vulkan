@@ -40,9 +40,33 @@ namespace de::math
 			return quaternion_t(s * axis._x, s * axis._y, s * axis._z, c);
 		}
 
-		bool is_normalized() const
+		static vec3 forwardVector(const quaternion_t& q) 
 		{
-			return (_x * _x + _y * _y + _z * _z + _w * _w) == static_cast<T>(1);
+			const auto x = 2.0f * q._x * q._z + 2.0f * q._y * q._w;
+			const auto y = 2.0f * q._y * q._z - 2.0f * q._x * q._w;
+			const auto z = 1.0f - 2.0f * q._x * q._x - 2.0f * q._y * q._y;
+			return vec3(-x, -y, -z);
+		}
+
+		static vec3 rightVector(const quaternion_t& q) 
+		{
+			const auto x = 1.0f - 2.0f * q._y * q._y - 2.0f * q._z * q._z;
+			const auto y = 2.0f * q._x * q._y + 2.0f * q._z * q._w;
+			const auto z = 2.0f * q._x * q._z - 2.0f * q._y * q._w;
+			return vec3(x, y, z);
+		}
+
+		static vec3 upVector(const quaternion_t& q) 
+		{
+			const auto x = 2.0f * q._x * q._y - 2.0f * q._z * q._w;
+			const auto y = 1.0f - 2.0f * q._x * q._x - 2.0f * q._z * q._z;
+			const auto z = 2.0f * q._y * q._z + 2.0f * q._x * q._w;
+			return vec3(x, y, z);
+		}
+
+		static float dot(const quaternion_t& q)
+		{
+			return (q._x * q._x + q._y * q._y + q._z * q._z + q._w * q._w);
 		}
 
 		void normalize()

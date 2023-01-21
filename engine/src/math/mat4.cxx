@@ -85,17 +85,19 @@ de::math::mat4 de::math::mat4::makeIdentity()
 	return mat4(std::move(rawMat));
 }
 
+de::math::mat4 de::math::mat4::makeFirstPersonView(const vec3& translation, const quaternion& rotation)
+{
+	return makeTranslation(-translation) * makeRotation(rotation) * makeScale(vec3(1.f, -1.f, 1.f));
+}
+
 de::math::mat4 de::math::mat4::lookAt(const vec3& pos, const vec3& target, const vec3& up)
 {
+	// BUG: when looking up or down, generates invalid matrix for camera to view
 	mat4 out;
-	vec3 z_axis;
-	z_axis._x = target._x - pos._x;
-	z_axis._y = target._y - pos._y;
-	z_axis._z = target._z - pos._z;
-
-	z_axis = vec3::normalize(z_axis);
-	vec3 x_axis = vec3::normalize(vec3::cross(z_axis, up));
-	vec3 y_axis = vec3::cross(x_axis, z_axis);
+	const auto z_axis = vec3::normalize(vec3(target._x - pos._x, target._y - pos._y, target._z - pos._z));
+	
+	const auto x_axis = vec3::normalize(vec3::cross(z_axis, up));
+	const auto y_axis = vec3::cross(x_axis, z_axis);
 
 	out[0][0] = x_axis._x;
 	out[0][1] = y_axis._x;
@@ -131,16 +133,6 @@ de::math::mat4 de::math::mat4::makeProjection(const float near, const float far,
 	out[3][2] = -((2.0f * far * near) / (far - near));
 	out[3][3] = 1.f;
 	return out;
-
-	mat4 ret;
-	ret[0][0] = 1.F / (aspect * tanHalfFov);
-	ret[1][1] = ret[0][0] * -aspect;
-	ret[2][2] = (far + near) / (far - near);
-	ret[2][3] = 1;
-	ret[3][2] = -(far * near) / (far - near);
-	ret[3][3] = 1;
-
-	return ret;
 }
 
 de::math::mat4 de::math::operator*(const de::math::mat4& a, const de::math::mat4& b)
@@ -317,27 +309,6 @@ de::math::mat4& de::math::mat4::extractScale(const vec3& inScale)
 		(*this)[2][2] *= invScale;
 	}
 	return *this;
-}
-
-de::math::vec3 de::math::mat4::forward() const
-{
-	auto out = vec3(-(*this)[0][2], -(*this)[1][2], -(*this)[2][2]);
-	out = vec3::normalize(out);
-	return out;
-}
-
-de::math::vec3 de::math::mat4::right() const
-{
-	auto out = vec3(-(*this)[0][0], -(*this)[1][0], -(*this)[2][0]);
-	out = vec3::normalize(out);
-	return out;
-}
-
-de::math::vec3 de::math::mat4::up() const
-{
-	auto out = vec3(-(*this)[0][1], -(*this)[1][1], -(*this)[2][1]);
-	out = vec3::normalize(out);
-	return out;
 }
 
 de::math::vec3 de::math::mat4::getTranslation() const

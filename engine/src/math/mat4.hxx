@@ -85,17 +85,13 @@ namespace de::math
 
 		static mat4 makeIdentity();
 
+		static mat4 makeFirstPersonView(const vec3& translation, const quaternion& rotation);
+
 		static mat4 lookAt(const vec3& pos, const vec3& target, const vec3& up);
 
 		static mat4 makeProjection(const float near, const float far, const float aspect, const float fov);
 
 		static mat4 makeInverse(const mat4& mat);
-
-		vec3 forward() const;
-
-		vec3 right() const;
-
-		vec3 up() const;
 
 		mat4& extractScale(const vec3& inScale);
 
