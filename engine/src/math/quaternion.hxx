@@ -40,7 +40,7 @@ namespace de::math
 			return quaternion_t(s * axis._x, s * axis._y, s * axis._z, c);
 		}
 
-		static vec3 forwardVector(const quaternion_t& q) 
+		static vec3 forwardVector(const quaternion_t& q)
 		{
 			const auto x = 2.0f * q._x * q._z + 2.0f * q._y * q._w;
 			const auto y = 2.0f * q._y * q._z - 2.0f * q._x * q._w;
@@ -48,7 +48,7 @@ namespace de::math
 			return vec3(-x, -y, -z);
 		}
 
-		static vec3 rightVector(const quaternion_t& q) 
+		static vec3 rightVector(const quaternion_t& q)
 		{
 			const auto x = 1.0f - 2.0f * q._y * q._y - 2.0f * q._z * q._z;
 			const auto y = 2.0f * q._x * q._y + 2.0f * q._z * q._w;
@@ -56,7 +56,7 @@ namespace de::math
 			return vec3(x, y, z);
 		}
 
-		static vec3 upVector(const quaternion_t& q) 
+		static vec3 upVector(const quaternion_t& q)
 		{
 			const auto x = 2.0f * q._x * q._y - 2.0f * q._z * q._w;
 			const auto y = 1.0f - 2.0f * q._x * q._x - 2.0f * q._z * q._z;
@@ -69,9 +69,33 @@ namespace de::math
 			return (q._x * q._x + q._y * q._y + q._z * q._z + q._w * q._w);
 		}
 
+		static T pitch(const quaternion_t& q)
+		{
+			const auto y = static_cast<T>(2) * (q._y * q._z + q._w * q._x);
+			const auto x = q._w * q._w - q._x * q._x - q._y * q._y + q._z * q._z;
+			return vec2(x, y) == vec2(0, 0) ? 0 : atan2(y, x);
+		}
+
+		static T yaw(const quaternion_t& q)
+		{
+			auto v = static_cast<T>(-2) * (q._x * q._z - q._w * q._y);
+			if (v > static_cast<T>(1))
+				v = static_cast<T>(1);
+			else if (v < static_cast<T>(-1))
+				v = static_cast<T>(-1);
+			return asin(v);
+		}
+
+		static T roll(const quaternion_t& q)
+		{
+			const auto y = static_cast<T>(2) * (q._x * q._y + q._w * q._z);
+			const auto x = q._w * q._w + q._x * q._x - q._y * q._y - q._z * q._z;
+			return vec2(x, y) == vec2(0, 0) ? 0 : atan2(y, x);
+		}
+
 		void normalize()
 		{
-			constexpr float EPSILON = 1e-6;
+			constexpr float epsilon = 1e-6;
 			const float magnitude = sqrtf(_x * _x + _y * _y + _z * _z + _w * _w);
 			if (std::isnan(magnitude) || magnitude == static_cast<T>(0))
 			{
@@ -80,19 +104,19 @@ namespace de::math
 			}
 
 			_x /= magnitude;
-			if (std::fabs(_x) < EPSILON)
+			if (std::fabs(_x) < epsilon)
 				_x = 0.f;
 
 			_y /= magnitude;
-			if (std::fabs(_y) < EPSILON)
+			if (std::fabs(_y) < epsilon)
 				_y = 0.f;
 
 			_z /= magnitude;
-			if (std::fabs(_z) < EPSILON)
+			if (std::fabs(_z) < epsilon)
 				_z = 0.f;
 
 			_w /= magnitude;
-			if (std::fabs(_w) < EPSILON)
+			if (std::fabs(_w) < epsilon)
 				_w = 0.f;
 		}
 
