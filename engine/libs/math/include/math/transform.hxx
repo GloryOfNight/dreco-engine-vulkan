@@ -1,11 +1,11 @@
 #pragma once
 
 #include "euler.hxx"
-#include "vectors.hxx"
+#include "vec3.hxx"
 
 namespace de::math
 {
-	struct DRECO_API transform
+	struct transform
 	{
 		transform();
 		transform(const vec3& translation, const euler& rotation, const vec3& scale);

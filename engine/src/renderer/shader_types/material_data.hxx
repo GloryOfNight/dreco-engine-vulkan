@@ -1,7 +1,8 @@
 #pragma once
 
 #include "core/containers/gltf/material.hxx"
-#include "math/vectors.hxx"
+#include "math/vec3.hxx"
+#include "math/vec4.hxx"
 
 struct material_data
 {

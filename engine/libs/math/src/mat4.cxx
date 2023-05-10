@@ -4,7 +4,6 @@
 #include "euler.hxx"
 #include "quaternion.hxx"
 #include "transform.hxx"
-#include "vec3.hxx"
 
 #include <cmath>
 #include <cstring>
@@ -94,6 +93,7 @@ de::math::mat4 de::math::mat4::lookAt(const vec3& pos, const vec3& target, const
 {
 	// BUG: when looking up or down, generates invalid matrix for camera to view
 	mat4 out;
+
 	const auto z_axis = vec3::normalize(vec3(target._x - pos._x, target._y - pos._y, target._z - pos._z));
 	
 	const auto x_axis = vec3::normalize(vec3::cross(z_axis, up));

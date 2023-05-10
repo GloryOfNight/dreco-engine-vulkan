@@ -1,7 +1,7 @@
 #pragma once
 
 #include "quaternion.hxx"
-#include "vectors.hxx"
+#include "vec3.hxx"
 
 #include <array>
 #include <cstddef>
@@ -68,7 +68,7 @@ namespace de::math
 		}
 	};
 
-	struct DRECO_API mat4 : public matrix<float, 4>
+	struct mat4 : public matrix<float, 4>
 	{
 		mat4() = default;
 		mat4(std::array<float, 16>&& rawMat);

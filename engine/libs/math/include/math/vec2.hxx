@@ -1,12 +1,11 @@
 #pragma once
-#include "vectors.hxx"
-
+#include <array>
 #include <type_traits>
 
 namespace de::math
 {
 	template <typename T>
-	struct DRECO_API vec2t
+	struct vec2t
 	{
 		static_assert(std::is_trivial<T>::value, "T must be trivial");
 
@@ -72,9 +71,14 @@ namespace de::math
 			return *this;
 		}
 
-		bool operator==(const vec2t<T>& other) const 
+		bool operator==(const vec2t<T>& other) const
 		{
 			return _x == other._x && _y == other._y;
 		}
 	};
+
+	using vec2i = vec2t<int32_t>;
+	using vec2d = vec2t<double>;
+	using vec2f = vec2t<float>;
+	using vec2 = vec2f;
 } // namespace de::math

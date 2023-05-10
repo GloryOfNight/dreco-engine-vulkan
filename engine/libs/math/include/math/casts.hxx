@@ -6,6 +6,8 @@
 #include "transform.hxx"
 #include "vec3.hxx"
 
+#include "constants.hxx"
+
 #include <cmath>
 
 namespace de::math
@@ -14,14 +16,14 @@ namespace de::math
 	constexpr T deg_to_rad(const T value)
 	{
 		static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
-		return static_cast<T>(value * static_cast<T>(M_PI)) / static_cast<T>(180);
+		return static_cast<T>(value * static_cast<T>(Pi)) / static_cast<T>(180);
 	}
 
 	template <typename T>
 	constexpr T rad_to_deg(const T value)
 	{
 		static_assert(std::is_floating_point<T>::value, "T must be a floating point type");
-		return static_cast<T>(value * static_cast<T>(180)) / static_cast<T>(M_PI);
+		return static_cast<T>(value * static_cast<T>(180)) / static_cast<T>(Pi);
 	}
 
 	inline euler euler_cast(const quaternion& q)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vec2.hxx"
 #include "vec3.hxx"
 
 #include <cmath>

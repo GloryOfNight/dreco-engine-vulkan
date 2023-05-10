@@ -1,5 +1,6 @@
 #include "material.hxx"
 
+#include "dreco.hxx"
 #include "renderer.hxx"
 
 de::vulkan::material_instance::material_instance(material* owner)

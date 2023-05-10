@@ -47,6 +47,9 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 -DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
 -DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
 
+add_subdirectory(libs)
+target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math)
+
 add_subdirectory(tools)
 add_subdirectory(thirdparty)
 

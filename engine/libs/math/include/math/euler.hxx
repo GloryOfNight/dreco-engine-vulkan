@@ -1,5 +1,7 @@
 #pragma once
-#include "vectors.hxx"
+#include "vec3.hxx"
+
+#include "constants.hxx"
 
 namespace de::math
 {
@@ -25,14 +27,14 @@ namespace de::math
 
 		vec3 toRightDirection() const
 		{
-			return euler_t(static_cast<T>(0), _yaw + 0.5 * M_PI, static_cast<T>(0)).toForwardVector();
+			return euler_t(static_cast<T>(0), _yaw + 0.5 * Pi, static_cast<T>(0)).toForwardVector();
 		}
 
 		void clamp()
 		{
-			_x = fmodf(_x, 2 * M_PI);
-			_y = fmodf(_y, 2 * M_PI);
-			_z = fmodf(_z, 2 * M_PI);
+			_x = fmodf(_x, 2 * Pi);
+			_y = fmodf(_y, 2 * Pi);
+			_z = fmodf(_z, 2 * Pi);
 		}
 
 		void max(const T pitch, const T yaw, const T roll)

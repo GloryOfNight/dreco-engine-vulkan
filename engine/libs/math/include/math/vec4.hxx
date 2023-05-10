@@ -1,12 +1,11 @@
 #pragma once
-#include "vectors.hxx"
-
+#include <array>
 #include <type_traits>
 
 namespace de::math
 {
 	template <typename T>
-	struct DRECO_API vec4t
+	struct vec4t
 	{
 		static_assert(std::is_trivial<T>::value, "T must be trivial");
 
@@ -82,4 +81,9 @@ namespace de::math
 			return *this;
 		}
 	};
+
+	using vec4i = vec4t<int32_t>;
+	using vec4d = vec4t<double>;
+	using vec4f = vec4t<float>;
+	using vec4 = vec4f;
 } // namespace de::math
