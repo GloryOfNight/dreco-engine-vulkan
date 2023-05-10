@@ -9,7 +9,7 @@
 #include <cstring>
 
 de::math::mat4::mat4(std::array<float, 16>&& rawMat)
-	: matrix(std::move(rawMat))
+	: mat_t(std::move(rawMat))
 {
 }
 
@@ -95,7 +95,7 @@ de::math::mat4 de::math::mat4::lookAt(const vec3& pos, const vec3& target, const
 	mat4 out;
 
 	const auto z_axis = vec3::normalize(vec3(target._x - pos._x, target._y - pos._y, target._z - pos._z));
-	
+
 	const auto x_axis = vec3::normalize(vec3::cross(z_axis, up));
 	const auto y_axis = vec3::cross(x_axis, z_axis);
 

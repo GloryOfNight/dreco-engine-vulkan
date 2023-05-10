@@ -1,74 +1,14 @@
 #pragma once
 
+#include "mat.hxx"
 #include "quaternion.hxx"
 #include "vec3.hxx"
-
-#include <array>
-#include <cstddef>
-#include <type_traits>
 
 namespace de::math
 {
 	struct transform;
 
-	template <typename T, size_t dim>
-	struct matrix
-	{
-		matrix() = default;
-		matrix(std::array<std::array<T, dim>, dim>&& rawMat)
-			: matrix()
-		{
-			memmove(this, rawMat.data(), sizeof(T) * dim * dim);
-		}
-		matrix(std::array<T, dim * dim>&& rawMat)
-			: matrix()
-		{
-			memmove(this, rawMat.data(), sizeof(T) * rawMat.size());
-		}
-
-		struct collumn
-		{
-			std::array<float, dim> _c{};
-			const float& operator[](uint8_t index) const
-			{
-				return _c[index];
-			}
-			float& operator[](uint8_t index)
-			{
-				return _c[index];
-			}
-
-			const std::array<float, dim>& operator*() const
-			{
-				return _c;
-			}
-		};
-
-		std::array<collumn, dim> _raw{};
-		const collumn& operator[](uint8_t index) const
-		{
-			return _raw[index];
-		}
-		collumn& operator[](uint8_t index)
-		{
-			return _raw[index];
-		}
-
-		bool operator==(const matrix<T, dim>& o) const
-		{
-			for (uint8_t i = 0; i < dim; ++i)
-			{
-				for (uint8_t j = 0; j < dim; ++j)
-				{
-					if ((*this)[i][j] != o[i][j])
-						return false;
-				}
-			}
-			return true;
-		}
-	};
-
-	struct mat4 : public matrix<float, 4>
+	struct mat4 : public mat_t<float, 4>
 	{
 		mat4() = default;
 		mat4(std::array<float, 16>&& rawMat);
