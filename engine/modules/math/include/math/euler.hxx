@@ -1,7 +1,8 @@
 #pragma once
+#include "constants.hxx"
 #include "vec3.hxx"
 
-#include "constants.hxx"
+#include <type_traits>
 
 namespace de::math
 {

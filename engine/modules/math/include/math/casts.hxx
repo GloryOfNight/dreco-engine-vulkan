@@ -1,14 +1,14 @@
 #pragma once
 
+#include "constants.hxx"
 #include "euler.hxx"
 #include "mat4.hxx"
 #include "quaternion.hxx"
 #include "transform.hxx"
 #include "vec3.hxx"
 
-#include "constants.hxx"
-
 #include <cmath>
+#include <type_traits>
 
 namespace de::math
 {

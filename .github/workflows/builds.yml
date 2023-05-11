@@ -17,7 +17,7 @@ jobs:
       run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build -DSDL_STATIC=FALSE && cmake --build SDL/build --config Release --target INSTALL
       
     - name: Install Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.0.3
+      uses: humbletim/setup-vulkan-sdk@v1.2.0
       
     - name: CMake Configure
       run: set SDL2_DIR="C:/Program Files (x86)/SDL2" && cmake --preset win64-release

@@ -4,6 +4,8 @@
 #include "quaternion.hxx"
 #include "vec3.hxx"
 
+#include <type_traits>
+
 namespace de::math
 {
 	struct transform;
