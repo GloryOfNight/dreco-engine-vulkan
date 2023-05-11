@@ -1,8 +1,8 @@
 # Dreco Engine - Vulkan
 Project for personal fun of writing vulkan renderer and an game engine.
 
-## Key principles
-- Crossplatform between Windows and Linux (as start)
+## Development principles
+- Crossplatform between Windows and Linux
 - CMake as build system
 - Modern C++ usage with C++ Core Guidelines in mind
 - Vulkan as crossplatform and modern choiсe of rendering api
