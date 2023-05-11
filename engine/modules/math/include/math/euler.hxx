@@ -2,8 +2,6 @@
 #include "constants.hxx"
 #include "vec3.hxx"
 
-#include <type_traits>
-
 namespace de::math
 {
 	template <typename T>

@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-#include <type_traits>
+#include <cstddef>
 
 namespace de::math
 {

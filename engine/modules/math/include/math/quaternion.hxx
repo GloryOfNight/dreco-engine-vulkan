@@ -4,7 +4,6 @@
 #include "vec3.hxx"
 
 #include <cmath>
-#include <type_traits>
 
 namespace de::math
 {
