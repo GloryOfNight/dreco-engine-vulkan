@@ -92,8 +92,8 @@ void de::gf::flying_camera::tick(double deltaTime)
 			}
 		}
 		transform._rotation.clamp();
-		transform._rotation.max(M_PI * 0.5f, M_PI * 2.f, M_PI * 2.f);
-		transform._rotation.min(-M_PI * 0.5f, -M_PI * 2.f, -M_PI * 2.f);
+		transform._rotation.max(de::math::Pi * 0.5f, de::math::Pi * 2.f, de::math::Pi * 2.f);
+		transform._rotation.min(-de::math::Pi * 0.5f, -de::math::Pi * 2.f, -de::math::Pi * 2.f);
 	}
 
 	camera::tick(deltaTime);

@@ -3,16 +3,16 @@
 #include "platforms/platform.h"
 #include "renderer/render.hxx"
 
-#include <SDL2/SDL_events.h>
+#include <SDL_events.h>
 
 de::input_manager::input_manager(event_manager& _eventManager)
 {
-	_eventManager.addEventBindingMem(SDL_KEYDOWN, this, &input_manager::onKeyEvent);
-	_eventManager.addEventBindingMem(SDL_KEYUP, this, &input_manager::onKeyEvent);
-	_eventManager.addEventBindingMem(SDL_MOUSEMOTION, this, &input_manager::onMouseEvent);
-	_eventManager.addEventBindingMem(SDL_MOUSEBUTTONDOWN, this, &input_manager::onMouseEvent);
-	_eventManager.addEventBindingMem(SDL_MOUSEBUTTONUP, this, &input_manager::onMouseEvent);
-	_eventManager.addEventBindingMem(SDL_MOUSEWHEEL, this, &input_manager::onMouseEvent);
+	_eventManager.addEventBindingMem(SDL_EVENT_KEY_DOWN, this, &input_manager::onKeyEvent);
+	_eventManager.addEventBindingMem(SDL_EVENT_KEY_UP, this, &input_manager::onKeyEvent);
+	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_MOTION, this, &input_manager::onMouseEvent);
+	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_BUTTON_DOWN, this, &input_manager::onMouseEvent);
+	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_BUTTON_UP, this, &input_manager::onMouseEvent);
+	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_WHEEL, this, &input_manager::onMouseEvent);
 }
 
 bool de::input_manager::isKeyPressed(const uint32_t key) const
@@ -38,7 +38,14 @@ void de::input_manager::warpMouse(const uint16_t x, const uint16_t y)
 
 void de::input_manager::showCursor(const bool state) const
 {
-	SDL_ShowCursor(state ? SDL_ENABLE : SDL_DISABLE);
+	if (state)
+	{
+		SDL_ShowCursor();
+	}
+	else
+	{
+		SDL_HideCursor();
+	}	
 }
 
 void de::input_manager::setMouseRelativeMode(const bool state) const
@@ -80,13 +87,13 @@ void de::input_manager::onMouseEvent(const SDL_Event& event)
 
 	if (_inMouseFocus)
 	{
-		if (event.type == SDL_MOUSEMOTION)
+		if (event.type == SDL_EVENT_MOUSE_MOTION)
 		{
 			_mouseState._state = event.motion.state;
 			_mouseState._x = event.motion.x;
 			_mouseState._y = event.motion.y;
 		}
-		else if (event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP)
+		else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP)
 		{
 			_mouseState._state = event.button.state;
 			_mouseState._x = event.button.x;

@@ -26,7 +26,7 @@ de::engine::engine()
 	, _threadPool()
 	, _renderer{}
 {
-	_eventManager.addEventBinding(SDL_QUIT, &onQuitEvent);
+	_eventManager.addEventBinding(SDL_EVENT_QUIT, &onQuitEvent);
 }
 
 de::engine::~engine()

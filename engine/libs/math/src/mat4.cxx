@@ -13,11 +13,6 @@ de::math::mat4::mat4(std::array<float, 16>&& rawMat)
 {
 }
 
-constexpr float de::math::mat4::size() noexcept
-{
-	return 16;
-}
-
 de::math::mat4 de::math::mat4::makeTransform(const transform& t)
 {
 	return makeTranslation(t._translation) * makeRotation(quat_cast(t._rotation)) * makeScale(t._scale);

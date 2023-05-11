@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16.2)
 project(dreco-engine)
 
 find_package(Vulkan REQUIRED)
-find_package(SDL2 REQUIRED)
+find_package(SDL3 REQUIRED)
 find_package(glm QUIET)
 
 set(DRECO_ASSETS_DIR "assets")
@@ -23,8 +23,8 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_VK_USE_VALIDATION DRECO_VK_USE_MESA_OVERLAY DRECO_VK_USE_LUNAR_MONITOR)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL2::SDL2 shader-compiler-static spirv-reflect stb tinygltf)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL2_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL3::SDL3 shader-compiler-static spirv-reflect stb tinygltf)
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL3_INCLUDE_DIRS})
 
 if (${glm_FOUND})
 target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
@@ -55,10 +55,11 @@ add_subdirectory(thirdparty)
 
 if(WIN32)
 add_custom_command(
-  TARGET  ${PROJECT_NAME}
+      TARGET  ${PROJECT_NAME}
   POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+  COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
 )
 endif()
 
-install(IMPORTED_RUNTIME_ARTIFACTS SDL2::SDL2 RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})
+# TODO: for some reason, this doesn't work. Fix later
+#install(IMPORTED_RUNTIME_ARTIFACTS SDL3::SDL3 RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})

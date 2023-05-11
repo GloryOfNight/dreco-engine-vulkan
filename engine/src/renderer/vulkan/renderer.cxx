@@ -214,8 +214,7 @@ void de::vulkan::renderer::applySettings()
 
 void de::vulkan::renderer::createWindow()
 {
-	_window = SDL_CreateWindow("dreco-launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 720, 720,
-		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	_window = SDL_CreateWindow("dreco-launcher", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 	_windowId = SDL_GetWindowID(_window);
 }
 
@@ -224,9 +223,10 @@ void de::vulkan::renderer::createInstance()
 	std::vector<const char*> instanceExtensions;
 
 	unsigned int count;
-	SDL_Vulkan_GetInstanceExtensions(_window, &count, nullptr);
+
+	SDL_Vulkan_GetInstanceExtensions(&count, nullptr);
 	instanceExtensions.resize(count);
-	SDL_Vulkan_GetInstanceExtensions(_window, &count, instanceExtensions.data() + 0);
+	SDL_Vulkan_GetInstanceExtensions(&count, instanceExtensions.data() + 0);
 
 	const auto allInstanceLayers = vk::enumerateInstanceLayerProperties();
 

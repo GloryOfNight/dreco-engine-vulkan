@@ -13,8 +13,6 @@ namespace de::math
 		mat4() = default;
 		mat4(std::array<float, 16>&& rawMat);
 
-		static constexpr float size() noexcept;
-
 		static mat4 makeTransform(const transform& t);
 
 		static mat4 makeTranslation(const vec3& vec);
