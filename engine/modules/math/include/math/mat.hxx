@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 namespace de::math
@@ -11,11 +12,12 @@ namespace de::math
 	struct mat_t
 	{
 		mat_t() = default;
+
 		mat_t(std::array<std::array<T, dim>, dim>&& rawMat)
-			: mat_t()
+			: _raw{std::move(rawMat)}
 		{
-			memmove(this, rawMat.data(), sizeof(T) * dim * dim);
 		}
+
 		mat_t(std::array<T, dim * dim>&& rawMat)
 			: mat_t()
 		{
