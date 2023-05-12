@@ -3,13 +3,13 @@
 #include "core/async/async_tasks/async_load_gltf.hxx"
 #include "core/containers/gltf/gltf.hxx"
 #include "core/misc/file.hxx"
+#include "shader_compiler_tool/shader_compiler.hxx"
 
 #include "engine.hxx"
 
 #include <SDL.h>
 #include <chrono>
 #include <csignal>
-#include <shader_compiler.hxx>
 
 static inline de::engine* gEngine{nullptr};
 

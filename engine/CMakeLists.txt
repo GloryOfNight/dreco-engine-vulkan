@@ -3,7 +3,6 @@ project(dreco-engine)
 
 find_package(Vulkan REQUIRED)
 find_package(SDL3 REQUIRED)
-find_package(glm QUIET)
 
 set(DRECO_ASSETS_DIR "assets")
 set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
@@ -23,19 +22,22 @@ endif()
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_VK_USE_VALIDATION DRECO_VK_USE_MESA_OVERLAY DRECO_VK_USE_LUNAR_MONITOR)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL3::SDL3 shader-compiler-static spirv-reflect stb tinygltf)
+# link enxternal libraries
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL3::SDL3 spirv-reflect stb tinygltf)
 target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL3_INCLUDE_DIRS})
 
-if (${glm_FOUND})
-target_link_libraries(${PROJECT_NAME} PUBLIC glm::glm)
-target_include_directories(${PROJECT_NAME} PUBLIC ${glm_INCLUDE_DIRS})
-target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_HAS_GLM)
-endif()
+# link modules
+add_subdirectory(modules)
+target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math dreco-shader-compiler-tool)
+
+# link thirdparty libraries
+add_subdirectory(thirdparty)
+target_link_libraries(${PROJECT_NAME} PUBLIC spirv-reflect stb tinygltf)
+
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED YES
-    CXX_EXTENSIONS NO
+    CXX_STANDARD_REQUIRED TRUE
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     EXPORT_COMPILE_COMMANDS TRUE
 )
@@ -47,10 +49,6 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 -DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
 -DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
 
-add_subdirectory(modules)
-add_subdirectory(thirdparty)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math)
 
 if(WIN32)
 add_custom_command(

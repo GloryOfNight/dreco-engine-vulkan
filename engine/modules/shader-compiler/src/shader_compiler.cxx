@@ -1,4 +1,4 @@
-#include "include/shader_compiler.hxx"
+#include "shader_compiler_tool/shader_compiler.hxx"
 
 #define _CRT_SECURE_NO_WARNINGS
 

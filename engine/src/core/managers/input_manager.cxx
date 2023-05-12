@@ -17,7 +17,12 @@ de::input_manager::input_manager(event_manager& _eventManager)
 
 bool de::input_manager::isKeyPressed(const uint32_t key) const
 {
-	return _pressedKeys.find(key) != _pressedKeys.end();
+	const auto& findRes = _keys.find(key);
+	if (findRes != _keys.end() && findRes->second._state == SDL_PRESSED)
+	{
+		return true;
+	}
+	return false;
 }
 
 uint32_t de::input_manager::getMouseState(uint16_t* const x, uint16_t* const y) const
@@ -45,7 +50,7 @@ void de::input_manager::showCursor(const bool state) const
 	else
 	{
 		SDL_HideCursor();
-	}	
+	}
 }
 
 void de::input_manager::setMouseRelativeMode(const bool state) const
@@ -65,17 +70,7 @@ bool de::input_manager::isInMouseFocus() const
 
 void de::input_manager::onKeyEvent(const SDL_Event& event)
 {
-	if (event.key.state == SDL_PRESSED)
-	{
-		if (!event.key.repeat)
-		{
-			_pressedKeys.emplace(event.key.keysym.sym);
-		}
-	}
-	else
-	{
-		_pressedKeys.erase(event.key.keysym.sym);
-	}
+	_keys.insert_or_assign(event.key.keysym.sym, key_state(event));
 }
 
 void de::input_manager::onMouseEvent(const SDL_Event& event)

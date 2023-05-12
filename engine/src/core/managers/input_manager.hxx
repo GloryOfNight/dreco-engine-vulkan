@@ -3,13 +3,13 @@
 #include "dreco.hxx"
 #include "event_manager.hxx"
 
-#include <set>
+#include <map>
 
 namespace de
 {
 	class DRECO_API input_manager
 	{
-	private:
+	public:
 		struct mouse_state
 		{
 			uint32_t _state{};
@@ -17,7 +17,21 @@ namespace de
 			uint16_t _y{};
 		};
 
-	public:
+		struct key_state
+		{
+			key_state() = default;
+			key_state(const SDL_Event& event)
+				: _state{event.key.state}
+				, _timestamp{event.key.timestamp}
+				, _repeat{static_cast<bool>(event.key.repeat)}
+			{
+			}
+
+			uint32_t _state;
+			uint64_t _timestamp;
+			bool _repeat;
+		};
+
 		input_manager(event_manager& _eventManager);
 		input_manager(const input_manager&) = delete;
 		input_manager(input_manager&&) = default;
@@ -41,7 +55,7 @@ namespace de
 		void onMouseEvent(const SDL_Event& event);
 
 	private:
-		std::set<uint32_t> _pressedKeys;
+		std::map<uint32_t, key_state> _keys;
 
 		mouse_state _mouseState;
 
