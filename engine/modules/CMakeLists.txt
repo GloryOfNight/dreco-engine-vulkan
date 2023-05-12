@@ -1,2 +1,2 @@
 add_subdirectory(math)
-add_subdirectory(shader-compiler)
+add_subdirectory(shader-compiler-tool)
