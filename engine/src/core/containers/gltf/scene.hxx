@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
 
-namespace gltf
+namespace de::gltf
 {
 	struct scene
 	{
+		std::string _name;
 		std::vector<uint32_t> _nodes;
 	};
-} // namespace gltf
+} // namespace de::gltf

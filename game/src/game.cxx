@@ -2,7 +2,4 @@
 
 #include "core/engine.hxx"
 
-DRECO_API void registerGame(defaultObject<game_instance>& defaultGameInstance)
-{
-	defaultGameInstance.init<launcher_gi>();
-}
+DRECO_IMPLEMENT_PRIMARY_GAME_INSTANCE_CLASS(launcher_gi);

@@ -4,11 +4,7 @@ project(dreco-game)
 file(GLOB_RECURSE GAME_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)
 file(GLOB_RECURSE GAME_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hxx)
 
-if(DRECO_BUILD_SHARED)
-add_library(${PROJECT_NAME} SHARED ${GAME_SOURCE_FILES} ${GAME_HEADER_FILES})
-else()
 add_library(${PROJECT_NAME} STATIC ${GAME_SOURCE_FILES} ${GAME_HEADER_FILES})
-endif()
 
 target_link_libraries(${PROJECT_NAME} dreco-engine)
 

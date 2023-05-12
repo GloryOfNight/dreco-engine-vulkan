@@ -11,7 +11,7 @@ layout(set = 1, binding = 1) uniform sampler2D metallicRoughness;
 layout(set = 1, binding = 2) uniform sampler2D emissive;
 layout(set = 1, binding = 3) uniform sampler2D normal;
 
-layout(set = 1, binding = 4) uniform materialUniform
+layout(set = 1, binding = 4) uniform readonly materialUniform
 {
     vec4 baseColorFactor;
     vec3 emissiveFactor;

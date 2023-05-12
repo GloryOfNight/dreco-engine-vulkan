@@ -1,17 +1,16 @@
 #pragma once
 
 #include "core/containers/gltf/material.hxx"
-#include "math/vec.hxx"
-
-#include <cstdint>
+#include "math/vec3.hxx"
+#include "math/vec4.hxx"
 
 struct material_data
 {
 	material_data() = default;
-	material_data(const gltf::material& m);
+	material_data(const de::gltf::material& m);
 
-	vec4 _baseColorFactor;
-	vec3 _emissiveFactor;
+	de::math::vec4 _baseColorFactor;
+	de::math::vec3 _emissiveFactor;
 
 	alignas(4) bool _hasBaseColor{false};
 	alignas(4) bool _hasEmissive{false};

@@ -2,18 +2,22 @@
 
 #include <string>
 
-struct generic_paths
+namespace de::paths
 {
-	static bool init();
+	struct generic
+	{
+		[[nodiscard]] static bool init();
 
-	static std::string currentDir();
+		[[nodiscard]] static std::string currentDir();
 
-	static std::string assetsDir();
+		[[nodiscard]] static std::string assetsDir();
 
-	static std::string shadersBinDir();
+		[[nodiscard]] static std::string shadersBinDir();
 
-	static std::string shadersSrcDir();
+		[[nodiscard]] static std::string shadersSrcDir();
 
-private:
-	static bool checkCorePaths();
-};
+	private:
+		static bool checkCorePaths();
+	};
+
+} // namespace de::paths
