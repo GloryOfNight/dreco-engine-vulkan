@@ -1,6 +1,6 @@
 #include "gltf.hxx"
 
-#include "core/misc/log.hxx"
+#include "log/log.hxx"
 #include "math/casts.hxx"
 #include "math/mat4.hxx"
 

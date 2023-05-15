@@ -1,5 +1,5 @@
 #pragma once
-#include "core/async/thread_pool.hxx"
+#include "threads/thread_pool.hxx"
 #include "core/managers/event_manager.hxx"
 #include "core/managers/input_manager.hxx"
 #include "core/misc/fps_counter.hxx"

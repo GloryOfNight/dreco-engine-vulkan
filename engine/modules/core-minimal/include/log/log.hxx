@@ -8,7 +8,6 @@ namespace de
 {
 	namespace log
 	{
-
 		enum class category
 		{
 			Application = SDL_LOG_CATEGORY_APPLICATION,

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.2)
+# Engine itself
 project(dreco-engine)
 
 find_package(Vulkan REQUIRED)
@@ -28,7 +28,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL3_I
 
 # link modules
 add_subdirectory(modules)
-target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math dreco-shader-compiler-tool)
+target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math dreco-core-minimal dreco-threads dreco-shader-compiler-tool)
 
 # link thirdparty libraries
 add_subdirectory(thirdparty)
@@ -43,12 +43,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC 
--DDRECO_ASSETS_DIR="${DRECO_ASSETS_DIR}"
--DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
--DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
-
 
 if(WIN32)
 add_custom_command(

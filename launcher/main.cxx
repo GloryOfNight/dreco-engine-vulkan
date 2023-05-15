@@ -2,6 +2,7 @@
 #include "game_framework/game_instance.hxx"
 
 #include "dreco.hxx"
+#include "core/misc/exceptions.hxx"
 #include "shader_compiler_tool/shader_compiler.hxx"
 
 extern "C++" DRECO_API de::gf::game_instance::unique __createGameInstance();

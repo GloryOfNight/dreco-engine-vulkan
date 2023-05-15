@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.2)
+# "Game" library that uses a engine library to create a game
 project(dreco-game)
 
 file(GLOB_RECURSE GAME_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)

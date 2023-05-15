@@ -1,5 +1,5 @@
 #pragma once
-#include "core/async/thread_pool.hxx"
+#include "threads/thread_pool.hxx"
 #include "core/containers/gltf/gltf.hxx"
 #include "core/containers/gltf/model.hxx"
 #include "core/engine.hxx"

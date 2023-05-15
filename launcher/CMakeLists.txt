@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21.0)
+# A executable that glues Game and Engine parts awell as future foundation for other runables (like editor)
 project(dreco-launcher)
 
 set(SOURCES_LIST main.cxx)
