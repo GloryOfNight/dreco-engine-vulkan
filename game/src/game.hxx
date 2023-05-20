@@ -5,9 +5,7 @@
 #include "game_framework/game_instance.hxx"
 #include "game_framework/world.hxx"
 
-#include "dreco.hxx"
-
-class launcher_world : public de::gf::world
+class DRECO_API launcher_world : public de::gf::world
 {
 public:
 	launcher_world(de::gf::game_instance& gi)
@@ -23,7 +21,7 @@ public:
 	}
 };
 
-class launcher_gi : public de::gf::game_instance
+class DRECO_API launcher_gi : public de::gf::game_instance
 {
 public:
 	launcher_gi() = default;
