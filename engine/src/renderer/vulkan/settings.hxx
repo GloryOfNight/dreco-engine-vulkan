@@ -4,7 +4,6 @@
 namespace de::vulkan
 {
 	class renderer;
-
 	struct settings
 	{
 		void init(const renderer* renderer);

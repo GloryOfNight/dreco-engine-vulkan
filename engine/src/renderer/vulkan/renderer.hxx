@@ -57,40 +57,42 @@ namespace de::vulkan
 
 		std::vector<uint32_t> getQueueFamilyIndices() const;
 
-		vk::RenderPass getRenderPass() const { return _renderPass; };
+		vk::RenderPass getRenderPass() const { return _renderPass; }
 
-		vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; };
+		vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; }
 
-		SDL_Window* getWindow() const { return _window; };
+		SDL_Window* getWindow() const { return _window; }
 
-		uint32_t getWindowId() const { return _windowId; };
+		uint32_t getWindowId() const { return _windowId; }
 
-		vk::Extent2D getCurrentExtent() const { return _currentExtent; };
+		vk::Extent2D getCurrentExtent() const { return _currentExtent; }
+
+		vk::Instance getInstance() { return _instance; }
+
+		vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
 
 		vk::Device getDevice() const { return _device; }
 
 		vk::SurfaceKHR getSurface() const { return _surface; }
 
-		vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
-
 		const settings& getSettings() const { return _settings; }
 		settings& getSettings() { return _settings; }
 
-		const std::vector<std::unique_ptr<scene>>& getScenes() const { return _scenes; };
-		std::vector<std::unique_ptr<scene>>& getScenes() { return _scenes; };
+		const std::vector<std::unique_ptr<scene>>& getScenes() const { return _scenes; }
+		std::vector<std::unique_ptr<scene>>& getScenes() { return _scenes; }
 
 		const texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
-		const de::vulkan::buffer_pool& getVertIndxBufferPool() const { return _bpVertIndx; };
-		de::vulkan::buffer_pool& getVertIndxBufferPool() { return _bpVertIndx; };
+		const de::vulkan::buffer_pool& getVertIndxBufferPool() const { return _bpVertIndx; }
+		de::vulkan::buffer_pool& getVertIndxBufferPool() { return _bpVertIndx; }
 
-		const de::vulkan::buffer_pool& getUniformBufferPool() const { return _bpUniforms; };
-		de::vulkan::buffer_pool& getUniformBufferPool() { return _bpUniforms; };
+		const de::vulkan::buffer_pool& getUniformBufferPool() const { return _bpUniforms; }
+		de::vulkan::buffer_pool& getUniformBufferPool() { return _bpUniforms; }
 
-		const de::vulkan::buffer_pool& getTransferBufferPool() const { return _bpTransfer; };
-		de::vulkan::buffer_pool& getTransferBufferPool() { return _bpTransfer; };
+		const de::vulkan::buffer_pool& getTransferBufferPool() const { return _bpTransfer; }
+		de::vulkan::buffer_pool& getTransferBufferPool() { return _bpTransfer; }
 
-		const de::vulkan::buffer& getCameraDataBuffer() const { return getUniformBufferPool().getBuffer(_cameraDataBufferId); };
+		const de::vulkan::buffer& getCameraDataBuffer() const { return getUniformBufferPool().getBuffer(_cameraDataBufferId); }
 
 		vk::CommandBuffer beginSingleTimeTransferCommands();
 
@@ -129,7 +131,7 @@ namespace de::vulkan
 
 		void createCommandPools();
 
-		void createCommandBuffers();
+		void createImageCommandBuffers();
 
 		void createFences();
 
@@ -196,6 +198,6 @@ namespace de::vulkan
 
 		std::vector<vk::Fence> _submitQueueFences;
 
-		vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
+		vk::Semaphore _semaphoreImageAvailable, _semaphoreRenderFinished;
 	};
 } // namespace de::vulkan

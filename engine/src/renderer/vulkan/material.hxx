@@ -91,12 +91,15 @@ namespace de::vulkan
 
 		void createDescriptorPool(uint32_t maxSets = 1);
 
+		void createPipelineLayout();
+
 		shader::shared _vert;
 		shader::shared _frag;
 
 		std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts;
 		vk::DescriptorPool _descriptorPool;
 
+		vk::PipelineLayout _pipelineLayout;
 		graphics_pipeline _pipeline;
 
 		std::vector<material_instance> _instances;

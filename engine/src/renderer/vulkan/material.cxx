@@ -127,8 +127,8 @@ void de::vulkan::material_instance::bindCmd(vk::CommandBuffer commandBuffer) con
 {
 	const auto& pipeline = _owner->getPipeline();
 
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _owner->getPipelineLayout(), 0, _descriptorSets, nullptr);
 	pipeline.bindCmd(commandBuffer);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.getLayout(), 0, _descriptorSets, nullptr);
 }
 
 de::vulkan::material::~material()
@@ -139,6 +139,11 @@ de::vulkan::material::~material()
 		for (auto layout : _descriptorSetLayouts)
 			device.destroyDescriptorSetLayout(layout);
 		device.destroyDescriptorPool(_descriptorPool);
+	}
+
+	if (_pipelineLayout)
+	{
+		device.destroyPipelineLayout(_pipelineLayout);
 	}
 }
 
@@ -169,7 +174,8 @@ de::vulkan::material_instance& de::vulkan::material::makeInstance()
 void de::vulkan::material::init(size_t maxInstances)
 {
 	createDescriptorPool(maxInstances);
-	_pipeline.create(*this);
+	createPipelineLayout();
+	_pipeline.create(_pipelineLayout, _vert, _frag);
 }
 
 void de::vulkan::material::setShaderVert(const shader::shared& inShader)
@@ -184,7 +190,8 @@ void de::vulkan::material::setShaderFrag(const shader::shared& inShader)
 
 void de::vulkan::material::recreatePipeline()
 {
-	_pipeline.recreatePipeline();
+	_pipeline.destroy();
+	_pipeline.create(_pipelineLayout, _vert, _frag);
 }
 
 void de::vulkan::material::resizeDescriptorPool(uint32_t newSize)
@@ -231,6 +238,20 @@ void de::vulkan::material::createDescriptorPool(uint32_t maxSets)
 													  .setMaxSets(_descriptorSetLayouts.size() * maxSets));
 }
 
+void de::vulkan::material::createPipelineLayout()
+{
+	auto device = renderer::get()->getDevice();
+
+	const auto ranges = getPushConstantRanges();
+
+	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
+		vk::PipelineLayoutCreateInfo()
+			.setSetLayouts(_descriptorSetLayouts)
+			.setPushConstantRanges(ranges);
+
+	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
+}
+
 const std::vector<vk::DescriptorSetLayout>& de::vulkan::material::getDescriptorSetLayouts() const
 {
 	return _descriptorSetLayouts;
@@ -275,7 +296,7 @@ const de::vulkan::shader::shared& de::vulkan::material::getFragShader() const
 
 vk::PipelineLayout de::vulkan::material::getPipelineLayout() const
 {
-	return _pipeline.getLayout();
+	return _pipelineLayout;
 }
 
 const de::vulkan::graphics_pipeline& de::vulkan::material::getPipeline() const

@@ -1,75 +1,16 @@
 #include "settings.hxx"
 
 #include "renderer.hxx"
-
-static vk::SampleCountFlagBits findMaxSampleCount(const vk::PhysicalDevice physicalDevice)
-{
-	const auto limits = physicalDevice.getProperties().limits;
-	const auto counts = limits.framebufferColorSampleCounts & limits.framebufferDepthSampleCounts;
-	if (counts & vk::SampleCountFlagBits::e64)
-		return vk::SampleCountFlagBits::e64;
-	else if (counts & vk::SampleCountFlagBits::e32)
-		return vk::SampleCountFlagBits::e32;
-	else if (counts & vk::SampleCountFlagBits::e16)
-		return vk::SampleCountFlagBits::e16;
-	else if (counts & vk::SampleCountFlagBits::e8)
-		return vk::SampleCountFlagBits::e8;
-	else if (counts & vk::SampleCountFlagBits::e4)
-		return vk::SampleCountFlagBits::e4;
-	else if (counts & vk::SampleCountFlagBits::e2)
-		return vk::SampleCountFlagBits::e2;
-	return vk::SampleCountFlagBits::e1;
-}
-
-static vk::SurfaceFormatKHR findSurfaceFormat(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
-{
-	const auto surfaceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
-
-	for (const auto& surfaceFormat : surfaceFormats)
-	{
-		if (vk::Format::eB8G8R8A8Unorm == surfaceFormat.format)
-		{
-			return surfaceFormat;
-		}
-	}
-
-	throw std::runtime_error("Failed to find preffered surface format!");
-	return vk::SurfaceFormatKHR();
-}
-
-static vk::PresentModeKHR findPresentMode(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
-{
-	// clang-format off
-	const std::array<vk::PresentModeKHR, 4> priorityModes =
-		{
-			vk::PresentModeKHR::eMailbox,
-			vk::PresentModeKHR::eFifoRelaxed,
-			vk::PresentModeKHR::eFifo,
-			vk::PresentModeKHR::eImmediate
-		};
-	// clang-format on
-
-	const auto availableModes = physicalDevice.getSurfacePresentModesKHR(surface);
-	const auto availableModesBegin = availableModes.begin();
-	const auto availableModesEnd = availableModes.end();
-	for (const auto mode : priorityModes)
-	{
-		if (std::find(availableModesBegin, availableModesEnd, mode) != availableModesEnd)
-		{
-			return mode;
-		}
-	}
-	return vk::PresentModeKHR::eImmediate;
-}
+#include "utils.hxx"
 
 void de::vulkan::settings::init(const renderer* renderer)
 {
 	const vk::SurfaceKHR surface = renderer->getSurface();
 	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
 
-	_surfaceFormat = findSurfaceFormat(physicalDevice, surface);
-	_presentMode = findPresentMode(physicalDevice, surface);
-	_maxSampleCount = findMaxSampleCount(physicalDevice);
+	_surfaceFormat = utils::findSurfaceFormat(physicalDevice, surface);
+	_presentMode = utils::findPresentMode(physicalDevice, surface);
+	_maxSampleCount = utils::findMaxSampleCount(physicalDevice);
 
 	setPrefferedSampleCount(_maxSampleCount);
 }

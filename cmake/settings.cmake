@@ -5,3 +5,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib CACHE PATH "Static Li
 
 # static libraries should be build with position independent code
 set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "Use Position Independent Code")
+
+# export compile commands for code editors
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Export Compile Commands")

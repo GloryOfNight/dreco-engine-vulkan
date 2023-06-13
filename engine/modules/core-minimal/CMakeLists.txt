@@ -19,7 +19,6 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 -DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
 -DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
 
-
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/platforms")

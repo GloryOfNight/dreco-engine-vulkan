@@ -33,49 +33,68 @@ void de::vulkan::renderer::init()
 {
 	_apiVersion = vk::enumerateInstanceVersion();
 
-	createWindow();
-	createInstance();
-	createSurface();
-	createPhysicalDevice();
+	{ // the base of vulkan renderer initialization
 
-	// if instance was created with api version bigger that device can support, recreate stuff with lower version
-	if (const uint32_t deviceApiVersion = _physicalDevice.getProperties().apiVersion; _apiVersion > deviceApiVersion)
-	{
-		_apiVersion = deviceApiVersion;
-		_instance.destroySurfaceKHR(_surface);
-		_instance.destroy();
+		if (SDL_Vulkan_LoadLibrary(NULL) != 0)
+		{
+			DE_LOG(Critical, "Failed to load vulkan library");
+			std::exit(EXIT_FAILURE);
+		}
 
 		createInstance();
-		createSurface();
 		createPhysicalDevice();
+
+		// if instance was created with api version bigger that physical device can support, recreate stuff with lower version
+		if (const uint32_t deviceApiVersion = _physicalDevice.getProperties().apiVersion; _apiVersion > deviceApiVersion)
+		{
+			DE_LOG(Info, "Api version and device api version doesn't match. Api: %i, device: %i", _apiVersion, deviceApiVersion);
+
+			_apiVersion = deviceApiVersion;
+			_instance.destroySurfaceKHR(_surface);
+			_instance.destroy();
+
+			createInstance();
+			createPhysicalDevice();
+		}
+
+		createDevice();
+
+		createQueues();
+		createBufferPools();
+		createCommandPools();
 	}
-	updateExtent();
-	_settings.init(this);
 
-	createDevice();
+	{ // common renderer resources
+		createCameraBuffer();
+		_placeholderTextureImage.create(de::image_data::makePlaceholder());
+	}
 
-	createQueues();
+	{ // window
+		createWindow();
+	}
 
-	createSwapchain();
-	createImageViews();
+	{ // window and surface dependent stuff
+		createSurface();
 
-	createCommandPools();
-	createCommandBuffers();
+		updateExtent();
+		_settings.init(this);
 
-	_depthImage.create();
-	_msaaImage.create();
+		createSwapchain();
 
-	createRenderPass();
+		createImageViews();
 
-	createFramebuffers();
+		createImageCommandBuffers(); // has dependency on swapchain views size
 
-	createFences();
-	createSemaphores();
+		_depthImage.create();
+		_msaaImage.create();
 
-	createBufferPools();
-	createCameraBuffer();
+		createRenderPass();
 
-	_placeholderTextureImage.create(de::image_data::makePlaceholder());
+		createFramebuffers();
+
+		createFences();
+		createSemaphores();
+	}
 }
 
 void de::vulkan::renderer::exit()
@@ -99,7 +118,7 @@ void de::vulkan::renderer::exit()
 
 	_placeholderTextureImage.destroy();
 
-	_device.destroySemaphore(_semaphoreImageAvaible);
+	_device.destroySemaphore(_semaphoreImageAvailable);
 	_device.destroySemaphore(_semaphoreRenderFinished);
 
 	_device.destroyCommandPool(_graphicsCommandPool);
@@ -222,8 +241,7 @@ void de::vulkan::renderer::createInstance()
 {
 	std::vector<const char*> instanceExtensions;
 
-	unsigned int count;
-
+	unsigned int count{};
 	SDL_Vulkan_GetInstanceExtensions(&count, nullptr);
 	instanceExtensions.resize(count);
 	SDL_Vulkan_GetInstanceExtensions(&count, instanceExtensions.data() + 0);
@@ -269,39 +287,19 @@ void de::vulkan::renderer::createSurface()
 void de::vulkan::renderer::createPhysicalDevice()
 {
 	const auto physicalDevices = _instance.enumeratePhysicalDevices();
-
-	// clang-format off
-	auto isGpuSuitSurface = [this](const vk::PhysicalDevice physicalDevice) -> bool 
-	{
-		const auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
-		const size_t queueFamilyPropertiesSize = queueFamilyProperties.size();
-		for (size_t i = 0; i < queueFamilyPropertiesSize; ++i)
-		{
-			if (physicalDevice.getSurfaceSupportKHR(i, _surface))
-			{
-				return true;
-			}
-		}
-		return false;
-	};
-	// clang-format on
-
 	for (vk::PhysicalDevice physicalDevice : physicalDevices)
 	{
-		if (isGpuSuitSurface(physicalDevice))
+		const auto physicalDeviceProperties = physicalDevice.getProperties();
+		if (vk::PhysicalDeviceType::eCpu == physicalDeviceProperties.deviceType ||
+			vk::PhysicalDeviceType::eOther == physicalDeviceProperties.deviceType)
 		{
-			const auto physicalDeviceProperties = physicalDevice.getProperties();
-			if (vk::PhysicalDeviceType::eCpu == physicalDeviceProperties.deviceType ||
-				vk::PhysicalDeviceType::eOther == physicalDeviceProperties.deviceType)
-			{
-				continue;
-			}
+			continue;
+		}
 
-			_physicalDevice = physicalDevice;
-			if (vk::PhysicalDeviceType::eDiscreteGpu == physicalDeviceProperties.deviceType)
-			{
-				break;
-			}
+		_physicalDevice = physicalDevice;
+		if (vk::PhysicalDeviceType::eDiscreteGpu == physicalDeviceProperties.deviceType)
+		{
+			break;
 		}
 	}
 
@@ -355,16 +353,11 @@ void de::vulkan::renderer::createQueues()
 	const size_t queueFamilyPropertiesSize = queueFamilyProperties.size();
 	for (size_t i = 0; i < queueFamilyPropertiesSize; ++i)
 	{
-		const vk::Bool32 isSupported = _physicalDevice.getSurfaceSupportKHR(i, _surface);
-		if (isSupported)
+		const auto queueFlags = queueFamilyProperties[i].queueFlags;
+		if ((queueFlags & vk::QueueFlagBits::eGraphics) && (queueFlags & vk::QueueFlagBits::eTransfer))
 		{
-			const auto queueFlags = queueFamilyProperties[i].queueFlags;
-			if ((queueFlags & vk::QueueFlagBits::eGraphics) && (queueFlags & vk::QueueFlagBits::eTransfer))
-			{
-				_graphicsQueueIndex = i;
-				_transferQueueIndex = i;
-				break;
-			}
+			_graphicsQueueIndex = i;
+			_transferQueueIndex = i;
 		}
 	}
 	_graphicsQueue = _device.getQueue(_graphicsQueueIndex, 0);
@@ -558,7 +551,7 @@ void de::vulkan::renderer::createCommandPools()
 	_transferCommandPool = _device.createCommandPool(transferCreateInfo);
 }
 
-void de::vulkan::renderer::createCommandBuffers()
+void de::vulkan::renderer::createImageCommandBuffers()
 {
 	const vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
 		vk::CommandBufferAllocateInfo()
@@ -580,7 +573,7 @@ inline void de::vulkan::renderer::createFences()
 
 void de::vulkan::renderer::createSemaphores()
 {
-	_semaphoreImageAvaible = _device.createSemaphore(vk::SemaphoreCreateInfo());
+	_semaphoreImageAvailable = _device.createSemaphore(vk::SemaphoreCreateInfo());
 	_semaphoreRenderFinished = _device.createSemaphore(vk::SemaphoreCreateInfo());
 }
 
@@ -609,7 +602,7 @@ void de::vulkan::renderer::drawFrame()
 	vk::ResultValue<uint32_t> aquireNextImageResult = vk::ResultValue<uint32_t>(vk::Result{}, UINT32_MAX);
 	try
 	{
-		aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvaible, nullptr);
+		aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvailable, nullptr);
 	}
 	catch (vk::OutOfDateKHRError outOfDateKHRError)
 	{
@@ -636,7 +629,7 @@ void de::vulkan::renderer::drawFrame()
 
 	vk::CommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
 
-	const std::array<vk::Semaphore, 1> submitWaitSemaphores = {_semaphoreImageAvaible};
+	const std::array<vk::Semaphore, 1> submitWaitSemaphores = {_semaphoreImageAvailable};
 	const std::array<vk::Semaphore, 1> submitSignalSemaphores = {_semaphoreRenderFinished};
 	const std::array<vk::PipelineStageFlags, 1> submitWaitDstStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
 	const std::array<vk::CommandBuffer, 1> submitCommandBuffers = {commandBuffer};

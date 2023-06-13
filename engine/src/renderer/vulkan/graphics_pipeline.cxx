@@ -2,70 +2,17 @@
 
 #include "renderer.hxx"
 
-void de::vulkan::graphics_pipeline::create(const material& material)
-{
-	_owner = &material;
-
-	renderer* renderer{renderer::get()};
-	vk::Device device = renderer->getDevice();
-	createPipelineLayout(device);
-	createPipeline(device);
-}
-
-void de::vulkan::graphics_pipeline::recreatePipeline()
-{
-	renderer* renderer{renderer::get()};
-	const vk::Device device = renderer->getDevice();
-
-	device.destroyPipeline(_pipeline);
-
-	createPipeline(device);
-}
-
-void de::vulkan::graphics_pipeline::destroy()
-{
-	const vk::Device device = renderer::get()->getDevice();
-	if (_pipeline)
-	{
-		device.destroyPipelineLayout(_pipelineLayout);
-		device.destroyPipeline(_pipeline);
-	}
-}
-
-void de::vulkan::graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer) const
-{
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
-}
-
-vk::PipelineLayout de::vulkan::graphics_pipeline::getLayout() const
-{
-	return _pipelineLayout;
-}
-
-vk::Pipeline de::vulkan::graphics_pipeline::get() const
-{
-	return _pipeline;
-}
-
-void de::vulkan::graphics_pipeline::createPipelineLayout(vk::Device device)
-{
-	const auto& descLayouts = _owner->getDescriptorSetLayouts();
-	const auto ranges = _owner->getPushConstantRanges();
-
-	const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo =
-		vk::PipelineLayoutCreateInfo()
-			.setSetLayouts(descLayouts)
-			.setPushConstantRanges(ranges);
-
-	_pipelineLayout = device.createPipelineLayout(pipelineLayoutCreateInfo);
-}
-
-void de::vulkan::graphics_pipeline::createPipeline(vk::Device device)
+void de::vulkan::graphics_pipeline::create(vk::PipelineLayout pipelineLayout, shader::shared vertShader, shader::shared fragShader)
 {
 	const renderer* renderer{renderer::get()};
 
-	const auto shaderStages = _owner->getShaderStages();
-	const auto vertexInputInfo = _owner->getVertShader()->getVertexInputInfo();
+	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages =
+		{
+			vertShader->getPipelineShaderStageCreateInfo(),
+			fragShader->getPipelineShaderStageCreateInfo(),
+		};
+
+	const auto vertexInputInfo = vertShader->getVertexInputInfo();
 	const auto vertexInputState = vk::PipelineVertexInputStateCreateInfo()
 									  .setVertexBindingDescriptions(vertexInputInfo._bindingDesc)
 									  .setVertexAttributeDescriptions(vertexInputInfo._attributeDesc);
@@ -156,11 +103,34 @@ void de::vulkan::graphics_pipeline::createPipeline(vk::Device device)
 			.setPColorBlendState(&colorBlendingState)
 			.setPMultisampleState(&multisamplingState)
 			.setPDepthStencilState(&depthStencilState)
-			.setLayout(_pipelineLayout)
+			.setLayout(pipelineLayout)
 			.setRenderPass(renderer->getRenderPass())
 			.setSubpass(0);
 
-	const auto createPipelineResult = device.createGraphicsPipeline(nullptr, pipelineCreateInfo);
+	const auto createPipelineResult = renderer::get()->getDevice().createGraphicsPipeline(nullptr, pipelineCreateInfo);
 	assert(vk::Result::eSuccess == createPipelineResult.result);
 	_pipeline = createPipelineResult.value;
+}
+
+void de::vulkan::graphics_pipeline::destroy()
+{
+	const vk::Device device = renderer::get()->getDevice();
+	if (_pipeline)
+	{
+		device.destroyPipeline(_pipeline);
+	}
+}
+
+void de::vulkan::graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer) const
+{
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
+}
+
+vk::Pipeline de::vulkan::graphics_pipeline::get() const
+{
+	return _pipeline;
+}
+
+void de::vulkan::graphics_pipeline::createPipeline(vk::Device device)
+{
 }

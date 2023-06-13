@@ -1,5 +1,7 @@
 #pragma once
 
+#include "shader.hxx"
+
 #include <vulkan/vulkan.hpp>
 
 namespace de::vulkan
@@ -13,28 +15,18 @@ namespace de::vulkan
 		graphics_pipeline(graphics_pipeline&&) = default;
 		~graphics_pipeline() { destroy(); };
 
-		void create(const material& material);
-
-		void recreatePipeline();
+		void create(vk::PipelineLayout pipelineLayout, shader::shared vertShader, shader::shared fragShader);
 
 		void destroy();
 
 		void bindCmd(vk::CommandBuffer commandBuffer) const;
 
-		vk::PipelineLayout getLayout() const;
-
 		vk::Pipeline get() const;
 
 	protected:
-		void createPipelineLayout(vk::Device device);
-
 		void createPipeline(vk::Device device);
 
 	private:
-		const material* _owner;
-
-		vk::PipelineLayout _pipelineLayout;
-
 		vk::Pipeline _pipeline;
 	};
 } // namespace de::vulkan
