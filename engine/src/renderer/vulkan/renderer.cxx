@@ -742,11 +742,6 @@ void de::vulkan::renderer::recreateSwapchain()
 	_msaaImage.recreate();
 
 	createFramebuffers();
-
-	for (auto& scene : _scenes)
-	{
-		scene->recreatePipelines();
-	}
 }
 
 vk::CommandBuffer de::vulkan::renderer::prepareCommandBuffer(uint32_t imageIndex)
@@ -768,6 +763,24 @@ vk::CommandBuffer de::vulkan::renderer::prepareCommandBuffer(uint32_t imageIndex
 			.setClearValues(clearValues);
 
 	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+
+	const auto viewport =
+		vk::Viewport()
+			.setX(0)
+			.setY(0)
+			.setWidth(static_cast<float>(_currentExtent.width))
+			.setHeight(static_cast<float>(_currentExtent.height))
+			.setMinDepth(0.0F)
+			.setMaxDepth(1.0F);
+
+	commandBuffer.setViewport(0, viewport);
+
+	const auto scissors = vk::Rect2D()
+									.setExtent(_currentExtent)
+									.setOffset(vk::Offset2D(0, 0));
+
+	commandBuffer.setScissor(0, scissors);
+
 	for (auto& scene : _scenes)
 	{
 		scene->bindToCmdBuffer(commandBuffer);

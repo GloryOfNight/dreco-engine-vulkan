@@ -188,12 +188,6 @@ void de::vulkan::material::setShaderFrag(const shader::shared& inShader)
 	_frag = inShader;
 }
 
-void de::vulkan::material::recreatePipeline()
-{
-	_pipeline.destroy();
-	_pipeline.create(_pipelineLayout, _vert, _frag);
-}
-
 void de::vulkan::material::resizeDescriptorPool(uint32_t newSize)
 {
 	auto device = renderer::get()->getDevice();

@@ -78,20 +78,24 @@ void de::vulkan::graphics_pipeline::create(vk::PipelineLayout pipelineLayout, sh
 		vk::Viewport()
 			.setX(0)
 			.setY(0)
-			.setWidth(static_cast<float>(extent.width))
-			.setHeight(static_cast<float>(extent.height))
+			.setWidth(1)
+			.setHeight(1)
 			.setMinDepth(0.0F)
 			.setMaxDepth(1.0F);
 
 	const vk::Rect2D scissors =
 		vk::Rect2D()
 			.setOffset(vk::Offset2D(0, 0))
-			.setExtent(extent);
+			.setExtent(vk::Extent2D());
 
 	const vk::PipelineViewportStateCreateInfo viewportState =
 		vk::PipelineViewportStateCreateInfo()
-			.setViewports({1, &viewport})
-			.setScissors({1, &scissors});
+			.setViewports(viewport)
+			.setScissors(scissors);
+
+	const std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+	const vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
+																.setDynamicStates(dynamicStates);
 
 	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
 		vk::GraphicsPipelineCreateInfo()
@@ -99,6 +103,7 @@ void de::vulkan::graphics_pipeline::create(vk::PipelineLayout pipelineLayout, sh
 			.setPVertexInputState(&vertexInputState)
 			.setPInputAssemblyState(&inputAssemblyState)
 			.setPViewportState(&viewportState)
+			.setPDynamicState(&dynamicState)
 			.setPRasterizationState(&rasterizationState)
 			.setPColorBlendState(&colorBlendingState)
 			.setPMultisampleState(&multisamplingState)
@@ -129,8 +134,4 @@ void de::vulkan::graphics_pipeline::bindCmd(vk::CommandBuffer commandBuffer) con
 vk::Pipeline de::vulkan::graphics_pipeline::get() const
 {
 	return _pipeline;
-}
-
-void de::vulkan::graphics_pipeline::createPipeline(vk::Device device)
-{
 }

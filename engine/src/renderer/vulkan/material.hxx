@@ -67,8 +67,6 @@ namespace de::vulkan
 		material(material&&) = default;
 		~material();
 
-		void recreatePipeline();
-
 		void resizeDescriptorPool(uint32_t newSize);
 
 		const std::vector<vk::DescriptorSetLayout>& getDescriptorSetLayouts() const;

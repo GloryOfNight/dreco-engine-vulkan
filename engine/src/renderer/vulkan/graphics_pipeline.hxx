@@ -23,9 +23,6 @@ namespace de::vulkan
 
 		vk::Pipeline get() const;
 
-	protected:
-		void createPipeline(vk::Device device);
-
 	private:
 		vk::Pipeline _pipeline;
 	};

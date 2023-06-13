@@ -46,8 +46,6 @@ namespace de::vulkan
 
 		void create(const de::gltf::model& m);
 
-		void recreatePipelines();
-
 		void bindToCmdBuffer(vk::CommandBuffer commandBuffer);
 
 		bool isEmpty() const;

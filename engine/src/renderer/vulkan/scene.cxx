@@ -213,11 +213,6 @@ void de::vulkan::scene::createMaterialsBuffer(const scene_meshes_info& info)
 	bpTransfer.freeBuffer(transferBufferId);
 }
 
-void de::vulkan::scene::recreatePipelines()
-{
-	_material->recreatePipeline();
-}
-
 void de::vulkan::scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 {
 	const auto vertIndexBuffer = renderer::get()->getVertIndxBufferPool().getBuffer(_meshesVIBufferId).get();
