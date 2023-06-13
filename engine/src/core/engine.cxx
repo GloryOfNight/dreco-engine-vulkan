@@ -113,6 +113,12 @@ void de::engine::run()
 
 	if (true == startRenderer())
 	{
+		auto window1 = SDL_CreateWindow("dreco-engine (1)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+		_renderer.addView(window1);
+
+		auto window2 = SDL_CreateWindow("dreco-engine (2)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+		_renderer.addView(window2);
+
 		startMainLoop();
 	}
 }

@@ -7,9 +7,9 @@ namespace de::vulkan
 	class vk_msaa_image final : public image
 	{
 	public:
-		void create();
+		void create(vk::Extent2D extent);
 
-		void recreate();
+		void recreate(vk::Extent2D extent);
 
 	protected:
 		vk::ImageAspectFlags getImageAspectFlags() const override;

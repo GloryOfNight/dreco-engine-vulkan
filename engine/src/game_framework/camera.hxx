@@ -10,12 +10,9 @@ namespace de::gf
 	public:
 		de::math::mat4 getView() const;
 
-		de::math::mat4 getProjection() const;
-
 		void tick(double deltaTime) override;
 
 	private:
 		de::math::mat4 _view;
-		de::math::mat4 _projection;
 	};
 } // namespace de::gf

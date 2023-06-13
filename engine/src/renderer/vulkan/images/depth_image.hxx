@@ -7,9 +7,9 @@ namespace de::vulkan
 	class vk_depth_image final : public image
 	{
 	public:
-		void create();
+		void create(vk::Extent2D extent);
 
-		void recreate();
+		void recreate(vk::Extent2D extent);
 
 		vk::Format getFormat() const;
 

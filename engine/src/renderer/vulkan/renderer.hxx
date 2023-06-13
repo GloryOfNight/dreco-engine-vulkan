@@ -9,6 +9,7 @@
 #include "graphics_pipeline.hxx"
 #include "scene.hxx"
 #include "settings.hxx"
+#include "view.hxx"
 
 #include <map>
 #include <memory>
@@ -43,7 +44,10 @@ namespace de::vulkan
 
 		void tick(double deltaTime);
 
-		void setCameraData(const de::math::mat4& inView, const de::math::mat4 inProj);
+		uint32_t addView(SDL_Window* window);
+		void removeView(uint32_t viewIndex);
+
+		void setCameraView(const de::math::mat4& inView);
 
 		void loadModel(const de::gltf::model& scn);
 
@@ -56,6 +60,8 @@ namespace de::vulkan
 		vk::SharingMode getSharingMode() const;
 
 		std::vector<uint32_t> getQueueFamilyIndices() const;
+
+		vk::Queue getGraphicsQueue() const { return _graphicsQueue; }
 
 		vk::RenderPass getRenderPass() const { return _renderPass; }
 
@@ -157,6 +163,8 @@ namespace de::vulkan
 		SDL_Window* _window{};
 
 		uint32_t _windowId{};
+
+		std::array<view, 16> _views;
 
 		vk::Extent2D _currentExtent;
 

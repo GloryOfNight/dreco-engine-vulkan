@@ -2,6 +2,7 @@
 
 #include "core/engine.hxx"
 #include "game_framework/camera.hxx"
+#include "math/casts.hxx"
 
 #include "dreco.hxx"
 #include "utils.hxx"
@@ -85,8 +86,8 @@ void de::vulkan::renderer::init()
 
 		createImageCommandBuffers(); // has dependency on swapchain views size
 
-		_depthImage.create();
-		_msaaImage.create();
+		_depthImage.create(_currentExtent);
+		_msaaImage.create(_currentExtent);
 
 		createRenderPass();
 
@@ -141,12 +142,63 @@ void de::vulkan::renderer::exit()
 
 void de::vulkan::renderer::tick(double deltaTime)
 {
-	updateCameraBuffer();
-	if (updateExtent())
+	for (auto& view : _views)
 	{
-		recreateSwapchain();
+		if (!view.isInitialized())
+			continue;
+
+		if (view.updateExtent(_physicalDevice))
+		{
+			view.recreateSwapchain();
+			return;
+		}
+
+		const uint32_t nextImage = view.acquireNextImageIndex();
+		if (nextImage == UINT32_MAX)
+			return;
+
+		const auto viewExtent = view.getCurrentExtent();
+		_cameraData.proj = de::math::mat4::makeProjection(0.1f, 1000.f, static_cast<float>(viewExtent.width) / static_cast<float>(viewExtent.height), de::math::deg_to_rad(75.F));
+		updateCameraBuffer();
+
+		auto CommandBuffer = view.beginCommandBuffer(nextImage);
+		for (auto& scene : _scenes)
+		{
+			scene->bindToCmdBuffer(CommandBuffer);
+		}
+		view.endCommandBuffer(CommandBuffer);
+
+		view.submitCommandBuffer(nextImage, CommandBuffer);
 	}
-	drawFrame();
+}
+
+uint32_t de::vulkan::renderer::addView(SDL_Window* window)
+{
+	size_t viewIndex = UINT32_MAX;
+	for (size_t i = 0; _views.size(); ++i)
+	{
+		if (!_views[i].isInitialized())
+		{
+			viewIndex = i;
+			break;
+		}
+	}
+
+	if (viewIndex == UINT32_MAX)
+		return viewIndex;
+
+	VkSurfaceKHR newSurface;
+	if (SDL_Vulkan_CreateSurface(window, _instance, &newSurface) == SDL_TRUE)
+	{
+		_views[viewIndex].init(newSurface);
+	}
+
+	return viewIndex;
+}
+
+void de::vulkan::renderer::removeView(uint32_t viewIndex)
+{
+	_views.at(viewIndex).destroy();
 }
 
 void de::vulkan::renderer::loadModel(const de::gltf::model& scn)
@@ -668,16 +720,9 @@ void de::vulkan::renderer::drawFrame()
 	}
 }
 
-void de::vulkan::renderer::setCameraData(const de::math::mat4& inView, const de::math::mat4 inProj)
+void de::vulkan::renderer::setCameraView(const de::math::mat4& inView)
 {
-	de::math::mat4 cor;
-	cor[0][0] = 1.0f;
-	cor[1][1] = -1.0f;
-	cor[2][2] = 0.5f;
-	cor[2][3] = 0.5f;
-	cor[3][3] = 1.0f;
 	_cameraData.view = inView;
-	_cameraData.proj = inProj;
 }
 
 void de::vulkan::renderer::updateCameraBuffer()
@@ -738,8 +783,8 @@ void de::vulkan::renderer::recreateSwapchain()
 
 	createRenderPass();
 
-	_depthImage.recreate();
-	_msaaImage.recreate();
+	_depthImage.recreate(_currentExtent);
+	_msaaImage.recreate(_currentExtent);
 
 	createFramebuffers();
 }
@@ -775,9 +820,10 @@ vk::CommandBuffer de::vulkan::renderer::prepareCommandBuffer(uint32_t imageIndex
 
 	commandBuffer.setViewport(0, viewport);
 
-	const auto scissors = vk::Rect2D()
-									.setExtent(_currentExtent)
-									.setOffset(vk::Offset2D(0, 0));
+	const auto scissors =
+		vk::Rect2D()
+			.setExtent(_currentExtent)
+			.setOffset(vk::Offset2D(0, 0));
 
 	commandBuffer.setScissor(0, scissors);
 

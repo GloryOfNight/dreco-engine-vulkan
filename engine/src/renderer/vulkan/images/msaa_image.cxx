@@ -3,12 +3,11 @@
 #include "renderer/vulkan/renderer.hxx"
 #include "renderer/vulkan/utils.hxx"
 
-void de::vulkan::vk_msaa_image::create()
+void de::vulkan::vk_msaa_image::create(vk::Extent2D extent)
 {
 	const renderer* renderer{renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	const vk::Extent2D extent = renderer->getCurrentExtent();
 	const vk::Format format = renderer->getSettings().getSurfaceFormat().format;
 	const vk::SampleCountFlagBits samples = renderer->getSettings().getPrefferedSampleCount();
 
@@ -22,10 +21,10 @@ void de::vulkan::vk_msaa_image::create()
 	createImageView(device, format);
 }
 
-void de::vulkan::vk_msaa_image::recreate()
+void de::vulkan::vk_msaa_image::recreate(vk::Extent2D extent)
 {
 	destroy();
-	create();
+	create(extent);
 }
 
 vk::ImageAspectFlags de::vulkan::vk_msaa_image::getImageAspectFlags() const
