@@ -4,6 +4,7 @@
 #include "images/texture_image.hxx"
 #include "renderer/shader_types/material_data.hxx"
 
+#include "constants.hxx"
 #include "graphics_pipeline.hxx"
 #include "material.hxx"
 #include "renderer.hxx"
@@ -99,15 +100,13 @@ void de::vulkan::scene::create(const de::gltf::model& m)
 	createMeshesBuffer(info);
 	createMaterialsBuffer(info);
 
-	auto vert = renderer->loadShader(DRECO_SHADER("basic.vert.spv"));
-	auto frag = renderer->loadShader(DRECO_SHADER("basic.frag.spv"));
-	_material = material::makeNew(vert, frag, totalPipelines);
+	const auto basicMat = renderer->getMaterial(de::vulkan::constants::materials::basic);
 
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
 		const auto& matData = materialsData[i];
 
-		auto& mat = _matInstances.emplace_back(&_material->makeInstance());
+		auto mat = _matInstances.emplace_back(basicMat->makeInstance());
 
 		mat->setBufferDependency("cameraData", &renderer->getCameraDataBuffer());
 
@@ -245,7 +244,6 @@ void de::vulkan::scene::destroy()
 {
 	_textureImages.clear();
 
-	_material.reset();
 	_matInstances.clear();
 
 	_meshes.clear();

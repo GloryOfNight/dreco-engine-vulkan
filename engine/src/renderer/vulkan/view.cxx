@@ -3,6 +3,8 @@
 #include "renderer.hxx"
 #include "utils.hxx"
 
+#include <thread>
+
 void de::vulkan::view::init(vk::SurfaceKHR surface)
 {
 	_surface = surface;

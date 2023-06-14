@@ -4,6 +4,7 @@
 #include "game_framework/camera.hxx"
 #include "math/casts.hxx"
 
+#include "constants.hxx"
 #include "dreco.hxx"
 #include "utils.hxx"
 
@@ -96,6 +97,10 @@ void de::vulkan::renderer::init()
 		createFences();
 		createSemaphores();
 	}
+
+	const auto basicVert = loadShader(DRECO_SHADER(constants::shaders::basicVert));
+	const auto basicFrag = loadShader(DRECO_SHADER(constants::shaders::basicFrag));
+	_materials.try_emplace(constants::materials::basic, material::makeNew(basicVert, basicFrag, 128));
 }
 
 void de::vulkan::renderer::exit()
@@ -109,6 +114,8 @@ void de::vulkan::renderer::exit()
 
 	_scenes.clear();
 	_shaders.clear();
+	_materials.clear();
+	_views = {};
 
 	for (auto& fence : _submitQueueFences)
 	{
@@ -144,31 +151,31 @@ void de::vulkan::renderer::tick(double deltaTime)
 {
 	for (auto& view : _views)
 	{
-		if (!view.isInitialized())
+		if (view == nullptr || !view->isInitialized())
 			continue;
 
-		if (view.updateExtent(_physicalDevice))
+		if (view->updateExtent(_physicalDevice))
 		{
-			view.recreateSwapchain();
+			view->recreateSwapchain();
 			return;
 		}
 
-		const uint32_t nextImage = view.acquireNextImageIndex();
+		const uint32_t nextImage = view->acquireNextImageIndex();
 		if (nextImage == UINT32_MAX)
 			return;
 
-		const auto viewExtent = view.getCurrentExtent();
+		const auto viewExtent = view->getCurrentExtent();
 		_cameraData.proj = de::math::mat4::makeProjection(0.1f, 1000.f, static_cast<float>(viewExtent.width) / static_cast<float>(viewExtent.height), de::math::deg_to_rad(75.F));
 		updateCameraBuffer();
 
-		auto CommandBuffer = view.beginCommandBuffer(nextImage);
+		auto CommandBuffer = view->beginCommandBuffer(nextImage);
 		for (auto& scene : _scenes)
 		{
 			scene->bindToCmdBuffer(CommandBuffer);
 		}
-		view.endCommandBuffer(CommandBuffer);
+		view->endCommandBuffer(CommandBuffer);
 
-		view.submitCommandBuffer(nextImage, CommandBuffer);
+		view->submitCommandBuffer(nextImage, CommandBuffer);
 	}
 }
 
@@ -177,7 +184,7 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 	size_t viewIndex = UINT32_MAX;
 	for (size_t i = 0; _views.size(); ++i)
 	{
-		if (!_views[i].isInitialized())
+		if (_views[i] == nullptr || !_views[i]->isInitialized())
 		{
 			viewIndex = i;
 			break;
@@ -190,7 +197,8 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 	VkSurfaceKHR newSurface;
 	if (SDL_Vulkan_CreateSurface(window, _instance, &newSurface) == SDL_TRUE)
 	{
-		_views[viewIndex].init(newSurface);
+		_views[viewIndex] = view::unique(new view());
+		_views[viewIndex]->init(newSurface);
 	}
 
 	return viewIndex;
@@ -198,7 +206,17 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 
 void de::vulkan::renderer::removeView(uint32_t viewIndex)
 {
-	_views.at(viewIndex).destroy();
+	_views.at(viewIndex) = nullptr;
+}
+
+de::vulkan::material* de::vulkan::renderer::getMaterial(const std::string_view& name) const
+{
+	const auto material = _materials.find(name.data());
+	if (material != _materials.end())
+	{
+		return material->second.get();
+	}
+	return nullptr;
 }
 
 void de::vulkan::renderer::loadModel(const de::gltf::model& scn)

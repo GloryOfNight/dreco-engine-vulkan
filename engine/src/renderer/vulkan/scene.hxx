@@ -76,7 +76,6 @@ namespace de::vulkan
 
 		std::vector<std::unique_ptr<texture_image>> _textureImages;
 
-		material::unique _material;
 		std::vector<material_instance*> _matInstances;
 
 		std::vector<std::vector<std::unique_ptr<mesh>>> _meshes;

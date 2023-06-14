@@ -156,12 +156,12 @@ de::vulkan::material::unique de::vulkan::material::makeNew(shader::shared vert, 
 	return mat;
 }
 
-de::vulkan::material_instance& de::vulkan::material::makeInstance()
+de::vulkan::material_instance* de::vulkan::material::makeInstance()
 {
 	try
 	{
-		auto& inst = _instances.emplace_back(material_instance(this));
-		return inst;
+		auto& inst = _instances.emplace_back(material_instance::unique(new material_instance(this)));
+		return inst.get();
 	}
 	catch (vk::OutOfPoolMemoryError)
 	{

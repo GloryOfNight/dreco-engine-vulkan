@@ -7,6 +7,7 @@
 
 #include "buffer.hxx"
 #include "graphics_pipeline.hxx"
+#include "material.hxx"
 #include "scene.hxx"
 #include "settings.hxx"
 #include "view.hxx"
@@ -46,6 +47,8 @@ namespace de::vulkan
 
 		uint32_t addView(SDL_Window* window);
 		void removeView(uint32_t viewIndex);
+
+		material* getMaterial(const std::string_view& name) const;
 
 		void setCameraView(const de::math::mat4& inView);
 
@@ -164,7 +167,11 @@ namespace de::vulkan
 
 		uint32_t _windowId{};
 
-		std::array<view, 16> _views;
+		std::array<view::unique, 16> _views;
+
+		std::map<std::string, shader::shared> _shaders;
+
+		std::map<std::string, material::unique> _materials;
 
 		vk::Extent2D _currentExtent;
 
@@ -192,8 +199,6 @@ namespace de::vulkan
 		de::vulkan::buffer_pool _bpVertIndx;
 		de::vulkan::buffer_pool _bpUniforms;
 		de::vulkan::buffer_pool _bpTransfer;
-
-		std::map<std::string, shader::shared> _shaders;
 
 		vk::SwapchainKHR _swapchain;
 

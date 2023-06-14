@@ -3,6 +3,7 @@
 #include "images/depth_image.hxx"
 #include "images/msaa_image.hxx"
 
+#include <memory>
 #include <vulkan/vulkan.hpp>
 
 namespace de::vulkan
@@ -10,6 +11,13 @@ namespace de::vulkan
 	class view
 	{
 	public:
+		using unique = std::unique_ptr<view>;
+
+		view() = default;
+		view(view&) = delete;
+		view(view&&) = default;
+		~view() { destroy(); }
+
 		void init(vk::SurfaceKHR surface);
 		void recreateSwapchain();
 		void destroy();

@@ -20,6 +20,10 @@ namespace de::vulkan
 		material_instance(class material* owner);
 
 	public:
+		using unique = std::unique_ptr<material_instance>;
+
+		material_instance(material_instance&) = delete;
+		material_instance(material_instance&&) = default;
 		~material_instance() = default;
 
 		vk::PipelineLayout getPipelineLayout() const;
@@ -61,7 +65,7 @@ namespace de::vulkan
 		using unique = std::unique_ptr<material>;
 
 		static unique makeNew(shader::shared vert, shader::shared frag, size_t maxInstances = 1);
-		material_instance& makeInstance();
+		material_instance* makeInstance();
 
 		material(material&) = delete;
 		material(material&&) = default;
@@ -100,7 +104,7 @@ namespace de::vulkan
 		vk::PipelineLayout _pipelineLayout;
 		graphics_pipeline _pipeline;
 
-		std::vector<material_instance> _instances;
+		std::vector<material_instance::unique> _instances;
 	};
 
 	template <typename Str>
