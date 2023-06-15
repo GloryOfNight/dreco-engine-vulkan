@@ -13,10 +13,27 @@ de::vulkan::material::~material()
 		device.destroyDescriptorPool(_descriptorPool);
 	}
 
+	_pipelines.clear();
+
 	if (_pipelineLayout)
 	{
 		device.destroyPipelineLayout(_pipelineLayout);
 	}
+}
+
+void de::vulkan::material::viewAdded(uint32_t viewIndex)
+{
+	_pipelines.emplace(viewIndex, createPipeline(viewIndex));
+}
+
+void de::vulkan::material::viewUpdated(uint32_t viewIndex)
+{
+	_pipelines.at(viewIndex) = createPipeline(viewIndex);
+}
+
+void de::vulkan::material::viewRemoved(uint32_t viewIndex)
+{
+	_pipelines.erase(viewIndex);
 }
 
 de::vulkan::material::unique de::vulkan::material::makeNew(shader::shared vert, shader::shared frag, size_t maxInstances)
@@ -48,7 +65,12 @@ void de::vulkan::material::init(size_t maxInstances)
 	createDescriptorPool(maxInstances);
 	createPipelineLayout();
 
-	_pipeline = createPipeline();
+	const auto& views = renderer::get()->getViews();
+	for (size_t i = 0; i < views.size(); ++i)
+	{
+		if (views[i] != nullptr && views[i]->isInitialized())
+			viewAdded(i);
+	}
 }
 
 void de::vulkan::material::setShaderVert(const shader::shared& inShader)
@@ -81,7 +103,8 @@ void de::vulkan::material::resizeDescriptorPool(uint32_t newSize)
 
 void de::vulkan::material::bindCmd(vk::CommandBuffer commandBuffer) const
 {
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
+	auto renderer = renderer::get();
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipelines.at(renderer->getCurrentDrawViewIndex()).get());
 }
 
 void de::vulkan::material::createDescriptorPool(uint32_t maxSets)
@@ -171,14 +194,10 @@ vk::PipelineLayout de::vulkan::material::getPipelineLayout() const
 	return _pipelineLayout;
 }
 
-vk::Pipeline de::vulkan::material::getPipeline() const
-{
-	return _pipeline;
-}
-
-vk::Pipeline de::vulkan::material::createPipeline()
+vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 {
 	const renderer* renderer{renderer::get()};
+	auto view = renderer->getView(viewIndex);
 
 	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages =
 		{
@@ -247,27 +266,27 @@ vk::Pipeline de::vulkan::material::createPipeline()
 									   .setMaxDepthBounds(1.0F)
 									   .setStencilTestEnable(VK_TRUE);
 
-	const vk::Extent2D extent = renderer->getCurrentExtent();
+	const vk::Extent2D extent = view->getCurrentExtent();
 	const vk::Viewport viewport =
 		vk::Viewport()
 			.setX(0)
 			.setY(0)
-			.setWidth(1)
-			.setHeight(1)
+			.setWidth(extent.width)
+			.setHeight(extent.height)
 			.setMinDepth(0.0F)
 			.setMaxDepth(1.0F);
 
 	const vk::Rect2D scissors =
 		vk::Rect2D()
 			.setOffset(vk::Offset2D(0, 0))
-			.setExtent(vk::Extent2D());
+			.setExtent(extent);
 
 	const vk::PipelineViewportStateCreateInfo viewportState =
 		vk::PipelineViewportStateCreateInfo()
 			.setViewports(viewport)
 			.setScissors(scissors);
 
-	const std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+	const std::array<vk::DynamicState, 0> dynamicStates = {};
 	const vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
 																.setDynamicStates(dynamicStates);
 
@@ -283,10 +302,10 @@ vk::Pipeline de::vulkan::material::createPipeline()
 			.setPMultisampleState(&multisamplingState)
 			.setPDepthStencilState(&depthStencilState)
 			.setLayout(_pipelineLayout)
-			.setRenderPass(renderer->getRenderPass())
+			.setRenderPass(view->getRenderPass())
 			.setSubpass(0);
 
-	const auto createPipelineResult = renderer::get()->getDevice().createGraphicsPipeline(nullptr, pipelineCreateInfo);
+	auto createPipelineResult = renderer->getDevice().createGraphicsPipelineUnique(nullptr, pipelineCreateInfo);
 	assert(vk::Result::eSuccess == createPipelineResult.result);
-	return createPipelineResult.value;
+	return std::move(createPipelineResult.value);
 }

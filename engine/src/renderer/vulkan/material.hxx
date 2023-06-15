@@ -28,6 +28,10 @@ namespace de::vulkan
 		material(material&&) = default;
 		~material();
 
+		void viewAdded(uint32_t viewIndex);
+		void viewUpdated(uint32_t viewIndex);
+		void viewRemoved(uint32_t viewIndex);
+
 		void resizeDescriptorPool(uint32_t newSize);
 
 		void bindCmd(vk::CommandBuffer commandBuffer) const;
@@ -42,7 +46,6 @@ namespace de::vulkan
 		const shader::shared& getFragShader() const;
 
 		vk::PipelineLayout getPipelineLayout() const;
-		vk::Pipeline getPipeline() const;
 
 	private:
 		void init(size_t maxInstances);
@@ -54,7 +57,7 @@ namespace de::vulkan
 
 		void createPipelineLayout();
 
-		vk::Pipeline createPipeline();
+		vk::UniquePipeline createPipeline(uint32_t viewIndex);
 
 		shader::shared _vert;
 		shader::shared _frag;
@@ -63,7 +66,7 @@ namespace de::vulkan
 		vk::DescriptorPool _descriptorPool;
 
 		vk::PipelineLayout _pipelineLayout;
-		vk::Pipeline _pipeline;
+		std::map<uint32_t, vk::UniquePipeline> _pipelines;
 
 		std::vector<material_instance::unique> _instances;
 	};

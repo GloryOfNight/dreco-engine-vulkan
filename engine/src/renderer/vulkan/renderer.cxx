@@ -149,33 +149,43 @@ void de::vulkan::renderer::exit()
 
 void de::vulkan::renderer::tick(double deltaTime)
 {
-	for (auto& view : _views)
+	for (size_t i = 0; i < _views.size(); ++i)
 	{
-		if (view == nullptr || !view->isInitialized())
+		auto& currentView = _views[i];
+		if (currentView == nullptr || !currentView->isInitialized())
 			continue;
 
-		if (view->updateExtent(_physicalDevice))
+		_currentDrawViewIndex = i;
+
+		if (currentView->updateExtent(_physicalDevice))
 		{
-			view->recreateSwapchain();
-			return;
+			currentView->recreateSwapchain();
+
+			// update all materials after swapchain recreation
+			for (auto& mat : _materials)
+			{
+				mat.second->viewUpdated(_currentDrawViewIndex);
+			}
+
+			return; // skip view draw if swapchain was recreated
 		}
 
-		const uint32_t nextImage = view->acquireNextImageIndex();
+		const uint32_t nextImage = currentView->acquireNextImageIndex();
 		if (nextImage == UINT32_MAX)
 			return;
 
-		const auto viewExtent = view->getCurrentExtent();
+		const auto viewExtent = currentView->getCurrentExtent();
 		_cameraData.proj = de::math::mat4::makeProjection(0.1f, 1000.f, static_cast<float>(viewExtent.width) / static_cast<float>(viewExtent.height), de::math::deg_to_rad(75.F));
 		updateCameraBuffer();
 
-		auto CommandBuffer = view->beginCommandBuffer(nextImage);
+		auto CommandBuffer = currentView->beginCommandBuffer(nextImage);
 		for (auto& scene : _scenes)
 		{
 			scene->bindToCmdBuffer(CommandBuffer);
 		}
-		view->endCommandBuffer(CommandBuffer);
+		currentView->endCommandBuffer(CommandBuffer);
 
-		view->submitCommandBuffer(nextImage, CommandBuffer);
+		currentView->submitCommandBuffer(nextImage, CommandBuffer);
 	}
 }
 
@@ -201,12 +211,24 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 		_views[viewIndex]->init(newSurface);
 	}
 
+	// update all materials with new view
+	for (auto& mat : _materials)
+	{
+		mat.second->viewAdded(viewIndex);
+	}
+
 	return viewIndex;
 }
 
 void de::vulkan::renderer::removeView(uint32_t viewIndex)
 {
 	_views.at(viewIndex) = nullptr;
+
+	// update all materials with new view
+	for (auto& mat : _materials)
+	{
+		mat.second->viewRemoved(viewIndex);
+	}
 }
 
 de::vulkan::material* de::vulkan::renderer::getMaterial(const std::string_view& name) const

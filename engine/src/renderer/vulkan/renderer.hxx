@@ -63,6 +63,12 @@ namespace de::vulkan
 
 		std::vector<uint32_t> getQueueFamilyIndices() const;
 
+		std::array<view::unique, 16>& getViews() { return _views; }
+
+		view* getView(uint32_t index) const { return _views[index].get(); }
+
+		uint32_t getCurrentDrawViewIndex() const { return _currentDrawViewIndex; }
+
 		vk::Queue getGraphicsQueue() const { return _graphicsQueue; }
 
 		vk::RenderPass getRenderPass() const { return _renderPass; }
@@ -167,6 +173,7 @@ namespace de::vulkan
 		uint32_t _windowId{};
 
 		std::array<view::unique, 16> _views;
+		uint32_t _currentDrawViewIndex{};
 
 		std::map<std::string, shader::shared> _shaders;
 
