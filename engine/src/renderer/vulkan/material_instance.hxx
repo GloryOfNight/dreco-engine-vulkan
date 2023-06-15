@@ -13,9 +13,10 @@
 
 namespace de::vulkan
 {
+	class material;
 	class material_instance final
 	{
-		friend class material;
+		friend material;
 		material_instance(material* owner);
 
 	public:
