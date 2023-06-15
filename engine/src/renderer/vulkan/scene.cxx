@@ -5,7 +5,6 @@
 #include "renderer/shader_types/material_data.hxx"
 
 #include "constants.hxx"
-#include "graphics_pipeline.hxx"
 #include "material.hxx"
 #include "renderer.hxx"
 #include "utils.hxx"
@@ -223,10 +222,13 @@ void de::vulkan::scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 	const size_t totalMaterials = _matInstances.size();
 	for (size_t i = 0; i < totalMaterials; ++i)
 	{
-		auto& mat = _matInstances[i];
+		auto matInst = _matInstances[i];
+		auto mat = matInst->getMaterial();
+
 		auto& meshes = _meshes[i];
 
 		mat->bindCmd(commandBuffer);
+		matInst->bindCmd(commandBuffer);
 		for (auto& mesh : meshes)
 		{
 			commandBuffer.pushConstants(mat->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(de::math::mat4), &mesh->_mat);

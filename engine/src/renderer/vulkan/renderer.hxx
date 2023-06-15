@@ -6,7 +6,6 @@
 #include "renderer/shader_types/camera_data.hxx"
 
 #include "buffer.hxx"
-#include "graphics_pipeline.hxx"
 #include "material.hxx"
 #include "scene.hxx"
 #include "settings.hxx"

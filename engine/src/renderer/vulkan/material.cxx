@@ -3,134 +3,6 @@
 #include "dreco.hxx"
 #include "renderer.hxx"
 
-de::vulkan::material_instance::material_instance(material* owner)
-{
-	_owner = owner;
-
-	auto device = renderer::get()->getDevice();
-	_descriptorSets = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo()
-														.setDescriptorPool(_owner->getDescriptorPool())
-														.setSetLayouts(_owner->getDescriptorSetLayouts()));
-}
-
-void de::vulkan::material_instance::updateShaderDescriptors(const shader& inShader)
-{
-	std::vector<vk::WriteDescriptorSet> writes;
-
-	const auto descriptorBufferInfos = getDescriptorBufferInfos(inShader);
-	const auto descriptorImageInfos = getDescriptorImageInfos(inShader);
-
-	const auto& relf = inShader.getRefl();
-	for (uint8_t i = 0; i < relf.descriptor_set_count; i++)
-	{
-		const auto& reflDescSet = relf.descriptor_sets[i];
-		for (uint8_t k = 0; k < reflDescSet.binding_count; k++)
-		{
-			const auto& reflBinding = relf.descriptor_bindings[k];
-
-			vk::WriteDescriptorSet& write = writes.emplace_back(vk::WriteDescriptorSet())
-												.setDstSet(_descriptorSets[reflDescSet.set])
-												.setDstBinding(reflBinding.binding)
-												.setDescriptorCount(reflBinding.count)
-												.setDescriptorType(static_cast<vk::DescriptorType>(reflBinding.descriptor_type));
-			switch (write.descriptorType)
-			{
-			case vk::DescriptorType::eUniformBuffer:
-				write.setPBufferInfo(descriptorBufferInfos.at(reflBinding.name).data());
-				break;
-			case vk::DescriptorType::eCombinedImageSampler:
-				write.setPImageInfo(descriptorImageInfos.at(reflBinding.name).data());
-				break;
-			default:
-				break;
-			}
-		}
-	}
-	renderer::get()->getDevice().updateDescriptorSets(writes, {});
-}
-
-std::map<std::string, std::vector<vk::DescriptorBufferInfo>> de::vulkan::material_instance::getDescriptorBufferInfos(const shader& inShader) const
-{
-	std::map<std::string, std::vector<vk::DescriptorBufferInfo>> out;
-
-	const auto& relf = inShader.getRefl();
-
-	for (uint8_t i = 0; i < relf.descriptor_binding_count; i++)
-	{
-		const auto& reflBinding = relf.descriptor_bindings[i];
-		if (reflBinding.descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-		{
-			continue;
-		}
-
-		const auto descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorBufferInfo>());
-		descBufferInfo.first->second.reserve(reflBinding.count);
-
-		const auto& bufferBind = _buffers.at(reflBinding.name);
-		for (uint32_t k = 0; k < reflBinding.count; ++k)
-		{
-			const auto buffer = bufferBind[k];
-			auto info = vk::DescriptorBufferInfo()
-							.setBuffer(buffer->get())
-							.setOffset(0)
-							.setRange(buffer->getSize());
-			descBufferInfo.first->second.push_back(info);
-		}
-	}
-
-	return out;
-}
-
-std::map<std::string, std::vector<vk::DescriptorImageInfo>> de::vulkan::material_instance::getDescriptorImageInfos(const shader& inShader) const
-{
-	std::map<std::string, std::vector<vk::DescriptorImageInfo>> out;
-
-	const auto& relf = inShader.getRefl();
-
-	for (uint8_t i = 0; i < relf.descriptor_binding_count; i++)
-	{
-		const auto& reflBinding = relf.descriptor_bindings[i];
-		if (reflBinding.descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-		{
-			continue;
-		}
-
-		const auto descBufferInfo = out.emplace(reflBinding.name, std::vector<vk::DescriptorImageInfo>());
-		descBufferInfo.first->second.reserve(reflBinding.count);
-
-		const auto& bindIt = _images.find(reflBinding.name);
-		for (uint32_t k = 0; k < reflBinding.count; ++k)
-		{
-			const auto image = bindIt != _images.end() ? bindIt->second[k] : &renderer::get()->getTextureImagePlaceholder();
-			auto info = vk::DescriptorImageInfo()
-							.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-							.setImageView(image->getImageView())
-							.setSampler(image->getSampler());
-			descBufferInfo.first->second.push_back(info);
-		}
-	}
-	return out;
-}
-
-vk::PipelineLayout de::vulkan::material_instance::getPipelineLayout() const
-{
-	return _owner->getPipelineLayout();
-}
-
-void de::vulkan::material_instance::updateDescriptorSets()
-{
-	updateShaderDescriptors(*_owner->getVertShader());
-	updateShaderDescriptors(*_owner->getFragShader());
-}
-
-void de::vulkan::material_instance::bindCmd(vk::CommandBuffer commandBuffer) const
-{
-	const auto& pipeline = _owner->getPipeline();
-
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _owner->getPipelineLayout(), 0, _descriptorSets, nullptr);
-	pipeline.bindCmd(commandBuffer);
-}
-
 de::vulkan::material::~material()
 {
 	auto device = renderer::get()->getDevice();
@@ -175,7 +47,8 @@ void de::vulkan::material::init(size_t maxInstances)
 {
 	createDescriptorPool(maxInstances);
 	createPipelineLayout();
-	_pipeline.create(_pipelineLayout, _vert, _frag);
+
+	_pipeline = createPipeline();
 }
 
 void de::vulkan::material::setShaderVert(const shader::shared& inShader)
@@ -204,6 +77,11 @@ void de::vulkan::material::resizeDescriptorPool(uint32_t newSize)
 	_instances.clear();
 	for (size_t i = 0; i < instancesCount; ++i)
 		makeInstance();
+}
+
+void de::vulkan::material::bindCmd(vk::CommandBuffer commandBuffer) const
+{
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 }
 
 void de::vulkan::material::createDescriptorPool(uint32_t maxSets)
@@ -293,7 +171,122 @@ vk::PipelineLayout de::vulkan::material::getPipelineLayout() const
 	return _pipelineLayout;
 }
 
-const de::vulkan::graphics_pipeline& de::vulkan::material::getPipeline() const
+vk::Pipeline de::vulkan::material::getPipeline() const
 {
 	return _pipeline;
+}
+
+vk::Pipeline de::vulkan::material::createPipeline()
+{
+	const renderer* renderer{renderer::get()};
+
+	const std::vector<vk::PipelineShaderStageCreateInfo> shaderStages =
+		{
+			_vert->getPipelineShaderStageCreateInfo(),
+			_frag->getPipelineShaderStageCreateInfo(),
+		};
+
+	const auto vertexInputInfo = _vert->getVertexInputInfo();
+	const auto vertexInputState = vk::PipelineVertexInputStateCreateInfo()
+									  .setVertexBindingDescriptions(vertexInputInfo._bindingDesc)
+									  .setVertexAttributeDescriptions(vertexInputInfo._attributeDesc);
+
+	std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments;
+	colorBlendAttachments[0] = vk::PipelineColorBlendAttachmentState()
+								   .setBlendEnable(VK_TRUE)
+								   .setColorWriteMask(
+									   vk::ColorComponentFlagBits::eR |
+									   vk::ColorComponentFlagBits::eG |
+									   vk::ColorComponentFlagBits::eB |
+									   vk::ColorComponentFlagBits::eA)
+								   .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+								   .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+								   .setColorBlendOp(vk::BlendOp::eAdd)
+								   .setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
+								   .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+								   .setAlphaBlendOp(vk::BlendOp::eSubtract);
+
+	const std::array<float, 4> colorBlendConstants = {0.F, 0.F, 0.F, 0.F};
+
+	const auto colorBlendingState = vk::PipelineColorBlendStateCreateInfo()
+										.setLogicOpEnable(VK_FALSE)
+										.setLogicOp(vk::LogicOp::eCopy)
+										.setAttachments(colorBlendAttachments)
+										.setBlendConstants(colorBlendConstants);
+
+	const auto inputAssemblyState = vk::PipelineInputAssemblyStateCreateInfo()
+										.setTopology(vk::PrimitiveTopology::eTriangleList)
+										.setPrimitiveRestartEnable(VK_FALSE);
+
+	const auto rasterizationState = vk::PipelineRasterizationStateCreateInfo()
+										.setRasterizerDiscardEnable(VK_FALSE)
+										.setPolygonMode(vk::PolygonMode::eFill)
+										.setLineWidth(1.0F)
+										.setCullMode(vk::CullModeFlagBits::eNone)
+										.setFrontFace(vk::FrontFace::eCounterClockwise)
+										.setDepthClampEnable(VK_FALSE)
+										.setDepthBiasEnable(VK_FALSE)
+										.setDepthBiasConstantFactor(0.0F)
+										.setDepthBiasSlopeFactor(0.0F)
+										.setDepthBiasClamp(0.0F);
+
+	const auto multisamplingState = vk::PipelineMultisampleStateCreateInfo()
+										.setSampleShadingEnable(VK_FALSE)
+										.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount())
+										.setMinSampleShading(1.0F)
+										.setPSampleMask(nullptr)
+										.setAlphaToCoverageEnable(VK_TRUE)
+										.setAlphaToOneEnable(VK_FALSE);
+
+	const auto depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+									   .setDepthTestEnable(VK_TRUE)
+									   .setDepthWriteEnable(VK_TRUE)
+									   .setDepthCompareOp(vk::CompareOp::eLess)
+									   .setDepthBoundsTestEnable(VK_FALSE)
+									   .setMinDepthBounds(0.0F)
+									   .setMaxDepthBounds(1.0F)
+									   .setStencilTestEnable(VK_TRUE);
+
+	const vk::Extent2D extent = renderer->getCurrentExtent();
+	const vk::Viewport viewport =
+		vk::Viewport()
+			.setX(0)
+			.setY(0)
+			.setWidth(1)
+			.setHeight(1)
+			.setMinDepth(0.0F)
+			.setMaxDepth(1.0F);
+
+	const vk::Rect2D scissors =
+		vk::Rect2D()
+			.setOffset(vk::Offset2D(0, 0))
+			.setExtent(vk::Extent2D());
+
+	const vk::PipelineViewportStateCreateInfo viewportState =
+		vk::PipelineViewportStateCreateInfo()
+			.setViewports(viewport)
+			.setScissors(scissors);
+
+	const std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+	const vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
+																.setDynamicStates(dynamicStates);
+
+	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
+		vk::GraphicsPipelineCreateInfo()
+			.setStages(shaderStages)
+			.setPVertexInputState(&vertexInputState)
+			.setPInputAssemblyState(&inputAssemblyState)
+			.setPViewportState(&viewportState)
+			.setPDynamicState(&dynamicState)
+			.setPRasterizationState(&rasterizationState)
+			.setPColorBlendState(&colorBlendingState)
+			.setPMultisampleState(&multisamplingState)
+			.setPDepthStencilState(&depthStencilState)
+			.setLayout(_pipelineLayout)
+			.setRenderPass(renderer->getRenderPass())
+			.setSubpass(0);
+
+	const auto createPipelineResult = renderer::get()->getDevice().createGraphicsPipeline(nullptr, pipelineCreateInfo);
+	assert(vk::Result::eSuccess == createPipelineResult.result);
+	return createPipelineResult.value;
 }
