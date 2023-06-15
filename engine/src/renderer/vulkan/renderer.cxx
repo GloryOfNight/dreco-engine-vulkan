@@ -132,6 +132,7 @@ void de::vulkan::renderer::tick(double deltaTime)
 			return;
 
 		const auto viewExtent = currentView->getCurrentExtent();
+		_cameraData.view = currentView->getViewMatrix();
 		_cameraData.proj = de::math::mat4::makeProjection(0.1f, 1000.f, static_cast<float>(viewExtent.width) / static_cast<float>(viewExtent.height), de::math::deg_to_rad(75.F));
 		updateCameraBuffer();
 
@@ -421,9 +422,9 @@ void de::vulkan::renderer::createCameraBuffer()
 	_cameraDataBufferId = getUniformBufferPool().makeBuffer(sizeof(camera_data));
 }
 
-void de::vulkan::renderer::setCameraView(const de::math::mat4& inView)
+void de::vulkan::renderer::setCameraView(uint32_t viewIndex, const de::math::mat4& inView)
 {
-	_cameraData.view = inView;
+	getView(viewIndex)->setViewMatrix(inView);
 }
 
 void de::vulkan::renderer::updateCameraBuffer()

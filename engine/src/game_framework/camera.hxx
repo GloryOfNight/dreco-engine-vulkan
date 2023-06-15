@@ -12,7 +12,13 @@ namespace de::gf
 
 		void tick(double deltaTime) override;
 
+		void setViewId(uint32_t viewId);
+
+		uint32_t getViewId() const { return _viewId; }
+
 	private:
 		de::math::mat4 _view;
+
+		uint32_t _viewId = 0;
 	};
 } // namespace de::gf

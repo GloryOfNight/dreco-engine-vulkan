@@ -15,5 +15,10 @@ void de::gf::camera::tick(double deltaTime)
 	const auto& transform = getTransform();
 	_view = de::math::mat4::makeFirstPersonView(transform._translation, de::math::quat_cast(transform._rotation));
 
-	de::engine::get()->getRenderer().setCameraView(_view);
+	de::engine::get()->getRenderer().setCameraView(_viewId, _view);
+}
+
+void de::gf::camera::setViewId(uint32_t viewId)
+{
+	_viewId = viewId;
 }

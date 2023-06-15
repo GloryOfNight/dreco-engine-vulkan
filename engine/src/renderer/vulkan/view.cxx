@@ -94,6 +94,11 @@ bool de::vulkan::view::updateExtent(vk::PhysicalDevice physicalDevice)
 	return false;
 }
 
+void de::vulkan::view::setViewMatrix(const de::math::mat4& viewMatrix)
+{
+	_viewMatrix = viewMatrix;
+}
+
 uint32_t de::vulkan::view::acquireNextImageIndex()
 {
 	const auto renderer = renderer::get();

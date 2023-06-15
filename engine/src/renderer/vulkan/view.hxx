@@ -2,6 +2,7 @@
 
 #include "images/depth_image.hxx"
 #include "images/msaa_image.hxx"
+#include "math/mat4.hxx"
 
 #include "settings.hxx"
 
@@ -27,6 +28,9 @@ namespace de::vulkan
 		bool isInitialized() const { return _surface != vk::SurfaceKHR(); }
 
 		bool updateExtent(vk::PhysicalDevice physicalDevice);
+
+		void setViewMatrix(const de::math::mat4& viewMatrix);
+		const de::math::mat4& getViewMatrix() const { return _viewMatrix; };
 
 		settings& getSettings() { return _settings; }
 		const settings& getSettings() const { return _settings; }
@@ -64,6 +68,8 @@ namespace de::vulkan
 		void createSemaphores(vk::Device device);
 
 		settings _settings;
+
+		de::math::mat4 _viewMatrix;
 
 		vk::SurfaceKHR _surface;
 

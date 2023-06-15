@@ -23,11 +23,12 @@ static void onQuitEvent(const SDL_Event&)
 
 de::engine::engine()
 	: _eventManager{}
-	, _inputManager(_eventManager)
+	, _inputManager()
 	, _threadPool()
 	, _renderer{}
 {
 	_eventManager.addEventBinding(SDL_EVENT_QUIT, &onQuitEvent);
+	_inputManager.init(_eventManager);
 }
 
 de::engine::~engine()
@@ -41,6 +42,15 @@ de::engine::~engine()
 de::engine* de::engine::get()
 {
 	return gEngine;
+}
+
+uint32_t de::engine::getWindowId(uint32_t viewId) const
+{
+	if (_windows[viewId] != nullptr)
+	{
+		return SDL_GetWindowID(_windows[viewId]);
+	}
+	return UINT32_MAX;
 }
 
 void de::engine::initialize()
@@ -113,14 +123,6 @@ void de::engine::run()
 
 	if (true == startRenderer())
 	{
-		auto window1 = SDL_CreateWindow("dreco-engine (1)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-		const auto window1Indx = _renderer.addView(window1);
-		if (window1Indx != UINT32_MAX)
-			_windows[window1Indx] = window1;
-
-		//auto window2 = SDL_CreateWindow("dreco-engine (2)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-		//_renderer.addView(window2);
-
 		startMainLoop();
 	}
 }
@@ -128,6 +130,15 @@ void de::engine::run()
 void de::engine::setCreateGameInstanceFunc(std::function<de::gf::game_instance::unique()> func)
 {
 	_createGameInstanceFunc = func;
+}
+
+uint32_t de::engine::addViewport(const std::string_view& name)
+{
+	auto window1 = SDL_CreateWindow(name.data(), 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	const auto window1Indx = _renderer.addView(window1);
+	if (window1Indx != UINT32_MAX)
+		_windows[window1Indx] = window1;
+	return window1Indx;
 }
 
 void de::engine::stop()

@@ -4,10 +4,17 @@
 #include "math/casts.hxx"
 #include "math/vec3.hxx"
 
+void de::gf::flying_camera::init()
+{
+	camera::init();
+	_inputManager.init(engine::get()->getEventManager());
+}
+
 void de::gf::flying_camera::tick(double deltaTime)
 {
 	auto* engine = de::engine::get();
-	auto& inputManager = engine->getInputManager();
+
+	_inputManager.setWindowId(engine->getWindowId(getViewId()));
 
 	auto& transform = getTransform();
 
@@ -17,35 +24,35 @@ void de::gf::flying_camera::tick(double deltaTime)
 
 	{ // camera WASDQE movement
 		float camMoveSpeed = 50.F;
-		if (inputManager.isKeyPressed(SDLK_LSHIFT))
+		if (_inputManager.isKeyPressed(SDLK_LSHIFT))
 		{
 			camMoveSpeed *= 2;
 		}
 
 		auto& pos = transform._translation;
-		if (inputManager.isKeyPressed(SDLK_w))
+		if (_inputManager.isKeyPressed(SDLK_w))
 		{
 			pos += camFowVec * camMoveSpeed * deltaTime;
 		}
-		else if (inputManager.isKeyPressed(SDLK_s))
+		else if (_inputManager.isKeyPressed(SDLK_s))
 		{
 			pos += camFowVec * (-camMoveSpeed * deltaTime);
 		}
 
-		if (inputManager.isKeyPressed(SDLK_d))
+		if (_inputManager.isKeyPressed(SDLK_d))
 		{
 			pos += camRightVec * (camMoveSpeed * deltaTime);
 		}
-		else if (inputManager.isKeyPressed(SDLK_a))
+		else if (_inputManager.isKeyPressed(SDLK_a))
 		{
 			pos += camRightVec * (-camMoveSpeed * deltaTime);
 		}
 
-		if (inputManager.isKeyPressed(SDLK_e))
+		if (_inputManager.isKeyPressed(SDLK_e))
 		{
 			pos += de::math::vec3(0, camMoveSpeed * deltaTime, 0);
 		}
-		else if (inputManager.isKeyPressed(SDLK_q))
+		else if (_inputManager.isKeyPressed(SDLK_q))
 		{
 			pos += de::math::vec3(0, -camMoveSpeed * deltaTime, 0);
 		}
@@ -54,15 +61,15 @@ void de::gf::flying_camera::tick(double deltaTime)
 	{
 		const auto& renderer = engine->getRenderer();
 
-		if (inputManager.isInMouseFocus())
+		if (_inputManager.isInMouseFocus())
 		{
 			uint16_t x, y;
-			const uint32_t mouseState = inputManager.getMouseState(&x, &y);
+			const uint32_t mouseState = _inputManager.getMouseState(&x, &y);
 
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
 				int w, h;
-				SDL_GetWindowSize(de::engine::get()->getWindow(), &w, &h);
+				SDL_GetWindowSize(de::engine::get()->getWindow(getViewId()), &w, &h);
 
 				const auto halfExtentX = static_cast<uint32_t>(w * 0.5f);
 				const auto halfExtentY = static_cast<uint32_t>(h * 0.5f);
@@ -82,14 +89,14 @@ void de::gf::flying_camera::tick(double deltaTime)
 				}
 				else // on first button press
 				{
-					inputManager.setMouseRelativeMode(true);
+					_inputManager.setMouseRelativeMode(true);
 					isMouseRightButtonRepeated = true;
 				}
-				inputManager.warpMouse(halfExtentX, halfExtentY);
+				_inputManager.warpMouse(halfExtentX, halfExtentY);
 			}
 			else if (isMouseRightButtonRepeated)
 			{
-				inputManager.setMouseRelativeMode(false);
+				_inputManager.setMouseRelativeMode(false);
 				isMouseRightButtonRepeated = false;
 			}
 		}

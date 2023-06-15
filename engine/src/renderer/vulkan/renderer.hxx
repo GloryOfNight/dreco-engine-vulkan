@@ -49,7 +49,7 @@ namespace de::vulkan
 
 		material* getMaterial(const std::string_view& name) const;
 
-		void setCameraView(const de::math::mat4& inView);
+		void setCameraView(uint32_t viewIndex, const de::math::mat4& inView);
 
 		void loadModel(const de::gltf::model& scn);
 

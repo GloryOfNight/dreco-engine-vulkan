@@ -37,7 +37,8 @@ namespace de
 
 		uint64_t getFrameCount() const { return _frameCounter; };
 
-		SDL_Window* getWindow() const { return _windows[0]; }
+		SDL_Window* getWindow(uint32_t viewId) const { return _windows[viewId]; }
+		uint32_t getWindowId(uint32_t viewId) const;
 
 		void initialize();
 
@@ -46,6 +47,8 @@ namespace de
 		void stop();
 
 		void setCreateGameInstanceFunc(std::function<de::gf::game_instance::unique()> func);
+
+		uint32_t addViewport(const std::string_view& name);
 
 	private:
 		static void onSystemSignal(int sig);
