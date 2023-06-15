@@ -3,6 +3,8 @@
 #include "images/depth_image.hxx"
 #include "images/msaa_image.hxx"
 
+#include "settings.hxx"
+
 #include <memory>
 #include <vulkan/vulkan.hpp>
 
@@ -18,13 +20,16 @@ namespace de::vulkan
 		view(view&&) = default;
 		~view() { destroy(); }
 
-		void init(vk::SurfaceKHR surface);
+		void init(vk::SurfaceKHR surface, uint32_t viewIndex);
 		void recreateSwapchain();
 		void destroy();
 
 		bool isInitialized() const { return _surface != vk::SurfaceKHR(); }
 
 		bool updateExtent(vk::PhysicalDevice physicalDevice);
+
+		settings& getSettings() { return _settings; }
+		const settings& getSettings() const { return _settings; }
 
 		uint32_t acquireNextImageIndex();
 
@@ -35,6 +40,7 @@ namespace de::vulkan
 		vk::RenderPass getRenderPass() const { return _renderPass; };
 		vk::Extent2D getCurrentExtent() const { return _currentExtent; };
 		vk::SurfaceKHR getSurface() const { return _surface; }
+		vk::SurfaceFormatKHR getSurfaceFormat() const { return _surfaceFormat; }
 
 		vk::SharingMode getSharingMode() const;
 
@@ -56,6 +62,8 @@ namespace de::vulkan
 		void createFences(vk::Device device);
 
 		void createSemaphores(vk::Device device);
+
+		settings _settings;
 
 		vk::SurfaceKHR _surface;
 

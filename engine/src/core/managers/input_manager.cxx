@@ -1,7 +1,7 @@
 #include "input_manager.hxx"
 
+#include "core/engine.hxx"
 #include "platforms/platform.h"
-#include "renderer/render.hxx"
 
 #include <SDL_events.h>
 
@@ -36,7 +36,7 @@ uint32_t de::input_manager::getMouseState(uint16_t* const x, uint16_t* const y) 
 
 void de::input_manager::warpMouse(const uint16_t x, const uint16_t y)
 {
-	SDL_WarpMouseInWindow(de::renderer::get()->getWindow(), x, y);
+	SDL_WarpMouseInWindow(de::engine::get()->getWindow(), x, y);
 	_mouseState._x = x;
 	_mouseState._y = y;
 }
@@ -75,10 +75,13 @@ void de::input_manager::onKeyEvent(const SDL_Event& event)
 
 void de::input_manager::onMouseEvent(const SDL_Event& event)
 {
-	const uint32_t windowId = de::vulkan::renderer::get()->getWindowId();
-	_inMouseFocus = event.motion.windowID == windowId ||
-					event.button.windowID == windowId ||
-					event.wheel.windowID == windowId;
+	//const uint32_t windowId = de::vulkan::renderer::get()->getWindowId();
+	//_inMouseFocus = event.motion.windowID == windowId ||
+	//				event.button.windowID == windowId ||
+	//				event.wheel.windowID == windowId;
+
+	// TEMP
+	_inMouseFocus = true;
 
 	if (_inMouseFocus)
 	{

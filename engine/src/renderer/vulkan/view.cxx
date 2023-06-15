@@ -5,7 +5,7 @@
 
 #include <thread>
 
-void de::vulkan::view::init(vk::SurfaceKHR surface)
+void de::vulkan::view::init(vk::SurfaceKHR surface, uint32_t viewIndex)
 {
 	_surface = surface;
 
@@ -17,6 +17,8 @@ void de::vulkan::view::init(vk::SurfaceKHR surface)
 	_presentMode = utils::findPresentMode(physicalDevice, surface);
 	_maxSampleCount = utils::findMaxSampleCount(physicalDevice);
 
+	_settings.init();
+
 	updateExtent(physicalDevice);
 
 	createSwapchain(physicalDevice, device);
@@ -25,8 +27,8 @@ void de::vulkan::view::init(vk::SurfaceKHR surface)
 
 	createImageCommandBuffers(device, renderer->getTransferCommandPool());
 
-	_depthImage.create(_currentExtent);
-	_msaaImage.create(_currentExtent);
+	_depthImage.create(viewIndex);
+	_msaaImage.create(viewIndex);
 
 	createRenderPass(device);
 	createFramebuffers(device);
@@ -50,8 +52,8 @@ void de::vulkan::view::recreateSwapchain()
 
 	createRenderPass(device);
 
-	_depthImage.recreate(_currentExtent);
-	_msaaImage.recreate(_currentExtent);
+	_depthImage.recreate();
+	_msaaImage.recreate();
 
 	createFramebuffers(device);
 }
@@ -318,8 +320,8 @@ void de::vulkan::view::createImageViews(vk::Device device)
 
 void de::vulkan::view::createRenderPass(vk::Device device)
 {
-	const vk::SampleCountFlagBits sampleCount = _maxSampleCount;
-	const bool isSamplingSupported = _maxSampleCount != vk::SampleCountFlagBits::e1;
+	const auto sampleCount = _settings.getSampleCount();
+	const bool isMultisamplingSupported = _settings.IsMultisamplingSupported();
 
 	std::vector<vk::AttachmentDescription> attachmentsDescriptions;
 
@@ -330,11 +332,11 @@ void de::vulkan::view::createRenderPass(vk::Device device)
 		.setFormat(_surfaceFormat.format)
 		.setSamples(sampleCount)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
-		.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
+		.setStoreOp(isMultisamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
 		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 		.setInitialLayout(vk::ImageLayout::eUndefined)
-		.setFinalLayout(isSamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
+		.setFinalLayout(isMultisamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
 	attachmentReferences.push_back(vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal));
 
 	attachmentsDescriptions.emplace_back() // depth
@@ -348,7 +350,7 @@ void de::vulkan::view::createRenderPass(vk::Device device)
 		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 	attachmentReferences.push_back(vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal));
 
-	if (isSamplingSupported)
+	if (isMultisamplingSupported)
 	{
 		attachmentsDescriptions.emplace_back() // color msaa
 			.setFormat(_surfaceFormat.format)

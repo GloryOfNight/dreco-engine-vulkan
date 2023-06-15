@@ -3,15 +3,19 @@
 #include "renderer/vulkan/renderer.hxx"
 #include "renderer/vulkan/utils.hxx"
 
-void de::vulkan::vk_msaa_image::create(vk::Extent2D extent)
+void de::vulkan::vk_msaa_image::create(uint32_t viewIndex)
 {
 	const renderer* renderer{renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	const vk::Format format = renderer->getSettings().getSurfaceFormat().format;
-	const vk::SampleCountFlagBits samples = renderer->getSettings().getPrefferedSampleCount();
+	_viewIndex = viewIndex;
 
-	createImage(device, format, extent.width, extent.height, samples);
+	auto view = renderer->getView(viewIndex);
+	const auto format = view->getSurfaceFormat().format;
+	const auto extent = view->getCurrentExtent();
+	const auto sampleCount = view->getSettings().getSampleCount();
+
+	createImage(device, format, extent.width, extent.height, sampleCount);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, utils::memory_property::device);
@@ -21,10 +25,10 @@ void de::vulkan::vk_msaa_image::create(vk::Extent2D extent)
 	createImageView(device, format);
 }
 
-void de::vulkan::vk_msaa_image::recreate(vk::Extent2D extent)
+void de::vulkan::vk_msaa_image::recreate()
 {
 	destroy();
-	create(extent);
+	create(_viewIndex);
 }
 
 vk::ImageAspectFlags de::vulkan::vk_msaa_image::getImageAspectFlags() const

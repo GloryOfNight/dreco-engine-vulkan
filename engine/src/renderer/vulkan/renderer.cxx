@@ -52,7 +52,6 @@ void de::vulkan::renderer::init()
 			DE_LOG(Info, "Api version and device api version doesn't match. Api: %i, device: %i", _apiVersion, deviceApiVersion);
 
 			_apiVersion = deviceApiVersion;
-			_instance.destroySurfaceKHR(_surface);
 			_instance.destroy();
 
 			createInstance();
@@ -69,38 +68,11 @@ void de::vulkan::renderer::init()
 	{ // common renderer resources
 		createCameraBuffer();
 		_placeholderTextureImage.create(de::image_data::makePlaceholder());
+
+		const auto basicVert = loadShader(DRECO_SHADER(constants::shaders::basicVert));
+		const auto basicFrag = loadShader(DRECO_SHADER(constants::shaders::basicFrag));
+		_materials.try_emplace(constants::materials::basic, material::makeNew(basicVert, basicFrag, 128));
 	}
-
-	{ // window
-		createWindow();
-	}
-
-	{ // window and surface dependent stuff
-		createSurface();
-
-		updateExtent();
-		_settings.init(this);
-
-		createSwapchain();
-
-		createImageViews();
-
-		createImageCommandBuffers(); // has dependency on swapchain views size
-
-		_depthImage.create(_currentExtent);
-		_msaaImage.create(_currentExtent);
-
-		createRenderPass();
-
-		createFramebuffers();
-
-		createFences();
-		createSemaphores();
-	}
-
-	const auto basicVert = loadShader(DRECO_SHADER(constants::shaders::basicVert));
-	const auto basicFrag = loadShader(DRECO_SHADER(constants::shaders::basicFrag));
-	_materials.try_emplace(constants::materials::basic, material::makeNew(basicVert, basicFrag, 128));
 }
 
 void de::vulkan::renderer::exit()
@@ -117,32 +89,17 @@ void de::vulkan::renderer::exit()
 	_materials.clear();
 	_views = {};
 
-	for (auto& fence : _submitQueueFences)
-	{
-		_device.destroyFence(fence);
-	}
-
-	cleanupSwapchain(_swapchain);
-
 	_placeholderTextureImage.destroy();
-
-	_device.destroySemaphore(_semaphoreImageAvailable);
-	_device.destroySemaphore(_semaphoreRenderFinished);
 
 	_device.destroyCommandPool(_graphicsCommandPool);
 	_device.destroyCommandPool(_transferCommandPool);
 
-	_depthImage.destroy();
-	_msaaImage.destroy();
 	_bpVertIndx.destroy();
 	_bpUniforms.destroy();
 	_bpTransfer.destroy();
 	_device.destroy();
 
-	_instance.destroy(_surface);
 	_instance.destroy();
-
-	SDL_DestroyWindow(_window);
 
 	new (this) renderer();
 }
@@ -208,7 +165,7 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 	if (SDL_Vulkan_CreateSurface(window, _instance, &newSurface) == SDL_TRUE)
 	{
 		_views[viewIndex] = view::unique(new view());
-		_views[viewIndex]->init(newSurface);
+		_views[viewIndex]->init(newSurface, viewIndex);
 	}
 
 	// update all materials with new view
@@ -268,11 +225,6 @@ uint32_t de::vulkan::renderer::getVersion(uint32_t& major, uint32_t& minor, uint
 	return _apiVersion;
 }
 
-uint32_t de::vulkan::renderer::getImageCount() const
-{
-	return _swapchainImageViews.size();
-}
-
 vk::SharingMode de::vulkan::renderer::getSharingMode() const
 {
 	return vk::SharingMode::eExclusive;
@@ -318,17 +270,6 @@ void de::vulkan::renderer::submitSingleTimeTransferCommands(const std::vector<vk
 	_transferQueue.waitIdle();
 }
 
-void de::vulkan::renderer::applySettings()
-{
-	recreateSwapchain();
-}
-
-void de::vulkan::renderer::createWindow()
-{
-	_window = SDL_CreateWindow("dreco-launcher", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-	_windowId = SDL_GetWindowID(_window);
-}
-
 void de::vulkan::renderer::createInstance()
 {
 	std::vector<const char*> instanceExtensions;
@@ -365,15 +306,6 @@ void de::vulkan::renderer::createInstance()
 	const vk::ApplicationInfo applicationInfo("dreco-launcher", 0, "dreco", 0, _apiVersion);
 	const vk::InstanceCreateInfo instanceCreateInfo({}, &applicationInfo, instanceLayers, instanceExtensions);
 	_instance = vk::createInstance(instanceCreateInfo);
-}
-
-void de::vulkan::renderer::createSurface()
-{
-	VkSurfaceKHR newSurface;
-	if (SDL_Vulkan_CreateSurface(_window, _instance, &newSurface) == SDL_TRUE)
-	{
-		_surface = newSurface;
-	}
 }
 
 void de::vulkan::renderer::createPhysicalDevice()
@@ -456,180 +388,6 @@ void de::vulkan::renderer::createQueues()
 	_transferQueue = _device.getQueue(_transferQueueIndex, 0);
 }
 
-void de::vulkan::renderer::createSwapchain()
-{
-	const auto sharingMode{getSharingMode()};
-	const auto queueFamilyIndexes{getQueueFamilyIndices()};
-
-	const vk::SurfaceCapabilitiesKHR surfaceCapabilities = _physicalDevice.getSurfaceCapabilitiesKHR(_surface);
-	const vk::PresentModeKHR presentMode = _settings.getPresentMode();
-	const vk::SurfaceFormatKHR surfaceFormat = _settings.getSurfaceFormat();
-	const uint32_t minImageCount = surfaceCapabilities.maxImageCount >= 3 ? 3 : surfaceCapabilities.minImageCount;
-
-	const vk::SwapchainCreateInfoKHR swapchainCreateInfo =
-		vk::SwapchainCreateInfoKHR()
-			.setSurface(_surface)
-			.setMinImageCount(minImageCount)
-			.setImageFormat(surfaceFormat.format)
-			.setImageColorSpace(surfaceFormat.colorSpace)
-			.setImageExtent(_currentExtent)
-			.setImageArrayLayers(1)
-			.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
-			.setImageSharingMode(static_cast<vk::SharingMode>(sharingMode))
-			.setQueueFamilyIndices(queueFamilyIndexes)
-			.setPreTransform(surfaceCapabilities.currentTransform)
-			.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-			.setPresentMode(presentMode)
-			.setClipped(VK_TRUE)
-			.setOldSwapchain(_swapchain);
-
-	_swapchain = _device.createSwapchainKHR(swapchainCreateInfo);
-	if (swapchainCreateInfo.oldSwapchain)
-	{
-		cleanupSwapchain(swapchainCreateInfo.oldSwapchain);
-	}
-}
-
-void de::vulkan::renderer::createImageViews()
-{
-	const auto swapchainImages = _device.getSwapchainImagesKHR(_swapchain);
-	const size_t imageCount = swapchainImages.size();
-
-	_swapchainImageViews.resize(imageCount);
-	for (size_t i = 0; i < imageCount; ++i)
-	{
-		const vk::ComponentMapping imageViewComponents =
-			vk::ComponentMapping()
-				.setR(vk::ComponentSwizzle::eIdentity)
-				.setG(vk::ComponentSwizzle::eIdentity)
-				.setB(vk::ComponentSwizzle::eIdentity)
-				.setA(vk::ComponentSwizzle::eIdentity);
-
-		const vk::ImageSubresourceRange imageSubresourceRange =
-			vk::ImageSubresourceRange()
-				.setAspectMask(vk::ImageAspectFlagBits::eColor)
-				.setBaseArrayLayer(0)
-				.setBaseMipLevel(0)
-				.setLayerCount(1)
-				.setLevelCount(1);
-
-		const vk::ImageViewCreateInfo imageViewCreateInfo =
-			vk::ImageViewCreateInfo()
-				.setImage(swapchainImages[i])
-				.setViewType(vk::ImageViewType::e2D)
-				.setFormat(_settings.getSurfaceFormat().format)
-				.setComponents(imageViewComponents)
-				.setSubresourceRange(imageSubresourceRange);
-
-		_swapchainImageViews[i] = _device.createImageView(imageViewCreateInfo);
-	}
-}
-
-void de::vulkan::renderer::createRenderPass()
-{
-	const vk::SampleCountFlagBits sampleCount = _settings.getPrefferedSampleCount();
-	const bool isSamplingSupported = _settings.getIsSamplingSupported();
-
-	std::vector<vk::AttachmentDescription> attachmentsDescriptions;
-
-	std::vector<vk::AttachmentReference> attachmentReferences;
-	std::vector<vk::AttachmentReference> resolveAttachmentReferences;
-
-	attachmentsDescriptions.emplace_back() // color
-		.setFormat(_settings.getSurfaceFormat().format)
-		.setSamples(sampleCount)
-		.setLoadOp(vk::AttachmentLoadOp::eClear)
-		.setStoreOp(isSamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
-		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eUndefined)
-		.setFinalLayout(isSamplingSupported ? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::ePresentSrcKHR);
-	attachmentReferences.push_back(vk::AttachmentReference(0, vk::ImageLayout::eColorAttachmentOptimal));
-
-	attachmentsDescriptions.emplace_back() // depth
-		.setFormat(_depthImage.getFormat())
-		.setSamples(sampleCount)
-		.setLoadOp(vk::AttachmentLoadOp::eClear)
-		.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-		.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-		.setInitialLayout(vk::ImageLayout::eUndefined)
-		.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-	attachmentReferences.push_back(vk::AttachmentReference(1, vk::ImageLayout::eDepthStencilAttachmentOptimal));
-
-	if (isSamplingSupported)
-	{
-		attachmentsDescriptions.emplace_back() // color msaa
-			.setFormat(_settings.getSurfaceFormat().format)
-			.setSamples(vk::SampleCountFlagBits::e1)
-			.setLoadOp(vk::AttachmentLoadOp::eDontCare)
-			.setStoreOp(vk::AttachmentStoreOp::eDontCare)
-			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-		resolveAttachmentReferences.push_back(vk::AttachmentReference(2, vk::ImageLayout::eColorAttachmentOptimal));
-	}
-
-	const vk::SubpassDescription subpassDescription =
-		vk::SubpassDescription()
-			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-			.setColorAttachments({1, &attachmentReferences[0]})
-			.setPDepthStencilAttachment(&attachmentReferences[1])
-			.setPResolveAttachments(resolveAttachmentReferences.data());
-
-	const vk::SubpassDependency subpassDependecy =
-		vk::SubpassDependency()
-			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
-			.setDstSubpass(0)
-			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
-			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
-			.setSrcAccessMask(vk::AccessFlagBits(0))
-			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite);
-
-	const vk::RenderPassCreateInfo renderPassCreateInfo =
-		vk::RenderPassCreateInfo()
-			.setAttachments(attachmentsDescriptions)
-			.setSubpasses({1, &subpassDescription})
-			.setDependencies({1, &subpassDependecy});
-
-	_renderPass = _device.createRenderPass(renderPassCreateInfo);
-}
-
-void de::vulkan::renderer::createFramebuffers()
-{
-	const size_t imageCount = getImageCount();
-	_framebuffers.resize(imageCount);
-
-	for (size_t i = 0; i < imageCount; ++i)
-	{
-		std::vector<vk::ImageView> attachments;
-		attachments.reserve(3);
-
-		if (_settings.getIsSamplingSupported())
-		{
-			attachments.push_back(_msaaImage.getImageView());
-			attachments.push_back(_depthImage.getImageView());
-			attachments.push_back(_swapchainImageViews[i]);
-		}
-		else
-		{
-			attachments.push_back(_swapchainImageViews[i]);
-			attachments.push_back(_depthImage.getImageView());
-		}
-
-		const vk::FramebufferCreateInfo framebufferCreateInfo =
-			vk::FramebufferCreateInfo()
-				.setRenderPass(_renderPass)
-				.setAttachments(attachments)
-				.setWidth(_currentExtent.width)
-				.setHeight(_currentExtent.height)
-				.setLayers(1);
-
-		_framebuffers[i] = _device.createFramebuffer(framebufferCreateInfo);
-	}
-}
-
 void de::vulkan::renderer::createCommandPools()
 {
 	const vk::CommandPoolCreateInfo graphicsCreateInfo = vk::CommandPoolCreateInfo()
@@ -641,32 +399,6 @@ void de::vulkan::renderer::createCommandPools()
 															 .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
 															 .setQueueFamilyIndex(_transferQueueIndex);
 	_transferCommandPool = _device.createCommandPool(transferCreateInfo);
-}
-
-void de::vulkan::renderer::createImageCommandBuffers()
-{
-	const vk::CommandBufferAllocateInfo commandBufferAllocateInfo =
-		vk::CommandBufferAllocateInfo()
-			.setLevel(vk::CommandBufferLevel::ePrimary)
-			.setCommandBufferCount(getImageCount())
-			.setCommandPool(_transferCommandPool);
-	_imageCommandBuffers = _device.allocateCommandBuffers(commandBufferAllocateInfo);
-}
-
-inline void de::vulkan::renderer::createFences()
-{
-	_submitQueueFences.resize(getImageCount());
-	for (auto& fence : _submitQueueFences)
-	{
-		const vk::FenceCreateInfo fenceCreateInfo(vk::FenceCreateFlagBits::eSignaled);
-		fence = _device.createFence(fenceCreateInfo);
-	}
-}
-
-void de::vulkan::renderer::createSemaphores()
-{
-	_semaphoreImageAvailable = _device.createSemaphore(vk::SemaphoreCreateInfo());
-	_semaphoreRenderFinished = _device.createSemaphore(vk::SemaphoreCreateInfo());
 }
 
 void de::vulkan::renderer::createBufferPools()
@@ -689,77 +421,6 @@ void de::vulkan::renderer::createCameraBuffer()
 	_cameraDataBufferId = getUniformBufferPool().makeBuffer(sizeof(camera_data));
 }
 
-void de::vulkan::renderer::drawFrame()
-{
-	vk::ResultValue<uint32_t> aquireNextImageResult = vk::ResultValue<uint32_t>(vk::Result{}, UINT32_MAX);
-	try
-	{
-		aquireNextImageResult = _device.acquireNextImageKHR(_swapchain, UINT32_MAX, _semaphoreImageAvailable, nullptr);
-	}
-	catch (vk::OutOfDateKHRError outOfDateKHRError)
-	{
-		return;
-	}
-
-	const uint32_t imageIndex = aquireNextImageResult.value;
-
-	if (vk::Result::eSuccess != aquireNextImageResult.result && vk::Result::eSuboptimalKHR != aquireNextImageResult.result)
-	{
-		if (vk::Result::eErrorOutOfDateKHR == aquireNextImageResult.result)
-		{
-			recreateSwapchain();
-		}
-		return;
-	}
-
-	const std::array<vk::Fence, 1> waitFences{_submitQueueFences[imageIndex]};
-	const vk::Result waitFencesResult = _device.waitForFences(waitFences, true, UINT32_MAX);
-	if (waitFencesResult == vk::Result::eTimeout)
-		return;
-
-	_device.resetFences(waitFences);
-
-	vk::CommandBuffer commandBuffer = prepareCommandBuffer(imageIndex);
-
-	const std::array<vk::Semaphore, 1> submitWaitSemaphores = {_semaphoreImageAvailable};
-	const std::array<vk::Semaphore, 1> submitSignalSemaphores = {_semaphoreRenderFinished};
-	const std::array<vk::PipelineStageFlags, 1> submitWaitDstStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-	const std::array<vk::CommandBuffer, 1> submitCommandBuffers = {commandBuffer};
-
-	const vk::SubmitInfo submitInfo =
-		vk::SubmitInfo()
-			.setWaitSemaphores(submitWaitSemaphores)
-			.setSignalSemaphores(submitSignalSemaphores)
-			.setWaitDstStageMask(submitWaitDstStages)
-			.setCommandBuffers(submitCommandBuffers);
-
-	_graphicsQueue.submit(submitInfo, _submitQueueFences[imageIndex]);
-
-	const vk::PresentInfoKHR presentInfo =
-		vk::PresentInfoKHR()
-			.setWaitSemaphores(submitSignalSemaphores)
-			.setSwapchains({1, &_swapchain})
-			.setImageIndices({1, &imageIndex});
-
-	try
-	{
-		const vk::Result presentResult = _graphicsQueue.presentKHR(presentInfo);
-
-		if (vk::Result::eSuboptimalKHR == aquireNextImageResult.result ||
-			vk::Result::eSuboptimalKHR == presentResult)
-		{
-			recreateSwapchain();
-		}
-	}
-	catch (vk::OutOfDateKHRError error)
-	{
-		std::this_thread::sleep_for(std::chrono::milliseconds(16));
-		SDL_UpdateWindowSurface(_window);
-
-		DE_LOG(Error, "OutOfDateKHRError");
-	}
-}
-
 void de::vulkan::renderer::setCameraView(const de::math::mat4& inView)
 {
 	_cameraData.view = inView;
@@ -777,103 +438,4 @@ void de::vulkan::renderer::updateCameraBuffer()
 
 	const auto copyRegion = vk::BufferCopy(0, 0, size);
 	de::vulkan::buffer::copyBuffer(_bpTransfer.getBuffer(id).get(), _bpUniforms.getBuffer(_cameraDataBufferId).get(), {copyRegion});
-}
-
-bool de::vulkan::renderer::updateExtent()
-{
-	const vk::Extent2D newExtent = _physicalDevice.getSurfaceCapabilitiesKHR(_surface).currentExtent;
-	if (_currentExtent != newExtent)
-	{
-		_currentExtent = newExtent;
-		return true;
-	}
-	return false;
-}
-
-void de::vulkan::renderer::cleanupSwapchain(vk::SwapchainKHR swapchain)
-{
-	_device.waitIdle();
-
-	_device.destroyRenderPass(_renderPass);
-
-	for (auto frameBuffer : _framebuffers)
-	{
-		_device.destroyFramebuffer(frameBuffer);
-	}
-	_framebuffers.clear();
-
-	for (auto imageView : _swapchainImageViews)
-	{
-		_device.destroyImageView(imageView);
-	}
-	_swapchainImageViews.clear();
-
-	_device.destroySwapchainKHR(swapchain);
-}
-
-void de::vulkan::renderer::recreateSwapchain()
-{
-	if (0 == _currentExtent.height || 0 == _currentExtent.width)
-	{
-		return;
-	}
-
-	createSwapchain();
-	createImageViews();
-
-	createRenderPass();
-
-	_depthImage.recreate(_currentExtent);
-	_msaaImage.recreate(_currentExtent);
-
-	createFramebuffers();
-}
-
-vk::CommandBuffer de::vulkan::renderer::prepareCommandBuffer(uint32_t imageIndex)
-{
-	vk::CommandBuffer commandBuffer = _imageCommandBuffers[imageIndex];
-
-	const vk::CommandBufferBeginInfo commandBufferBeginInfo(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-	commandBuffer.begin(commandBufferBeginInfo);
-
-	std::array<vk::ClearValue, 2> clearValues;
-	clearValues[0].color = vk::ClearColorValue(std::array<float, 4>{0.0F, 0.0F, 0.0F, 1.0F});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0F, 0U);
-
-	const vk::RenderPassBeginInfo renderPassBeginInfo =
-		vk::RenderPassBeginInfo()
-			.setRenderPass(_renderPass)
-			.setFramebuffer(_framebuffers[imageIndex])
-			.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), _currentExtent))
-			.setClearValues(clearValues);
-
-	commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
-
-	const auto viewport =
-		vk::Viewport()
-			.setX(0)
-			.setY(0)
-			.setWidth(static_cast<float>(_currentExtent.width))
-			.setHeight(static_cast<float>(_currentExtent.height))
-			.setMinDepth(0.0F)
-			.setMaxDepth(1.0F);
-
-	commandBuffer.setViewport(0, viewport);
-
-	const auto scissors =
-		vk::Rect2D()
-			.setExtent(_currentExtent)
-			.setOffset(vk::Offset2D(0, 0));
-
-	commandBuffer.setScissor(0, scissors);
-
-	for (auto& scene : _scenes)
-	{
-		scene->bindToCmdBuffer(commandBuffer);
-	}
-	commandBuffer.endRenderPass();
-
-	commandBuffer.end();
-
-	return commandBuffer;
 }

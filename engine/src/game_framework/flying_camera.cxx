@@ -61,9 +61,11 @@ void de::gf::flying_camera::tick(double deltaTime)
 
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
-				const auto extent = renderer.getCurrentExtent();
-				const auto halfExtentX = static_cast<uint32_t>(extent.width * 0.5f);
-				const auto halfExtentY = static_cast<uint32_t>(extent.height * 0.5f);
+				int w, h;
+				SDL_GetWindowSize(de::engine::get()->getWindow(), &w, &h);
+
+				const auto halfExtentX = static_cast<uint32_t>(w * 0.5f);
+				const auto halfExtentY = static_cast<uint32_t>(h * 0.5f);
 				if (isMouseRightButtonRepeated)
 				{
 					const auto cameraRotSpeed = de::math::deg_to_rad(45.f);

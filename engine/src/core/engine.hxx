@@ -1,10 +1,10 @@
 #pragma once
-#include "threads/thread_pool.hxx"
 #include "core/managers/event_manager.hxx"
 #include "core/managers/input_manager.hxx"
 #include "core/misc/fps_counter.hxx"
 #include "game_framework/game_instance.hxx"
 #include "renderer/render.hxx"
+#include "threads/thread_pool.hxx"
 
 #include "dreco.hxx"
 
@@ -37,6 +37,8 @@ namespace de
 
 		uint64_t getFrameCount() const { return _frameCounter; };
 
+		SDL_Window* getWindow() const { return _windows[0]; }
+
 		void initialize();
 
 		void run();
@@ -59,6 +61,8 @@ namespace de
 		void postMainLoop();
 
 		double calculateNewDeltaTime() noexcept;
+
+		std::array<SDL_Window*, 16> _windows{};
 
 		event_manager _eventManager;
 

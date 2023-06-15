@@ -251,7 +251,7 @@ vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 
 	const auto multisamplingState = vk::PipelineMultisampleStateCreateInfo()
 										.setSampleShadingEnable(VK_FALSE)
-										.setRasterizationSamples(renderer->getSettings().getPrefferedSampleCount())
+										.setRasterizationSamples(view->getSettings().getSampleCount())
 										.setMinSampleShading(1.0F)
 										.setPSampleMask(nullptr)
 										.setAlphaToCoverageEnable(VK_TRUE)

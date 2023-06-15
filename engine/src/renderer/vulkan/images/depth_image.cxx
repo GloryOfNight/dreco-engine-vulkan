@@ -3,14 +3,20 @@
 #include "renderer/vulkan/renderer.hxx"
 #include "renderer/vulkan/utils.hxx"
 
-void de::vulkan::vk_depth_image::create(vk::Extent2D extent)
+void de::vulkan::vk_depth_image::create(uint32_t viewIndex)
 {
 	renderer* renderer{renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
 	_format = findSupportedDepthFormat();
 
-	createImage(device, _format, extent.width, extent.height, renderer->getSettings().getPrefferedSampleCount());
+	_viewIndex = viewIndex;
+
+	const auto view = renderer->getView(viewIndex);
+	const auto extent = view->getCurrentExtent();
+	const auto sampleCount = view->getSettings().getSampleCount();
+
+	createImage(device, _format, extent.width, extent.height, sampleCount);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, utils::memory_property::device);
@@ -36,10 +42,10 @@ void de::vulkan::vk_depth_image::create(vk::Extent2D extent)
 	device.freeCommandBuffers(renderer->getTransferCommandPool(), commandBuffer);
 }
 
-void de::vulkan::vk_depth_image::recreate(vk::Extent2D extent)
+void de::vulkan::vk_depth_image::recreate()
 {
 	destroy();
-	create(extent);
+	create(_viewIndex);
 }
 
 vk::Format de::vulkan::vk_depth_image::getFormat() const

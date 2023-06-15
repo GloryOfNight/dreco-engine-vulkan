@@ -7,9 +7,9 @@ namespace de::vulkan
 	class vk_depth_image final : public image
 	{
 	public:
-		void create(vk::Extent2D extent);
+		void create(uint32_t viewIndex);
 
-		void recreate(vk::Extent2D extent);
+		void recreate();
 
 		vk::Format getFormat() const;
 
@@ -24,5 +24,7 @@ namespace de::vulkan
 
 	private:
 		vk::Format _format{VK_FORMAT_UNDEFINED};
+
+		uint32_t _viewIndex{};
 	};
 } // namespace de::vulkan

@@ -3,66 +3,39 @@
 #include "renderer.hxx"
 #include "utils.hxx"
 
-void de::vulkan::settings::init(const renderer* renderer)
+void de::vulkan::settings::init()
 {
-	const vk::SurfaceKHR surface = renderer->getSurface();
-	const vk::PhysicalDevice physicalDevice = renderer->getPhysicalDevice();
-
-	_surfaceFormat = utils::findSurfaceFormat(physicalDevice, surface);
-	_presentMode = utils::findPresentMode(physicalDevice, surface);
-	_maxSampleCount = utils::findMaxSampleCount(physicalDevice);
-
-	setPrefferedSampleCount(_maxSampleCount);
+	const vk::PhysicalDevice physicalDevice = renderer::get()->getPhysicalDevice();
+	setSampleCount(utils::findMaxSampleCount(physicalDevice));
 }
 
-const vk::SurfaceFormatKHR& de::vulkan::settings::getSurfaceFormat() const
+vk::SampleCountFlagBits de::vulkan::settings::getSampleCount() const
 {
-	return _surfaceFormat;
+	return _sampleCount;
 }
 
-vk::PresentModeKHR de::vulkan::settings::getPresentMode() const
+bool de::vulkan::settings::IsMultisamplingSupported() const
 {
-	return _presentMode;
+	return _sampleCount != vk::SampleCountFlagBits::e1;
 }
 
-vk::SampleCountFlagBits de::vulkan::settings::getMaxSampleCount() const
-{
-	return _maxSampleCount;
-}
-
-vk::SampleCountFlagBits de::vulkan::settings::getPrefferedSampleCount() const
-{
-	return _prefferedSampleCount;
-}
-
-bool de::vulkan::settings::setPrefferedSampleCount(const vk::SampleCountFlagBits sampleCount)
-{
-	const bool isSupported = static_cast<uint32_t>(sampleCount) > 0 &&
-							 (sampleCount == vk::SampleCountFlagBits::e1 || static_cast<uint32_t>(sampleCount) % 2 == 0) &&
-							 _maxSampleCount >= sampleCount;
-	if (isSupported)
-	{
-		_prefferedSampleCount = sampleCount;
-	}
-	return isSupported;
-}
-
-bool de::vulkan::settings::getIsSamplingSupported() const
-{
-	return _prefferedSampleCount != vk::SampleCountFlagBits::e1;
-}
-
-vk::PolygonMode de::vulkan::settings::getDefaultPolygonMode() const
+vk::PolygonMode de::vulkan::settings::getPolygonMode() const
 {
 	return _polygonMode;
 }
 
-bool de::vulkan::settings::setDefaultPolygonMode(const vk::PolygonMode mode)
+de::vulkan::settings& de::vulkan::settings::setSampleCount(const vk::SampleCountFlagBits sampleCount)
 {
-	const bool isDifferent = _polygonMode != mode;
-	if (isDifferent)
+	const auto maxSampleCount = utils::findMaxSampleCount(renderer::get()->getPhysicalDevice());
+	if (sampleCount <= maxSampleCount)
 	{
-		_polygonMode = mode;
+		_sampleCount = sampleCount;
 	}
-	return isDifferent;
+	return *this;
+}
+
+de::vulkan::settings& de::vulkan::settings::setPolygonMode(const vk::PolygonMode mode)
+{
+	_polygonMode = mode;
+	return *this;
 }

@@ -7,13 +7,15 @@ namespace de::vulkan
 	class vk_msaa_image final : public image
 	{
 	public:
-		void create(vk::Extent2D extent);
+		void create(uint32_t viewIndex);
 
-		void recreate(vk::Extent2D extent);
+		void recreate();
 
 	protected:
 		vk::ImageAspectFlags getImageAspectFlags() const override;
 
 		vk::ImageUsageFlags getImageUsageFlags() const override;
+
+		uint32_t _viewIndex;
 	};
 } // namespace de::vulkan

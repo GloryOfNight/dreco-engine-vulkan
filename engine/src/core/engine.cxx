@@ -114,10 +114,12 @@ void de::engine::run()
 	if (true == startRenderer())
 	{
 		auto window1 = SDL_CreateWindow("dreco-engine (1)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-		_renderer.addView(window1);
+		const auto window1Indx = _renderer.addView(window1);
+		if (window1Indx != UINT32_MAX)
+			_windows[window1Indx] = window1;
 
-		auto window2 = SDL_CreateWindow("dreco-engine (2)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-		_renderer.addView(window2);
+		//auto window2 = SDL_CreateWindow("dreco-engine (2)", 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+		//_renderer.addView(window2);
 
 		startMainLoop();
 	}
@@ -220,6 +222,13 @@ void de::engine::postMainLoop()
 {
 	_renderer.exit();
 	_gameInstance.reset();
+
+	for (auto window : _windows)
+	{
+		if (window != nullptr)
+			SDL_DestroyWindow(window);
+	}
+
 	SDL_Quit();
 }
 
