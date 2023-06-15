@@ -22,6 +22,40 @@ void de::gf::flying_camera::tick(double deltaTime)
 	const auto camFowVec = de::math::quaternion::forwardVector(quatRot);
 	const auto camRightVec = de::math::quaternion::rightVector(quatRot);
 
+	{
+		auto view = de::renderer::get()->getView(getViewId());
+		auto viewSettings = view->getSettings();
+		if (_inputManager.isKeyPressed(SDLK_F1))
+		{
+			if (viewSettings.getPolygonMode() == vk::PolygonMode::eFill)
+			{
+				viewSettings.setPolygonMode(vk::PolygonMode::eLine);
+			}
+			else
+			{
+				viewSettings.setPolygonMode(vk::PolygonMode::eFill);
+			}
+		}
+
+		if (_inputManager.isKeyPressed(SDLK_PAGEUP))
+		{
+			const auto sampleCount = viewSettings.getSampleCount();
+			if (sampleCount < vk::SampleCountFlagBits::e64)
+			{
+				viewSettings.setSampleCount(static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(sampleCount) * 2));
+			}
+		}
+		else if (_inputManager.isKeyPressed(SDLK_PAGEDOWN))
+		{
+			const auto sampleCount = viewSettings.getSampleCount();
+			if (sampleCount > vk::SampleCountFlagBits::e1)
+			{
+				viewSettings.setSampleCount(static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(sampleCount) / 2));
+			}
+		}
+		view->applySettings(std::move(viewSettings));
+	}
+
 	{ // camera WASDQE movement
 		float camMoveSpeed = 50.F;
 		if (_inputManager.isKeyPressed(SDLK_LSHIFT))

@@ -7,6 +7,7 @@
 
 void de::vulkan::view::init(vk::SurfaceKHR surface, uint32_t viewIndex)
 {
+	_viewIndex = viewIndex;
 	_surface = surface;
 
 	auto renderer = renderer::get();
@@ -15,7 +16,6 @@ void de::vulkan::view::init(vk::SurfaceKHR surface, uint32_t viewIndex)
 
 	_surfaceFormat = utils::findSurfaceFormat(physicalDevice, surface);
 	_presentMode = utils::findPresentMode(physicalDevice, surface);
-	_maxSampleCount = utils::findMaxSampleCount(physicalDevice);
 
 	_settings.init();
 
@@ -97,6 +97,21 @@ bool de::vulkan::view::updateExtent(vk::PhysicalDevice physicalDevice)
 void de::vulkan::view::setViewMatrix(const de::math::mat4& viewMatrix)
 {
 	_viewMatrix = viewMatrix;
+}
+void de::vulkan::view::applySettings(settings&& newSettings)
+{
+	if (_settings != newSettings)
+	{
+		_settings = newSettings;
+
+		recreateSwapchain();
+
+		auto& mats = renderer::get()->getMaterials();
+		for (auto& [name, mat] : mats)
+		{
+			mat->viewUpdated(_viewIndex);
+		}
+	}
 }
 
 uint32_t de::vulkan::view::acquireNextImageIndex()
@@ -404,7 +419,7 @@ void de::vulkan::view::createFramebuffers(vk::Device device)
 		std::vector<vk::ImageView> attachments;
 		attachments.reserve(3);
 
-		if (_maxSampleCount != vk::SampleCountFlagBits::e1)
+		if (_settings.getSampleCount() != vk::SampleCountFlagBits::e1)
 		{
 			attachments.push_back(_msaaImage.getImageView());
 			attachments.push_back(_depthImage.getImageView());

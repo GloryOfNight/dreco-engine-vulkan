@@ -49,6 +49,8 @@ namespace de::vulkan
 
 		material* getMaterial(const std::string_view& name) const;
 
+		const std::map<std::string, material::unique>& getMaterials() const { return _materials; }
+
 		void setCameraView(uint32_t viewIndex, const de::math::mat4& inView);
 
 		void loadModel(const de::gltf::model& scn);

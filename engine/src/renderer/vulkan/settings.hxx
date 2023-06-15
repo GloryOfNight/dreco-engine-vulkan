@@ -19,6 +19,11 @@ namespace de::vulkan
 		settings& setSampleCount(const vk::SampleCountFlagBits sampleCount);
 		settings& setPolygonMode(const vk::PolygonMode mode);
 
+		bool operator==(const settings& other) const
+		{
+			return memcmp(this, &other, sizeof(settings)) == 0;
+		}
+
 	private:
 		vk::SampleCountFlagBits _sampleCount{vk::SampleCountFlagBits::e1};
 

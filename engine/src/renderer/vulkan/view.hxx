@@ -32,8 +32,8 @@ namespace de::vulkan
 		void setViewMatrix(const de::math::mat4& viewMatrix);
 		const de::math::mat4& getViewMatrix() const { return _viewMatrix; };
 
-		settings& getSettings() { return _settings; }
 		const settings& getSettings() const { return _settings; }
+		void applySettings(settings&& newSettings);
 
 		uint32_t acquireNextImageIndex();
 
@@ -67,6 +67,8 @@ namespace de::vulkan
 
 		void createSemaphores(vk::Device device);
 
+		uint32_t _viewIndex;
+
 		settings _settings;
 
 		de::math::mat4 _viewMatrix;
@@ -76,8 +78,6 @@ namespace de::vulkan
 		vk::SurfaceFormatKHR _surfaceFormat;
 
 		vk::PresentModeKHR _presentMode;
-
-		vk::SampleCountFlagBits _maxSampleCount{vk::SampleCountFlagBits::e1};
 
 		vk::SwapchainKHR _swapchain;
 

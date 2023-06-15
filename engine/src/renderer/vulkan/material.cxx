@@ -239,7 +239,7 @@ vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 
 	const auto rasterizationState = vk::PipelineRasterizationStateCreateInfo()
 										.setRasterizerDiscardEnable(VK_FALSE)
-										.setPolygonMode(vk::PolygonMode::eFill)
+										.setPolygonMode(view->getSettings().getPolygonMode())
 										.setLineWidth(1.0F)
 										.setCullMode(vk::CullModeFlagBits::eNone)
 										.setFrontFace(vk::FrontFace::eCounterClockwise)
