@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/containers/gltf/image.hxx"
+#include "gltf/image.hxx"
 #include "renderer/vulkan/image.hxx"
 
 namespace de::vulkan

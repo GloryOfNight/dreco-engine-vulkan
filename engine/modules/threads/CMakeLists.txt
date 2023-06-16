@@ -7,11 +7,9 @@ add_library(${PROJECT_NAME} STATIC ${DRECO_THREADS_SOURCE_FILES} ${DRECO_THREADS
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
-    EXPORT_COMPILE_COMMANDS TRUE
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
-
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/threads")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE dreco-core-minimal)

@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/gltf/model.hxx"
+#include "gltf/model.hxx"
 #include "images/depth_image.hxx"
 #include "images/msaa_image.hxx"
 #include "images/texture_image.hxx"

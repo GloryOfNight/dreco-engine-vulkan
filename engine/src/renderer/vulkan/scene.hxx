@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/gltf/model.hxx"
+#include "gltf/model.hxx"
 #include "math/transform.hxx"
 #include "vulkan/vulkan.h"
 

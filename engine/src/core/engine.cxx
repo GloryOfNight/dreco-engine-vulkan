@@ -1,7 +1,6 @@
 #include "engine.hxx"
 
 #include "core/async/async_tasks/async_load_gltf.hxx"
-#include "core/containers/gltf/gltf.hxx"
 #include "core/misc/exceptions.hxx"
 #include "core/misc/file.hxx"
 #include "shader_compiler_tool/shader_compiler.hxx"
