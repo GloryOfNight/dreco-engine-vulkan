@@ -5,10 +5,10 @@
 #include "math/mat4.hxx"
 
 #include <algorithm>
-#include <cstring>
 #include <execution>
 #include <filesystem>
 #include <iostream>
+#include <string.h>
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
