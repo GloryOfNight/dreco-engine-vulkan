@@ -5,10 +5,10 @@
 #include "math/mat4.hxx"
 
 #include <algorithm>
+#include <cstring>
 #include <execution>
 #include <filesystem>
 #include <iostream>
-#include <string.h>
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -281,7 +281,7 @@ static void parseImages(const tinygltf::Model& tModel, de::gltf::model& dModel)
 			image._components = components;
 
 			image._pixels.resize(pixelCount);
-			memmove_s(image._pixels.data(), image._pixels.size(), stbiPixels, pixelCount);
+			std::memmove(image._pixels.data(), stbiPixels, pixelCount);
 
 			delete[] stbiPixels;
 		}
