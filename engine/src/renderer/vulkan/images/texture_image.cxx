@@ -5,19 +5,13 @@
 
 #include "dreco.hxx"
 
-void de::vulkan::texture_image::create(const de::image_data& image)
+void de::vulkan::texture_image::create(const de::gltf::image& image)
 {
-	if (!image.isValid())
-	{
-		DE_LOG(Error, "No valid texture data, using placeholder instead.");
-		create(de::image_data::makePlaceholder(1024, 1024));
-		return;
-	}
 	renderer* renderer{renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
 	const vk::Format format = vk::Format::eR8G8B8A8Unorm;
-	createImage(device, format, static_cast<uint32_t>(image.getWidth()), static_cast<uint32_t>(image.getHeight()));
+	createImage(device, format, image._width, image._height);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, utils::memory_property::device);
@@ -30,7 +24,9 @@ void de::vulkan::texture_image::create(const de::image_data& image)
 	auto& bpTransfer = renderer->getTransferBufferPool();
 	const auto transferBufferId = bpTransfer.makeBuffer(memoryRequirements.size);
 	auto region = bpTransfer.map(transferBufferId);
-	std::memcpy(region, image.getPixels(), image.getPixelCount());
+
+	memcpy(region, image._pixels.data(), image._pixels.size());
+
 	bpTransfer.unmap(transferBufferId);
 
 	// clang-format off
@@ -56,8 +52,9 @@ void de::vulkan::texture_image::create(const de::image_data& image)
 
 	commandBuffers[0] = transitionImageLayout(transitionLayoutInfo);
 
-	commandBuffers[1] = de::vulkan::buffer::copyBufferToImage(bpTransfer.getBuffer(transferBufferId), _image, vk::ImageLayout::eTransferDstOptimal,
-		static_cast<uint32_t>(image.getWidth()), static_cast<uint32_t>(image.getHeight()));
+	commandBuffers[1] = de::vulkan::buffer::copyBufferToImage(
+		bpTransfer.getBuffer(transferBufferId), _image,
+		vk::ImageLayout::eTransferDstOptimal, image._width, image._height);
 
 	transitionLayoutInfo._layoutOld = vk::ImageLayout::eTransferDstOptimal;
 	transitionLayoutInfo._layoutNew = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -68,7 +65,10 @@ void de::vulkan::texture_image::create(const de::image_data& image)
 
 	commandBuffers[2] = transitionImageLayout(transitionLayoutInfo);
 
-	const std::array<vk::PipelineStageFlags, 2> stageFlags{vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader};
+	const std::array<vk::PipelineStageFlags, 2> stageFlags{
+		vk::PipelineStageFlagBits::eTransfer,
+		vk::PipelineStageFlagBits::eFragmentShader};
+
 	std::vector<vk::SubmitInfo> submitInfos(3, vk::SubmitInfo());
 	submitInfos[0].commandBufferCount = 1;
 	submitInfos[0].pCommandBuffers = &commandBuffers[0];

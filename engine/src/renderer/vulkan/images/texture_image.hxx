@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/containers/gltf/image.hxx"
-#include "core/containers/image_data.hxx"
 #include "renderer/vulkan/image.hxx"
 
 namespace de::vulkan
@@ -14,7 +13,7 @@ namespace de::vulkan
 		texture_image(texture_image&&) = delete;
 		virtual ~texture_image() { destroy(); };
 
-		void create(const de::image_data& image);
+		void create(const de::gltf::image& image);
 
 		void destroy() override;
 

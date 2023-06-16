@@ -24,7 +24,7 @@ bool de::paths::generic::init()
 		}
 	}
 
-	// set back non-modifed path
+	// set back non-modified path
 	current_path(originalCwd);
 	return false;
 }

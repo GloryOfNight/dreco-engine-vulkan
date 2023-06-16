@@ -10,6 +10,9 @@
 #include <iostream>
 #include <vector>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -262,7 +265,30 @@ static void parseImages(const tinygltf::Model& tModel, de::gltf::model& dModel)
 
 	const auto asyncImageLoad = [&dModel](de::gltf::image& image)
 	{
-		image._image = de::image_data::load(dModel._rootPath + '/' + image._uri);
+		constexpr auto components = 4U;
+
+		int width, heigth, channels;
+		const auto stbiPixels = stbi_load((dModel._rootPath + '/' + image._uri).data(), &width, &heigth, &channels, components);
+
+		if (stbiPixels)
+		{
+			const size_t pixelCount = width * heigth * components;
+
+			image._width = width;
+			image._height = heigth;
+			image._channels = channels;
+			image._components = components;
+
+			image._pixels.resize(pixelCount);
+			memmove_s(image._pixels.data(), image._pixels.size(), stbiPixels, pixelCount);
+
+			delete[] stbiPixels;
+		}
+		else
+		{
+			DE_LOG(Error, "Failed to load image: %s", image._uri.data());
+			image = de::gltf::image::makePlaceholder(256, 256);
+		}
 	};
 	std::for_each(std::execution::par, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }

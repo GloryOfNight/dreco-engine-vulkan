@@ -72,7 +72,7 @@ void de::engine::initialize()
 
 	if (_isRunning)
 	{
-		DE_LOG(Error, "%s: egnine already running, cannot init.", __FUNCTION__);
+		DE_LOG(Error, "%s: engine already running, cannot init.", __FUNCTION__);
 		throw de::except::initialization_error();
 		return;
 	}
@@ -99,7 +99,7 @@ void de::engine::run()
 {
 	if (nullptr == de::engine::get())
 	{
-		DE_LOG(Error, "%s: engine unitilized.", __FUNCTION__);
+		DE_LOG(Error, "%s: engine uninitialized.", __FUNCTION__);
 		return;
 	}
 
@@ -109,13 +109,13 @@ void de::engine::run()
 	}
 	catch (std::bad_function_call)
 	{
-		DE_LOG(Error, "%s: __createGameInstance bad call, coundn't run", __FUNCTION__);
+		DE_LOG(Error, "%s: __createGameInstance bad call, couldn't run", __FUNCTION__);
 		return;
 	}
 
 	if (nullptr == _gameInstance)
 	{
-		DE_LOG(Error, "%s: game instance == nullptr, coundn't run", __FUNCTION__);
+		DE_LOG(Error, "%s: game instance == nullptr, couldn't run", __FUNCTION__);
 		return;
 	}
 
@@ -165,9 +165,9 @@ void de::engine::registerSignals()
 void de::engine::onSystemSignal(int sig)
 {
 	if (sig == SIGFPE)
-		DE_LOG(Info, "%s: engine recieved floating point excetion. . . stopping.", __FUNCTION__);
+		DE_LOG(Info, "%s: engine received floating point exception. . . stopping.", __FUNCTION__);
 	else if (sig == SIGSEGV)
-		DE_LOG(Info, "%s: engine recieved segment violation. . . stopping.", __FUNCTION__);
+		DE_LOG(Info, "%s: engine received segment violation. . . stopping.", __FUNCTION__);
 	else if (sig == SIGABRT || sig == SIGTERM || sig == SIGINT)
 		DE_LOG(Info, "%s: engine stop signal. . . stopping.", __FUNCTION__);
 

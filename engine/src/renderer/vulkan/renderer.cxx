@@ -67,7 +67,7 @@ void de::vulkan::renderer::init()
 
 	{ // common renderer resources
 		createCameraBuffer();
-		_placeholderTextureImage.create(de::image_data::makePlaceholder());
+		_placeholderTextureImage.create(de::gltf::image::makePlaceholder(256, 256));
 
 		const auto basicVert = loadShader(DRECO_SHADER(constants::shaders::basicVert));
 		const auto basicFrag = loadShader(DRECO_SHADER(constants::shaders::basicFrag));

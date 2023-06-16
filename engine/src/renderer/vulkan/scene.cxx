@@ -72,7 +72,7 @@ void de::vulkan::scene::create(const de::gltf::model& m)
 	for (size_t i = 0; i < imagesNum; ++i)
 	{
 		auto& ti = _textureImages.emplace_back(new texture_image());
-		ti->create(m._images[i]._image);
+		ti->create(m._images[i]);
 	}
 
 	const size_t totalPipelines = m._materials.size();
