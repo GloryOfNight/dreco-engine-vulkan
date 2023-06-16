@@ -49,6 +49,7 @@ namespace de
 		void setCreateGameInstanceFunc(std::function<de::gf::game_instance::unique()> func);
 
 		uint32_t addViewport(const std::string_view& name);
+		void closeWindow(uint32_t windowId);
 
 	private:
 		static void onSystemSignal(int sig);

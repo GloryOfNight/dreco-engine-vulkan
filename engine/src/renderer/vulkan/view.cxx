@@ -65,6 +65,7 @@ void de::vulkan::view::destroy()
 	auto physicalDevice = renderer->getPhysicalDevice();
 	auto device = renderer->getDevice();
 
+	[[maybe_unused]] const auto waitResult = device.waitForFences(_submitQueueFences, true, UINT32_MAX);
 	for (auto& fence : _submitQueueFences)
 	{
 		device.destroyFence(fence);

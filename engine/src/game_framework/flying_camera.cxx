@@ -22,8 +22,14 @@ void de::gf::flying_camera::tick(double deltaTime)
 	const auto camFowVec = de::math::quaternion::forwardVector(quatRot);
 	const auto camRightVec = de::math::quaternion::rightVector(quatRot);
 
+	auto view = de::renderer::get()->getView(getViewId());
+	if (view == nullptr)
 	{
-		auto view = de::renderer::get()->getView(getViewId());
+		// do not update camera if view is not present
+		return;
+	}
+
+	{
 		auto viewSettings = view->getSettings();
 		if (_inputManager.isKeyPressed(SDLK_F1))
 		{
