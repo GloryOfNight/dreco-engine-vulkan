@@ -5,6 +5,7 @@
 #include "math/mat4.hxx"
 
 #include <algorithm>
+#include <cstring>
 #include <execution>
 #include <filesystem>
 #include <iostream>
