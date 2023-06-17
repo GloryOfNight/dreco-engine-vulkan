@@ -69,9 +69,16 @@ void de::vulkan::renderer::init()
 		createCameraBuffer();
 		_placeholderTextureImage.create(de::gltf::image::makePlaceholder(256, 256));
 
-		const auto basicVert = loadShader(DRECO_SHADER(constants::shaders::basicVert));
-		const auto basicFrag = loadShader(DRECO_SHADER(constants::shaders::basicFrag));
-		_materials.try_emplace(constants::materials::basic, material::makeNew(basicVert, basicFrag, 128));
+		{
+			const auto vert = loadShader(DRECO_SHADER(constants::shaders::basicVert));
+			const auto frag = loadShader(DRECO_SHADER(constants::shaders::basicFrag));
+			_materials.try_emplace(constants::materials::basic, material::makeNew(vert, frag, 128));
+		}
+		{
+			const auto vert = loadShader(DRECO_SHADER(constants::shaders::skyboxVert));
+			const auto frag = loadShader(DRECO_SHADER(constants::shaders::skyboxFrag));
+			_materials.try_emplace(constants::materials::skybox, material::makeNew(vert, frag, 128));
+		}
 	}
 }
 
