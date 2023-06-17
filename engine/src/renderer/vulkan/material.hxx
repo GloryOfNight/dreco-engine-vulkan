@@ -21,8 +21,12 @@ namespace de::vulkan
 	public:
 		using unique = std::unique_ptr<material>;
 
-		static unique makeNew(shader::shared vert, shader::shared frag, size_t maxInstances = 1);
+		static unique makeNew(shader::shared vert, shader::shared frag);
 		material_instance* makeInstance();
+
+		void init(size_t maxInstances);
+
+		void setDynamicStates(std::vector<vk::DynamicState>&& dynamicStates);
 
 		material(material&) = delete;
 		material(material&&) = default;
@@ -48,7 +52,6 @@ namespace de::vulkan
 		vk::PipelineLayout getPipelineLayout() const;
 
 	private:
-		void init(size_t maxInstances);
 		void setShaderVert(const shader::shared& inShader);
 		void setShaderFrag(const shader::shared& inShader);
 		void setInstanceCount(uint32_t inValue);
@@ -59,15 +62,17 @@ namespace de::vulkan
 
 		vk::UniquePipeline createPipeline(uint32_t viewIndex);
 
-		shader::shared _vert;
-		shader::shared _frag;
+		shader::shared _vert{};
+		shader::shared _frag{};
 
-		std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts;
-		vk::DescriptorPool _descriptorPool;
+		std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts{};
+		vk::DescriptorPool _descriptorPool{};
 
-		vk::PipelineLayout _pipelineLayout;
-		std::map<uint32_t, vk::UniquePipeline> _pipelines;
+		vk::PipelineLayout _pipelineLayout{};
+		std::map<uint32_t, vk::UniquePipeline> _pipelines{};
 
-		std::vector<material_instance::unique> _instances;
+		std::vector<material_instance::unique> _instances{};
+
+		std::vector<vk::DynamicState> _pipelineDynamicStates{};
 	};
 } // namespace de::vulkan

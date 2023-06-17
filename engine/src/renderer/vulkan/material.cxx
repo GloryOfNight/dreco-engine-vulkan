@@ -36,12 +36,11 @@ void de::vulkan::material::viewRemoved(uint32_t viewIndex)
 	_pipelines.erase(viewIndex);
 }
 
-de::vulkan::material::unique de::vulkan::material::makeNew(shader::shared vert, shader::shared frag, size_t maxInstances)
+de::vulkan::material::unique de::vulkan::material::makeNew(shader::shared vert, shader::shared frag)
 {
 	auto mat = unique(new material());
 	mat->setShaderVert(vert);
 	mat->setShaderFrag(frag);
-	mat->init(maxInstances);
 	return mat;
 }
 
@@ -71,6 +70,11 @@ void de::vulkan::material::init(size_t maxInstances)
 		if (views[i] != nullptr && views[i]->isInitialized())
 			viewAdded(i);
 	}
+}
+
+void de::vulkan::material::setDynamicStates(std::vector<vk::DynamicState>&& dynamicStates)
+{
+	_pipelineDynamicStates = dynamicStates;
 }
 
 void de::vulkan::material::setShaderVert(const shader::shared& inShader)
@@ -286,9 +290,8 @@ vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 			.setViewports(viewport)
 			.setScissors(scissors);
 
-	const std::array<vk::DynamicState, 0> dynamicStates = {};
 	const vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
-																.setDynamicStates(dynamicStates);
+																.setDynamicStates(_pipelineDynamicStates);
 
 	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
 		vk::GraphicsPipelineCreateInfo()

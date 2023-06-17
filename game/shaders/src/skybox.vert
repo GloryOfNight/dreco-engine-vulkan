@@ -11,7 +11,8 @@ layout(set = 0, binding = 0) uniform readonly Camera
 } cameraData;
 
 void main() {
-    gl_Position = cameraData.proj * mat4(mat3(cameraData.view)) * vec4(inPosition, 1.0);
+    // make sure skybox doesn't get cut by projection near/far plane
+    gl_Position = cameraData.proj * mat4(mat3(cameraData.view)) * vec4(inPosition * 10, 0.1);
 
     outUVW = inPosition;
 }

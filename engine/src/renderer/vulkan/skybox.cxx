@@ -8,12 +8,12 @@ void de::vulkan::skybox::init()
 	auto renderer = renderer::get();
 
 	std::array<std::string, 6> cubemaptexs{
-		"skyboxes/openglsample/right.jpg",
-		"skyboxes/openglsample/left.jpg",
-		"skyboxes/openglsample/top.jpg",
-		"skyboxes/openglsample/bottom.jpg",
-		"skyboxes/openglsample/front.jpg",
-		"skyboxes/openglsample/back.jpg"
+		"skyboxes/sea/right.jpg",
+		"skyboxes/sea/left.jpg",
+		"skyboxes/sea/top.jpg",
+		"skyboxes/sea/bottom.jpg",
+		"skyboxes/sea/front.jpg",
+		"skyboxes/sea/back.jpg"
 	};
 
 	_cubemap.create(cubemaptexs);
@@ -45,7 +45,9 @@ void de::vulkan::skybox::drawCmd(vk::CommandBuffer commandBuffer)
 	_matInst->getMaterial()->bindCmd(commandBuffer);
 	_matInst->bindCmd(commandBuffer);
 
+	commandBuffer.setDepthTestEnable(false);
 	commandBuffer.draw(_vertSize, 1, 0, 0);
+	commandBuffer.setDepthTestEnable(true);
 }
 
 void de::vulkan::skybox::createBox()
