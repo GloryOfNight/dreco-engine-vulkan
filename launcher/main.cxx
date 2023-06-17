@@ -2,6 +2,7 @@
 #include "game_framework/game_instance.hxx"
 
 #include "dreco.hxx"
+#include "core/misc/exceptions.hxx"
 #include "shader_compiler_tool/shader_compiler.hxx"
 
 extern "C++" DRECO_API de::gf::game_instance::unique __createGameInstance();
@@ -16,7 +17,7 @@ int main()
 	catch (de::except::initialization_error& e)
 	{
 		DE_LOG(Error, "%s: %s", __FUNCTION__, e.what());
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	engine.setCreateGameInstanceFunc(__createGameInstance);
@@ -28,5 +29,5 @@ int main()
 
 	engine.run();
 
-	return 0;
+	return EXIT_SUCCESS;
 }

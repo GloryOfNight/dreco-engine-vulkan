@@ -4,32 +4,28 @@
 namespace de::vulkan
 {
 	class renderer;
-
 	struct settings
 	{
-		void init(const renderer* renderer);
-
-		const vk::SurfaceFormatKHR& getSurfaceFormat() const;
+		void init();
 
 		vk::PresentModeKHR getPresentMode() const;
 
-		vk::SampleCountFlagBits getMaxSampleCount() const;
+		vk::SampleCountFlagBits getSampleCount() const;
 
-		vk::SampleCountFlagBits getPrefferedSampleCount() const;
-		bool setPrefferedSampleCount(const vk::SampleCountFlagBits sampleCount);
+		bool IsMultisamplingSupported() const;
 
-		bool getIsSamplingSupported() const;
+		vk::PolygonMode getPolygonMode() const;
 
-		vk::PolygonMode getDefaultPolygonMode() const;
-		bool setDefaultPolygonMode(const vk::PolygonMode mode);
+		settings& setSampleCount(const vk::SampleCountFlagBits sampleCount);
+		settings& setPolygonMode(const vk::PolygonMode mode);
+
+		bool operator==(const settings& other) const
+		{
+			return memcmp(this, &other, sizeof(settings)) == 0;
+		}
 
 	private:
-		vk::SurfaceFormatKHR _surfaceFormat;
-		vk::PresentModeKHR _presentMode;
-
-		vk::SampleCountFlagBits _maxSampleCount{vk::SampleCountFlagBits::e1};
-
-		vk::SampleCountFlagBits _prefferedSampleCount{vk::SampleCountFlagBits::e1};
+		vk::SampleCountFlagBits _sampleCount{vk::SampleCountFlagBits::e1};
 
 		vk::PolygonMode _polygonMode{vk::PolygonMode::eFill};
 	};

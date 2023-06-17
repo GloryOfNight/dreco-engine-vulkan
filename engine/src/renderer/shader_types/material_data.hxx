@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/containers/gltf/material.hxx"
+#include "gltf/material.hxx"
 #include "math/vec3.hxx"
 #include "math/vec4.hxx"
 

@@ -32,10 +32,12 @@ namespace de
 			bool _repeat;
 		};
 
-		input_manager(event_manager& _eventManager);
+		input_manager() = default;
 		input_manager(const input_manager&) = delete;
 		input_manager(input_manager&&) = default;
 		~input_manager() = default;
+
+		void init(event_manager& eventManager);
 
 		bool isKeyPressed(const uint32_t key) const;
 
@@ -49,16 +51,20 @@ namespace de
 
 		bool isInMouseFocus() const;
 
+		void setWindowId(const uint32_t windowId);
+
 	protected:
 		void onKeyEvent(const SDL_Event& event);
 
 		void onMouseEvent(const SDL_Event& event);
 
 	private:
-		std::map<uint32_t, key_state> _keys;
+		std::map<uint32_t, key_state> _keys{};
 
-		mouse_state _mouseState;
+		mouse_state _mouseState{};
 
 		bool _inMouseFocus{};
+
+		uint32_t _windowId{UINT32_MAX};
 	};
 } // namespace de

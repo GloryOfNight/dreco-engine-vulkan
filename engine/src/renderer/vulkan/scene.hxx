@@ -1,5 +1,5 @@
 #pragma once
-#include "core/containers/gltf/model.hxx"
+#include "gltf/model.hxx"
 #include "math/transform.hxx"
 #include "vulkan/vulkan.h"
 
@@ -46,8 +46,6 @@ namespace de::vulkan
 
 		void create(const de::gltf::model& m);
 
-		void recreatePipelines();
-
 		void bindToCmdBuffer(vk::CommandBuffer commandBuffer);
 
 		bool isEmpty() const;
@@ -78,7 +76,6 @@ namespace de::vulkan
 
 		std::vector<std::unique_ptr<texture_image>> _textureImages;
 
-		material::unique _material;
 		std::vector<material_instance*> _matInstances;
 
 		std::vector<std::vector<std::unique_ptr<mesh>>> _meshes;

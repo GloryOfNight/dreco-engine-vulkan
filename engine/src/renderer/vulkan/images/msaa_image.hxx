@@ -7,7 +7,7 @@ namespace de::vulkan
 	class vk_msaa_image final : public image
 	{
 	public:
-		void create();
+		void create(uint32_t viewIndex);
 
 		void recreate();
 
@@ -15,5 +15,7 @@ namespace de::vulkan
 		vk::ImageAspectFlags getImageAspectFlags() const override;
 
 		vk::ImageUsageFlags getImageUsageFlags() const override;
+
+		uint32_t _viewIndex;
 	};
 } // namespace de::vulkan

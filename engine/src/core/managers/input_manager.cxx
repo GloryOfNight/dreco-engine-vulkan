@@ -1,18 +1,18 @@
 #include "input_manager.hxx"
 
+#include "core/engine.hxx"
 #include "platforms/platform.h"
-#include "renderer/render.hxx"
 
 #include <SDL_events.h>
 
-de::input_manager::input_manager(event_manager& _eventManager)
+void de::input_manager::init(event_manager& eventManager)
 {
-	_eventManager.addEventBindingMem(SDL_EVENT_KEY_DOWN, this, &input_manager::onKeyEvent);
-	_eventManager.addEventBindingMem(SDL_EVENT_KEY_UP, this, &input_manager::onKeyEvent);
-	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_MOTION, this, &input_manager::onMouseEvent);
-	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_BUTTON_DOWN, this, &input_manager::onMouseEvent);
-	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_BUTTON_UP, this, &input_manager::onMouseEvent);
-	_eventManager.addEventBindingMem(SDL_EVENT_MOUSE_WHEEL, this, &input_manager::onMouseEvent);
+	eventManager.addEventBindingMem(SDL_EVENT_KEY_DOWN, this, &input_manager::onKeyEvent);
+	eventManager.addEventBindingMem(SDL_EVENT_KEY_UP, this, &input_manager::onKeyEvent);
+	eventManager.addEventBindingMem(SDL_EVENT_MOUSE_MOTION, this, &input_manager::onMouseEvent);
+	eventManager.addEventBindingMem(SDL_EVENT_MOUSE_BUTTON_DOWN, this, &input_manager::onMouseEvent);
+	eventManager.addEventBindingMem(SDL_EVENT_MOUSE_BUTTON_UP, this, &input_manager::onMouseEvent);
+	eventManager.addEventBindingMem(SDL_EVENT_MOUSE_WHEEL, this, &input_manager::onMouseEvent);
 }
 
 bool de::input_manager::isKeyPressed(const uint32_t key) const
@@ -36,9 +36,13 @@ uint32_t de::input_manager::getMouseState(uint16_t* const x, uint16_t* const y) 
 
 void de::input_manager::warpMouse(const uint16_t x, const uint16_t y)
 {
-	SDL_WarpMouseInWindow(de::renderer::get()->getWindow(), x, y);
-	_mouseState._x = x;
-	_mouseState._y = y;
+	auto window = SDL_GetWindowFromID(_windowId);
+	if (window)
+	{
+		SDL_WarpMouseInWindow(window, x, y);
+		_mouseState._x = x;
+		_mouseState._y = y;
+	}
 }
 
 void de::input_manager::showCursor(const bool state) const
@@ -55,7 +59,7 @@ void de::input_manager::showCursor(const bool state) const
 
 void de::input_manager::setMouseRelativeMode(const bool state) const
 {
-	// SDL Relative mode acting wierd on linux, untill figure out, use hack:
+	// SDL Relative mode acting weird on Linux, until figure out, use hack:
 #if PLATFORM_LINUX
 	showCursor(!state);
 #else
@@ -70,15 +74,24 @@ bool de::input_manager::isInMouseFocus() const
 
 void de::input_manager::onKeyEvent(const SDL_Event& event)
 {
+	// ignore input that was for wrong window
+	if (event.key.windowID != _windowId && _windowId != UINT32_MAX)
+	{
+		return;
+	}
+
 	_keys.insert_or_assign(event.key.keysym.sym, key_state(event));
 }
 
 void de::input_manager::onMouseEvent(const SDL_Event& event)
 {
-	const uint32_t windowId = de::vulkan::renderer::get()->getWindowId();
-	_inMouseFocus = event.motion.windowID == windowId ||
-					event.button.windowID == windowId ||
-					event.wheel.windowID == windowId;
+	// ignore input that was for wrong window
+	if (event.motion.windowID != _windowId && _windowId != UINT32_MAX)
+	{
+		return;
+	}
+
+	_inMouseFocus = true;
 
 	if (_inMouseFocus)
 	{
@@ -95,4 +108,9 @@ void de::input_manager::onMouseEvent(const SDL_Event& event)
 			_mouseState._y = event.button.y;
 		}
 	}
+}
+
+void de::input_manager::setWindowId(uint32_t windowId)
+{
+	_windowId = windowId;
 }

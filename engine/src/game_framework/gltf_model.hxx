@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/containers/gltf/model.hxx"
+#include "gltf/model.hxx"
 
 #include "node.hxx"
 

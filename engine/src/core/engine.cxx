@@ -1,7 +1,7 @@
 #include "engine.hxx"
 
 #include "core/async/async_tasks/async_load_gltf.hxx"
-#include "core/containers/gltf/gltf.hxx"
+#include "core/misc/exceptions.hxx"
 #include "core/misc/file.hxx"
 #include "shader_compiler_tool/shader_compiler.hxx"
 
@@ -17,16 +17,31 @@ static void onQuitEvent(const SDL_Event&)
 {
 	auto engine = de::engine::get();
 	if (engine)
+	{
+		DE_LOG(Info, "%s: Received quit event.", __FUNCTION__);
 		engine->stop();
+	}
+}
+
+static void onWindowCloseEvent(const SDL_Event& event)
+{
+	auto engine = de::engine::get();
+	if (engine)
+	{
+		DE_LOG(Info, "%s: Received close window event.", __FUNCTION__);
+		engine->closeWindow(event.window.windowID);
+	}
 }
 
 de::engine::engine()
 	: _eventManager{}
-	, _inputManager(_eventManager)
+	, _inputManager()
 	, _threadPool()
 	, _renderer{}
 {
 	_eventManager.addEventBinding(SDL_EVENT_QUIT, &onQuitEvent);
+	_eventManager.addEventBinding(SDL_EVENT_WINDOW_CLOSE_REQUESTED, &onWindowCloseEvent);
+	_inputManager.init(_eventManager);
 }
 
 de::engine::~engine()
@@ -40,6 +55,15 @@ de::engine::~engine()
 de::engine* de::engine::get()
 {
 	return gEngine;
+}
+
+uint32_t de::engine::getWindowId(uint32_t viewId) const
+{
+	if (_windows[viewId] != nullptr)
+	{
+		return SDL_GetWindowID(_windows[viewId]);
+	}
+	return UINT32_MAX;
 }
 
 void de::engine::initialize()
@@ -61,7 +85,7 @@ void de::engine::initialize()
 
 	if (_isRunning)
 	{
-		DE_LOG(Error, "%s: egnine already running, cannot init.", __FUNCTION__);
+		DE_LOG(Error, "%s: engine already running, cannot init.", __FUNCTION__);
 		throw de::except::initialization_error();
 		return;
 	}
@@ -88,7 +112,7 @@ void de::engine::run()
 {
 	if (nullptr == de::engine::get())
 	{
-		DE_LOG(Error, "%s: engine unitilized.", __FUNCTION__);
+		DE_LOG(Error, "%s: engine uninitialized.", __FUNCTION__);
 		return;
 	}
 
@@ -98,13 +122,13 @@ void de::engine::run()
 	}
 	catch (std::bad_function_call)
 	{
-		DE_LOG(Error, "%s: __createGameInstance bad call, coundn't run", __FUNCTION__);
+		DE_LOG(Error, "%s: __createGameInstance bad call, couldn't run", __FUNCTION__);
 		return;
 	}
 
 	if (nullptr == _gameInstance)
 	{
-		DE_LOG(Error, "%s: game instance == nullptr, coundn't run", __FUNCTION__);
+		DE_LOG(Error, "%s: game instance == nullptr, couldn't run", __FUNCTION__);
 		return;
 	}
 
@@ -119,6 +143,42 @@ void de::engine::run()
 void de::engine::setCreateGameInstanceFunc(std::function<de::gf::game_instance::unique()> func)
 {
 	_createGameInstanceFunc = func;
+}
+
+uint32_t de::engine::addViewport(const std::string_view& name)
+{
+	auto window1 = SDL_CreateWindow(name.data(), 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	const auto window1Indx = _renderer.addView(window1);
+	if (window1Indx != UINT32_MAX)
+	{
+		_windows[window1Indx] = window1;
+		DE_LOG(Info, "%s: Added viewport: %i", __FUNCTION__, window1Indx);
+	}
+	return window1Indx;
+}
+
+void de::engine::closeWindow(uint32_t windowId)
+{
+	uint32_t viewIndex = UINT32_MAX;
+	for (size_t i = 0; i < _windows.size(); ++i)
+	{
+		if (SDL_GetWindowID(_windows[i]) == windowId)
+		{
+			viewIndex = i;
+			break;
+		}
+	}
+
+	if (viewIndex != UINT32_MAX)
+	{
+		DE_LOG(Info, "%s: Removing viewport: %i . . .", __FUNCTION__, viewIndex);
+
+		_renderer.removeView(viewIndex);
+		SDL_DestroyWindow(_windows[viewIndex]);
+		_windows[viewIndex] = nullptr;
+
+		DE_LOG(Info, "%s: Viewport %i removed", __FUNCTION__, viewIndex);
+	}
 }
 
 void de::engine::stop()
@@ -145,9 +205,9 @@ void de::engine::registerSignals()
 void de::engine::onSystemSignal(int sig)
 {
 	if (sig == SIGFPE)
-		DE_LOG(Info, "%s: engine recieved floating point excetion. . . stopping.", __FUNCTION__);
+		DE_LOG(Info, "%s: engine received floating point exception. . . stopping.", __FUNCTION__);
 	else if (sig == SIGSEGV)
-		DE_LOG(Info, "%s: engine recieved segment violation. . . stopping.", __FUNCTION__);
+		DE_LOG(Info, "%s: engine received segment violation. . . stopping.", __FUNCTION__);
 	else if (sig == SIGABRT || sig == SIGTERM || sig == SIGINT)
 		DE_LOG(Info, "%s: engine stop signal. . . stopping.", __FUNCTION__);
 
@@ -213,6 +273,13 @@ void de::engine::postMainLoop()
 {
 	_renderer.exit();
 	_gameInstance.reset();
+
+	for (auto window : _windows)
+	{
+		if (window != nullptr)
+			SDL_DestroyWindow(window);
+	}
+
 	SDL_Quit();
 }
 

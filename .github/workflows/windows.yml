@@ -1,0 +1,29 @@
+name: Windows
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, development ]
+
+jobs:
+  Windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install SDL
+        run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build && cmake --build SDL/build --config Release --target INSTALL
+      
+      - name: Install Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+            vulkan-query-version: 1.3.204.0
+            vulkan-components: Vulkan-Headers, Vulkan-Loader
+            vulkan-use-cache: true
+      
+      - name: CMake Configure
+        run: cmake --preset win64-release
+
+      - name: CMake Build
+        run: cmake --build build

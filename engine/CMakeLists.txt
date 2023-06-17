@@ -1,40 +1,27 @@
-cmake_minimum_required(VERSION 3.16.2)
+# main CMakeLists.txt for engine
 project(dreco-engine)
 
 find_package(Vulkan REQUIRED)
-find_package(SDL3 REQUIRED)
 
 set(DRECO_ASSETS_DIR "assets")
 set(DRECO_SHADERS_SOURCE_DIR "shaders/src")
 set(DRECO_SHADERS_BINARY_DIR "shaders/bin")
-set(DRECO_LIBRARY_TYPE SHARED)
 
 file(GLOB_RECURSE DRECO_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx)
 file(GLOB_RECURSE DRECO_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hxx)
 
-add_library(${PROJECT_NAME} ${DRECO_LIBRARY_TYPE} ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
+# creating object library to be compiled and later linked into shared and static libraries
+add_library(${PROJECT_NAME} OBJECT ${DRECO_SOURCE_FILES} ${DRECO_HEADER_FILES})
 
-if (${DRECO_LIBRARY_TYPE} STREQUAL SHARED)
-target_compile_definitions(${PROJECT_NAME} PRIVATE DRECO_LIBRARY_TYPE_SHARED)
-elseif(${DRECO_LIBRARY_TYPE} STREQUAL STATIC)
-target_compile_definitions(${PROJECT_NAME} PRIVATE DRECO_LIBRARY_TYPE_STATIC)
-endif()
+# add shared library using object library
+add_library(${PROJECT_NAME}-shared SHARED $<TARGET_OBJECTS:${PROJECT_NAME}>)
+target_link_libraries(${PROJECT_NAME}-shared ${PROJECT_NAME})
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_VK_USE_VALIDATION DRECO_VK_USE_MESA_OVERLAY DRECO_VK_USE_LUNAR_MONITOR)
+# add static library using object library
+add_library(${PROJECT_NAME}-static STATIC $<TARGET_OBJECTS:${PROJECT_NAME}>)
+target_link_libraries(${PROJECT_NAME}-static ${PROJECT_NAME})
 
-# link enxternal libraries
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan SDL3::SDL3 spirv-reflect stb tinygltf)
-target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL3_INCLUDE_DIRS})
-
-# link modules
-add_subdirectory(modules)
-target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math dreco-shader-compiler-tool)
-
-# link thirdparty libraries
-add_subdirectory(thirdparty)
-target_link_libraries(${PROJECT_NAME} PUBLIC spirv-reflect stb tinygltf)
-
-
+## setting up object library and shared/static libraries using it
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
@@ -42,21 +29,24 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     EXPORT_COMPILE_COMMANDS TRUE
 )
 
+# make sure src directory is included to public 
+# TODO: separate src and include directories
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC 
--DDRECO_ASSETS_DIR="${DRECO_ASSETS_DIR}"
--DDRECO_SHADERS_SOURCE_DIR="${DRECO_SHADERS_SOURCE_DIR}"
--DDRECO_SHADERS_BINARY_DIR="${DRECO_SHADERS_BINARY_DIR}")
+# used by renderer 
+# TODO: move somewhere else
+target_compile_definitions(${PROJECT_NAME} PUBLIC DRECO_VK_USE_VALIDATION DRECO_VK_USE_MESA_OVERLAY DRECO_VK_USE_LUNAR_MONITOR)
+
+# link enxternal libraries
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan spirv-reflect stb tinygltf)
+target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL3_INCLUDE_DIRS})
+
+# link modules
+add_subdirectory(modules)
+target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math dreco-core-minimal dreco-gltf dreco-threads dreco-shader-compiler-tool)
+
+# link thirdparty libraries
+add_subdirectory(thirdparty)
+target_link_libraries(${PROJECT_NAME} PUBLIC spirv-reflect stb tinygltf)
 
 
-if(WIN32)
-add_custom_command(
-      TARGET  ${PROJECT_NAME}
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
-)
-endif()
-
-# TODO: for some reason, this doesn't work. Fix later
-#install(IMPORTED_RUNTIME_ARTIFACTS SDL3::SDL3 RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX})

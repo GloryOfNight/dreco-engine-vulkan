@@ -4,10 +4,17 @@
 #include "math/casts.hxx"
 #include "math/vec3.hxx"
 
+void de::gf::flying_camera::init()
+{
+	camera::init();
+	_inputManager.init(engine::get()->getEventManager());
+}
+
 void de::gf::flying_camera::tick(double deltaTime)
 {
 	auto* engine = de::engine::get();
-	auto& inputManager = engine->getInputManager();
+
+	_inputManager.setWindowId(engine->getWindowId(getViewId()));
 
 	auto& transform = getTransform();
 
@@ -15,37 +22,77 @@ void de::gf::flying_camera::tick(double deltaTime)
 	const auto camFowVec = de::math::quaternion::forwardVector(quatRot);
 	const auto camRightVec = de::math::quaternion::rightVector(quatRot);
 
+	auto view = de::renderer::get()->getView(getViewId());
+	if (view == nullptr)
+	{
+		// do not update camera if view is not present
+		return;
+	}
+
+	{
+		auto viewSettings = view->getSettings();
+		if (_inputManager.isKeyPressed(SDLK_F1))
+		{
+			if (viewSettings.getPolygonMode() == vk::PolygonMode::eFill)
+			{
+				viewSettings.setPolygonMode(vk::PolygonMode::eLine);
+			}
+			else
+			{
+				viewSettings.setPolygonMode(vk::PolygonMode::eFill);
+			}
+		}
+
+		if (_inputManager.isKeyPressed(SDLK_PAGEUP))
+		{
+			const auto sampleCount = viewSettings.getSampleCount();
+			if (sampleCount < vk::SampleCountFlagBits::e64)
+			{
+				viewSettings.setSampleCount(static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(sampleCount) * 2));
+			}
+		}
+		else if (_inputManager.isKeyPressed(SDLK_PAGEDOWN))
+		{
+			const auto sampleCount = viewSettings.getSampleCount();
+			if (sampleCount > vk::SampleCountFlagBits::e1)
+			{
+				viewSettings.setSampleCount(static_cast<vk::SampleCountFlagBits>(static_cast<uint32_t>(sampleCount) / 2));
+			}
+		}
+		view->applySettings(std::move(viewSettings));
+	}
+
 	{ // camera WASDQE movement
 		float camMoveSpeed = 50.F;
-		if (inputManager.isKeyPressed(SDLK_LSHIFT))
+		if (_inputManager.isKeyPressed(SDLK_LSHIFT))
 		{
 			camMoveSpeed *= 2;
 		}
 
 		auto& pos = transform._translation;
-		if (inputManager.isKeyPressed(SDLK_w))
+		if (_inputManager.isKeyPressed(SDLK_w))
 		{
 			pos += camFowVec * camMoveSpeed * deltaTime;
 		}
-		else if (inputManager.isKeyPressed(SDLK_s))
+		else if (_inputManager.isKeyPressed(SDLK_s))
 		{
 			pos += camFowVec * (-camMoveSpeed * deltaTime);
 		}
 
-		if (inputManager.isKeyPressed(SDLK_d))
+		if (_inputManager.isKeyPressed(SDLK_d))
 		{
 			pos += camRightVec * (camMoveSpeed * deltaTime);
 		}
-		else if (inputManager.isKeyPressed(SDLK_a))
+		else if (_inputManager.isKeyPressed(SDLK_a))
 		{
 			pos += camRightVec * (-camMoveSpeed * deltaTime);
 		}
 
-		if (inputManager.isKeyPressed(SDLK_e))
+		if (_inputManager.isKeyPressed(SDLK_e))
 		{
 			pos += de::math::vec3(0, camMoveSpeed * deltaTime, 0);
 		}
-		else if (inputManager.isKeyPressed(SDLK_q))
+		else if (_inputManager.isKeyPressed(SDLK_q))
 		{
 			pos += de::math::vec3(0, -camMoveSpeed * deltaTime, 0);
 		}
@@ -54,16 +101,18 @@ void de::gf::flying_camera::tick(double deltaTime)
 	{
 		const auto& renderer = engine->getRenderer();
 
-		if (inputManager.isInMouseFocus())
+		if (_inputManager.isInMouseFocus())
 		{
 			uint16_t x, y;
-			const uint32_t mouseState = inputManager.getMouseState(&x, &y);
+			const uint32_t mouseState = _inputManager.getMouseState(&x, &y);
 
 			if (mouseState == SDL_BUTTON_LMASK)
 			{
-				const auto extent = renderer.getCurrentExtent();
-				const auto halfExtentX = static_cast<uint32_t>(extent.width * 0.5f);
-				const auto halfExtentY = static_cast<uint32_t>(extent.height * 0.5f);
+				int w, h;
+				SDL_GetWindowSize(de::engine::get()->getWindow(getViewId()), &w, &h);
+
+				const auto halfExtentX = static_cast<uint32_t>(w * 0.5f);
+				const auto halfExtentY = static_cast<uint32_t>(h * 0.5f);
 				if (isMouseRightButtonRepeated)
 				{
 					const auto cameraRotSpeed = de::math::deg_to_rad(45.f);
@@ -80,14 +129,14 @@ void de::gf::flying_camera::tick(double deltaTime)
 				}
 				else // on first button press
 				{
-					inputManager.setMouseRelativeMode(true);
+					_inputManager.setMouseRelativeMode(true);
 					isMouseRightButtonRepeated = true;
 				}
-				inputManager.warpMouse(halfExtentX, halfExtentY);
+				_inputManager.warpMouse(halfExtentX, halfExtentY);
 			}
 			else if (isMouseRightButtonRepeated)
 			{
-				inputManager.setMouseRelativeMode(false);
+				_inputManager.setMouseRelativeMode(false);
 				isMouseRightButtonRepeated = false;
 			}
 		}

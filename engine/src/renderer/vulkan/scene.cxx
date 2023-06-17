@@ -4,7 +4,7 @@
 #include "images/texture_image.hxx"
 #include "renderer/shader_types/material_data.hxx"
 
-#include "graphics_pipeline.hxx"
+#include "constants.hxx"
 #include "material.hxx"
 #include "renderer.hxx"
 #include "utils.hxx"
@@ -72,7 +72,7 @@ void de::vulkan::scene::create(const de::gltf::model& m)
 	for (size_t i = 0; i < imagesNum; ++i)
 	{
 		auto& ti = _textureImages.emplace_back(new texture_image());
-		ti->create(m._images[i]._image);
+		ti->create(m._images[i]);
 	}
 
 	const size_t totalPipelines = m._materials.size();
@@ -99,15 +99,13 @@ void de::vulkan::scene::create(const de::gltf::model& m)
 	createMeshesBuffer(info);
 	createMaterialsBuffer(info);
 
-	auto vert = renderer->loadShader(DRECO_SHADER("basic.vert.spv"));
-	auto frag = renderer->loadShader(DRECO_SHADER("basic.frag.spv"));
-	_material = material::makeNew(vert, frag, totalPipelines);
+	const auto basicMat = renderer->getMaterial(de::vulkan::constants::materials::basic);
 
 	for (size_t i = 0; i < totalPipelines; ++i)
 	{
 		const auto& matData = materialsData[i];
 
-		auto& mat = _matInstances.emplace_back(&_material->makeInstance());
+		auto mat = _matInstances.emplace_back(basicMat->makeInstance());
 
 		mat->setBufferDependency("cameraData", &renderer->getCameraDataBuffer());
 
@@ -213,11 +211,6 @@ void de::vulkan::scene::createMaterialsBuffer(const scene_meshes_info& info)
 	bpTransfer.freeBuffer(transferBufferId);
 }
 
-void de::vulkan::scene::recreatePipelines()
-{
-	_material->recreatePipeline();
-}
-
 void de::vulkan::scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 {
 	const auto vertIndexBuffer = renderer::get()->getVertIndxBufferPool().getBuffer(_meshesVIBufferId).get();
@@ -229,10 +222,13 @@ void de::vulkan::scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 	const size_t totalMaterials = _matInstances.size();
 	for (size_t i = 0; i < totalMaterials; ++i)
 	{
-		auto& mat = _matInstances[i];
+		auto matInst = _matInstances[i];
+		auto mat = matInst->getMaterial();
+
 		auto& meshes = _meshes[i];
 
 		mat->bindCmd(commandBuffer);
+		matInst->bindCmd(commandBuffer);
 		for (auto& mesh : meshes)
 		{
 			commandBuffer.pushConstants(mat->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(de::math::mat4), &mesh->_mat);
@@ -250,7 +246,6 @@ void de::vulkan::scene::destroy()
 {
 	_textureImages.clear();
 
-	_material.reset();
 	_matInstances.clear();
 
 	_meshes.clear();

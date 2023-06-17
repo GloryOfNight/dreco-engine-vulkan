@@ -3,6 +3,8 @@
 #include "renderer.hxx"
 #include "utils.hxx"
 
+#include "core/misc/exceptions.hxx"
+
 #include <limits>
 
 void de::vulkan::buffer::create(vk::MemoryPropertyFlags memoryPropertyFlags, vk::BufferUsageFlags usage, vk::DeviceSize size)

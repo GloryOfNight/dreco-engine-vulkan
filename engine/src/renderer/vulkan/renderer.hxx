@@ -1,14 +1,15 @@
 #pragma once
-#include "core/containers/gltf/model.hxx"
+#include "gltf/model.hxx"
 #include "images/depth_image.hxx"
 #include "images/msaa_image.hxx"
 #include "images/texture_image.hxx"
 #include "renderer/shader_types/camera_data.hxx"
 
 #include "buffer.hxx"
-#include "graphics_pipeline.hxx"
+#include "material.hxx"
 #include "scene.hxx"
 #include "settings.hxx"
+#include "view.hxx"
 
 #include <map>
 #include <memory>
@@ -43,7 +44,14 @@ namespace de::vulkan
 
 		void tick(double deltaTime);
 
-		void setCameraData(const de::math::mat4& inView, const de::math::mat4 inProj);
+		uint32_t addView(SDL_Window* window);
+		void removeView(uint32_t viewIndex);
+
+		material* getMaterial(const std::string_view& name) const;
+
+		const std::map<std::string, material::unique>& getMaterials() const { return _materials; }
+
+		void setCameraView(uint32_t viewIndex, const de::math::mat4& inView);
 
 		void loadModel(const de::gltf::model& scn);
 
@@ -57,40 +65,37 @@ namespace de::vulkan
 
 		std::vector<uint32_t> getQueueFamilyIndices() const;
 
-		vk::RenderPass getRenderPass() const { return _renderPass; };
+		std::array<view::unique, 16>& getViews() { return _views; }
 
-		vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; };
+		view* getView(uint32_t index) const { return _views[index].get(); }
 
-		SDL_Window* getWindow() const { return _window; };
+		uint32_t getCurrentDrawViewIndex() const { return _currentDrawViewIndex; }
 
-		uint32_t getWindowId() const { return _windowId; };
+		vk::Queue getGraphicsQueue() const { return _graphicsQueue; }
 
-		vk::Extent2D getCurrentExtent() const { return _currentExtent; };
+		vk::CommandPool getTransferCommandPool() const { return _transferCommandPool; }
 
-		vk::Device getDevice() const { return _device; }
-
-		vk::SurfaceKHR getSurface() const { return _surface; }
+		vk::Instance getInstance() { return _instance; }
 
 		vk::PhysicalDevice getPhysicalDevice() const { return _physicalDevice; }
 
-		const settings& getSettings() const { return _settings; }
-		settings& getSettings() { return _settings; }
+		vk::Device getDevice() const { return _device; }
 
-		const std::vector<std::unique_ptr<scene>>& getScenes() const { return _scenes; };
-		std::vector<std::unique_ptr<scene>>& getScenes() { return _scenes; };
+		const std::vector<std::unique_ptr<scene>>& getScenes() const { return _scenes; }
+		std::vector<std::unique_ptr<scene>>& getScenes() { return _scenes; }
 
 		const texture_image& getTextureImagePlaceholder() const { return _placeholderTextureImage; }
 
-		const de::vulkan::buffer_pool& getVertIndxBufferPool() const { return _bpVertIndx; };
-		de::vulkan::buffer_pool& getVertIndxBufferPool() { return _bpVertIndx; };
+		const de::vulkan::buffer_pool& getVertIndxBufferPool() const { return _bpVertIndx; }
+		de::vulkan::buffer_pool& getVertIndxBufferPool() { return _bpVertIndx; }
 
-		const de::vulkan::buffer_pool& getUniformBufferPool() const { return _bpUniforms; };
-		de::vulkan::buffer_pool& getUniformBufferPool() { return _bpUniforms; };
+		const de::vulkan::buffer_pool& getUniformBufferPool() const { return _bpUniforms; }
+		de::vulkan::buffer_pool& getUniformBufferPool() { return _bpUniforms; }
 
-		const de::vulkan::buffer_pool& getTransferBufferPool() const { return _bpTransfer; };
-		de::vulkan::buffer_pool& getTransferBufferPool() { return _bpTransfer; };
+		const de::vulkan::buffer_pool& getTransferBufferPool() const { return _bpTransfer; }
+		de::vulkan::buffer_pool& getTransferBufferPool() { return _bpTransfer; }
 
-		const de::vulkan::buffer& getCameraDataBuffer() const { return getUniformBufferPool().getBuffer(_cameraDataBufferId); };
+		const de::vulkan::buffer& getCameraDataBuffer() const { return getUniformBufferPool().getBuffer(_cameraDataBufferId); }
 
 		vk::CommandBuffer beginSingleTimeTransferCommands();
 
@@ -98,20 +103,10 @@ namespace de::vulkan
 
 		void submitSingleTimeTransferCommands(const std::vector<vk::SubmitInfo>& submits);
 
-		void applySettings();
-
 	protected:
 		void updateCameraBuffer();
 
-		void drawFrame();
-
-		bool updateExtent();
-
-		void createWindow();
-
 		void createInstance();
-
-		void createSurface();
 
 		void createPhysicalDevice();
 
@@ -119,29 +114,11 @@ namespace de::vulkan
 
 		void createQueues();
 
-		void createSwapchain();
-
-		void createImageViews();
-
-		void createRenderPass();
-
-		void createFramebuffers();
-
 		void createCommandPools();
-
-		void createCommandBuffers();
-
-		void createFences();
-
-		void createSemaphores();
 
 		void createBufferPools();
 
 		void createCameraBuffer();
-
-		void cleanupSwapchain(vk::SwapchainKHR swapchain);
-
-		void recreateSwapchain();
 
 		vk::CommandBuffer prepareCommandBuffer(uint32_t imageIndex);
 
@@ -152,13 +129,12 @@ namespace de::vulkan
 
 		std::vector<std::unique_ptr<scene>> _scenes;
 
-		SDL_Window* _window{};
+		std::array<view::unique, 16> _views;
+		uint32_t _currentDrawViewIndex{};
 
-		uint32_t _windowId{};
+		std::map<std::string, shader::shared> _shaders;
 
-		vk::Extent2D _currentExtent;
-
-		vk::SurfaceKHR _surface;
+		std::map<std::string, material::unique> _materials;
 
 		vk::Instance _instance;
 
@@ -170,32 +146,11 @@ namespace de::vulkan
 		vk::Queue _graphicsQueue, _transferQueue;
 		vk::CommandPool _graphicsCommandPool, _transferCommandPool;
 
-		settings _settings;
-
-		vk_msaa_image _msaaImage;
-
-		vk_depth_image _depthImage;
-
 		camera_data _cameraData;
 		de::vulkan::buffer::id _cameraDataBufferId{std::numeric_limits<de::vulkan::buffer::id>::max()};
 
 		de::vulkan::buffer_pool _bpVertIndx;
 		de::vulkan::buffer_pool _bpUniforms;
 		de::vulkan::buffer_pool _bpTransfer;
-
-		std::map<std::string, shader::shared> _shaders;
-
-		vk::SwapchainKHR _swapchain;
-
-		std::vector<vk::ImageView> _swapchainImageViews;
-		std::vector<vk::CommandBuffer> _imageCommandBuffers;
-
-		vk::RenderPass _renderPass;
-
-		std::vector<vk::Framebuffer> _framebuffers;
-
-		std::vector<vk::Fence> _submitQueueFences;
-
-		vk::Semaphore _semaphoreImageAvaible, _semaphoreRenderFinished;
 	};
 } // namespace de::vulkan

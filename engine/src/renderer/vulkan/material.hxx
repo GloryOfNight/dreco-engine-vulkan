@@ -3,7 +3,7 @@
 #include "images/texture_image.hxx"
 
 #include "buffer.hxx"
-#include "graphics_pipeline.hxx"
+#include "material_instance.hxx"
 #include "shader.hxx"
 
 #include <map>
@@ -14,45 +14,6 @@
 
 namespace de::vulkan
 {
-	class material_instance final
-	{
-		friend material;
-		material_instance(class material* owner);
-
-	public:
-		~material_instance() = default;
-
-		vk::PipelineLayout getPipelineLayout() const;
-
-		template <typename Str>
-		void setBufferDependency(Str&& inName, const de::vulkan::buffer* inBuffer, size_t arrayIndex = 0);
-
-		template <typename Str>
-		void setBufferDependencySize(Str&& inName, size_t size);
-
-		template <typename Str>
-		void setImageDependecy(Str&& inName, const texture_image* inImage, size_t arrayIndex = 0);
-
-		template <typename Str>
-		void setImageDependecySize(Str&& inName, size_t size);
-
-		void updateDescriptorSets();
-
-		void bindCmd(vk::CommandBuffer commandBuffer) const;
-
-	private:
-		void updateShaderDescriptors(const shader& inShader);
-		std::map<std::string, std::vector<vk::DescriptorBufferInfo>> getDescriptorBufferInfos(const shader& inShader) const;
-		std::map<std::string, std::vector<vk::DescriptorImageInfo>> getDescriptorImageInfos(const shader& inShader) const;
-
-		class material* _owner;
-
-		std::vector<vk::DescriptorSet> _descriptorSets;
-
-		std::map<std::string, std::vector<const de::vulkan::buffer*>> _buffers;
-		std::map<std::string, std::vector<const texture_image*>> _images;
-	};
-
 	class material final
 	{
 		material() = default;
@@ -61,15 +22,19 @@ namespace de::vulkan
 		using unique = std::unique_ptr<material>;
 
 		static unique makeNew(shader::shared vert, shader::shared frag, size_t maxInstances = 1);
-		material_instance& makeInstance();
+		material_instance* makeInstance();
 
 		material(material&) = delete;
 		material(material&&) = default;
 		~material();
 
-		void recreatePipeline();
+		void viewAdded(uint32_t viewIndex);
+		void viewUpdated(uint32_t viewIndex);
+		void viewRemoved(uint32_t viewIndex);
 
 		void resizeDescriptorPool(uint32_t newSize);
+
+		void bindCmd(vk::CommandBuffer commandBuffer) const;
 
 		const std::vector<vk::DescriptorSetLayout>& getDescriptorSetLayouts() const;
 		vk::DescriptorPool getDescriptorPool() const;
@@ -81,7 +46,6 @@ namespace de::vulkan
 		const shader::shared& getFragShader() const;
 
 		vk::PipelineLayout getPipelineLayout() const;
-		const graphics_pipeline& getPipeline() const;
 
 	private:
 		void init(size_t maxInstances);
@@ -91,48 +55,19 @@ namespace de::vulkan
 
 		void createDescriptorPool(uint32_t maxSets = 1);
 
+		void createPipelineLayout();
+
+		vk::UniquePipeline createPipeline(uint32_t viewIndex);
+
 		shader::shared _vert;
 		shader::shared _frag;
 
 		std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts;
 		vk::DescriptorPool _descriptorPool;
 
-		graphics_pipeline _pipeline;
+		vk::PipelineLayout _pipelineLayout;
+		std::map<uint32_t, vk::UniquePipeline> _pipelines;
 
-		std::vector<material_instance> _instances;
+		std::vector<material_instance::unique> _instances;
 	};
-
-	template <typename Str>
-	void material_instance::setBufferDependency(Str&& inName, const de::vulkan::buffer* inBuffer, size_t arrayIndex)
-	{
-		auto it = _buffers.try_emplace(std::forward<Str>(inName), std::vector<const de::vulkan::buffer*>(1, nullptr));
-		it.first->second[arrayIndex] = inBuffer;
-	}
-
-	template <typename Str>
-	void material_instance::setBufferDependencySize(Str&& inName, size_t size)
-	{
-		auto& arr = _buffers[std::forward<Str>(inName)];
-		if (arr.size() != size)
-		{
-			arr.resize(size);
-		}
-	}
-
-	template <typename Str>
-	void material_instance::setImageDependecy(Str&& inName, const texture_image* inImage, size_t arrayIndex)
-	{
-		auto it = _images.try_emplace(std::forward<Str>(inName), std::vector<const texture_image*>(1, nullptr));
-		it.first->second[arrayIndex] = inImage;
-	}
-
-	template <typename Str>
-	void material_instance::setImageDependecySize(Str&& inName, size_t size)
-	{
-		auto& arr = _images[std::forward<Str>(inName)];
-		if (arr.size() != size)
-		{
-			arr.resize(size);
-		}
-	}
 } // namespace de::vulkan

@@ -1,8 +1,8 @@
 #pragma once
-#include "core/async/thread_pool.hxx"
-#include "core/containers/gltf/gltf.hxx"
-#include "core/containers/gltf/model.hxx"
 #include "core/engine.hxx"
+#include "gltf/gltf.hxx"
+#include "gltf/model.hxx"
+#include "threads/thread_pool.hxx"
 
 #include <string>
 
