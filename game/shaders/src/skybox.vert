@@ -11,8 +11,7 @@ layout(set = 0, binding = 0) uniform readonly Camera
 } cameraData;
 
 void main() {
-    gl_Position = cameraData.proj * cameraData.view * vec4(inPosition, 1.0);
+    gl_Position = cameraData.proj * mat4(mat3(cameraData.view)) * vec4(inPosition, 1.0);
 
     outUVW = inPosition;
-    outUVW.xy *= -1.f;
 }

@@ -5,6 +5,12 @@
 
 void de::vulkan::image::destroy()
 {
+	if (_sampler)
+	{
+		const vk::Device device = renderer::get()->getDevice();
+		device.destroySampler(_sampler);
+		_sampler = nullptr;
+	}
 	if (_imageView)
 	{
 		const vk::Device device = renderer::get()->getDevice();
@@ -20,16 +26,6 @@ void de::vulkan::image::destroy()
 	_deviceMemory.free();
 }
 
-vk::ImageAspectFlags de::vulkan::image::getImageAspectFlags() const
-{
-	return vk::ImageAspectFlags();
-}
-
-vk::ImageUsageFlags de::vulkan::image::getImageUsageFlags() const
-{
-	return vk::ImageUsageFlags();
-}
-
 void de::vulkan::image::createImage(const vk::Device device, const vk::Format format, const uint32_t width, const uint32_t height, const vk::SampleCountFlagBits samples)
 {
 	const auto renderer{renderer::get()};
@@ -38,11 +34,12 @@ void de::vulkan::image::createImage(const vk::Device device, const vk::Format fo
 
 	const vk::ImageCreateInfo imageCreateInfo =
 		vk::ImageCreateInfo()
+			.setFlags(getImageCreateFlags())
 			.setImageType(vk::ImageType::e2D)
 			.setFormat(format)
 			.setExtent(vk::Extent3D(width, height, 1))
 			.setMipLevels(1)
-			.setArrayLayers(1)
+			.setArrayLayers(getLayerCount())
 			.setSamples(samples)
 			.setTiling(vk::ImageTiling::eOptimal)
 			.setUsage(getImageUsageFlags())
@@ -65,7 +62,7 @@ void de::vulkan::image::createImageView(const vk::Device device, const vk::Forma
 			.setAspectMask(getImageAspectFlags())
 			.setBaseArrayLayer(0)
 			.setBaseMipLevel(0)
-			.setLayerCount(1)
+			.setLayerCount(getLayerCount())
 			.setLevelCount(1);
 
 	const vk::ImageViewCreateInfo imageViewCreateInfo =
@@ -73,7 +70,7 @@ void de::vulkan::image::createImageView(const vk::Device device, const vk::Forma
 			.setFlags({})
 			.setImage(_image)
 			.setFormat(format)
-			.setViewType(vk::ImageViewType::e2D)
+			.setViewType(getImageViewType())
 			.setSubresourceRange(imageSubresourceRange);
 
 	_imageView = device.createImageView(imageViewCreateInfo);
@@ -89,7 +86,7 @@ VkCommandBuffer de::vulkan::image::transitionImageLayout(const image_transition_
 			.setBaseMipLevel(0)
 			.setBaseArrayLayer(0)
 			.setLevelCount(1)
-			.setLayerCount(1);
+			.setLayerCount(getLayerCount());
 
 	const vk::ImageMemoryBarrier imageMemoryBarrier =
 		vk::ImageMemoryBarrier()
@@ -106,4 +103,32 @@ VkCommandBuffer de::vulkan::image::transitionImageLayout(const image_transition_
 	commandBuffer.end();
 
 	return commandBuffer;
+}
+
+void de::vulkan::image::createSampler(const vk::Device device)
+{
+	const vk::PhysicalDevice physicalDevice = renderer::get()->getPhysicalDevice();
+	const vk::PhysicalDeviceProperties physicalDeviceProperties = physicalDevice.getProperties();
+	const vk::PhysicalDeviceFeatures physicalDeviceFeatures = physicalDevice.getFeatures();
+
+	const vk::SamplerCreateInfo samplerCreateInfo =
+		vk::SamplerCreateInfo()
+			.setFlags({})
+			.setMagFilter(vk::Filter::eLinear)
+			.setMinFilter(vk::Filter::eLinear)
+			.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+			.setAddressModeU(vk::SamplerAddressMode::eRepeat)
+			.setAddressModeV(vk::SamplerAddressMode::eRepeat)
+			.setAddressModeW(vk::SamplerAddressMode::eRepeat)
+			.setMipLodBias(0.0F)
+			.setAnisotropyEnable(physicalDeviceFeatures.samplerAnisotropy)
+			.setMaxAnisotropy(physicalDeviceProperties.limits.maxSamplerAnisotropy)
+			.setCompareEnable(VK_TRUE)
+			.setCompareOp(vk::CompareOp::eAlways)
+			.setMinLod(0.0F)
+			.setMaxLod(0.0F)
+			.setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+			.setUnnormalizedCoordinates(VK_FALSE);
+
+	_sampler = device.createSampler(samplerCreateInfo);
 }

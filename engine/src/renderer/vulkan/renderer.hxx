@@ -1,5 +1,6 @@
 #pragma once
 #include "gltf/model.hxx"
+#include "images/cubemap_image.hxx"
 #include "images/depth_image.hxx"
 #include "images/msaa_image.hxx"
 #include "images/texture_image.hxx"
@@ -9,6 +10,7 @@
 #include "material.hxx"
 #include "scene.hxx"
 #include "settings.hxx"
+#include "skybox.hxx"
 #include "view.hxx"
 
 #include <map>
@@ -126,6 +128,8 @@ namespace de::vulkan
 		uint32_t _apiVersion{};
 
 		texture_image _placeholderTextureImage;
+
+		skybox _skybox;
 
 		std::vector<std::unique_ptr<scene>> _scenes;
 

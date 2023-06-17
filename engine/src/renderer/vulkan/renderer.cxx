@@ -79,6 +79,7 @@ void de::vulkan::renderer::init()
 			const auto frag = loadShader(DRECO_SHADER(constants::shaders::skyboxFrag));
 			_materials.try_emplace(constants::materials::skybox, material::makeNew(vert, frag, 128));
 		}
+		_skybox.init();
 	}
 }
 
@@ -91,12 +92,13 @@ void de::vulkan::renderer::exit()
 
 	_device.waitIdle();
 
+	_skybox.destroy();
+	_placeholderTextureImage.destroy();
+
 	_scenes.clear();
 	_shaders.clear();
 	_materials.clear();
 	_views = {};
-
-	_placeholderTextureImage.destroy();
 
 	_device.destroyCommandPool(_graphicsCommandPool);
 	_device.destroyCommandPool(_transferCommandPool);
@@ -143,14 +145,17 @@ void de::vulkan::renderer::tick(double deltaTime)
 		_cameraData.proj = de::math::mat4::makeProjection(0.1f, 1000.f, static_cast<float>(viewExtent.width) / static_cast<float>(viewExtent.height), de::math::deg_to_rad(75.F));
 		updateCameraBuffer();
 
-		auto CommandBuffer = currentView->beginCommandBuffer(nextImage);
+		auto commandBuffer = currentView->beginCommandBuffer(nextImage);
+
+		_skybox.drawCmd(commandBuffer);
+
 		for (auto& scene : _scenes)
 		{
-			scene->bindToCmdBuffer(CommandBuffer);
+			scene->bindToCmdBuffer(commandBuffer);
 		}
-		currentView->endCommandBuffer(CommandBuffer);
+		currentView->endCommandBuffer(commandBuffer);
 
-		currentView->submitCommandBuffer(nextImage, CommandBuffer);
+		currentView->submitCommandBuffer(nextImage, commandBuffer);
 	}
 }
 
