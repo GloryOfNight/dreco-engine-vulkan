@@ -1,8 +1,7 @@
 #pragma once
 
-#include "images/texture_image.hxx"
-
 #include "buffer.hxx"
+#include "image.hxx"
 #include "shader.hxx"
 
 #include <map>
@@ -35,7 +34,7 @@ namespace de::vulkan
 		void setBufferDependencySize(Str&& inName, size_t size);
 
 		template <typename Str>
-		void setImageDependecy(Str&& inName, const texture_image* inImage, size_t arrayIndex = 0);
+		void setImageDependecy(Str&& inName, const image* inImage, size_t arrayIndex = 0);
 
 		template <typename Str>
 		void setImageDependecySize(Str&& inName, size_t size);
@@ -54,7 +53,7 @@ namespace de::vulkan
 		std::vector<vk::DescriptorSet> _descriptorSets;
 
 		std::map<std::string, std::vector<const de::vulkan::buffer*>> _buffers;
-		std::map<std::string, std::vector<const texture_image*>> _images;
+		std::map<std::string, std::vector<const image*>> _images;
 	};
 
 	template <typename Str>
@@ -75,9 +74,9 @@ namespace de::vulkan
 	}
 
 	template <typename Str>
-	void material_instance::setImageDependecy(Str&& inName, const texture_image* inImage, size_t arrayIndex)
+	void material_instance::setImageDependecy(Str&& inName, const image* inImage, size_t arrayIndex)
 	{
-		auto it = _images.try_emplace(std::forward<Str>(inName), std::vector<const texture_image*>(1, nullptr));
+		auto it = _images.try_emplace(std::forward<Str>(inName), std::vector<const image*>(1, nullptr));
 		it.first->second[arrayIndex] = inImage;
 	}
 

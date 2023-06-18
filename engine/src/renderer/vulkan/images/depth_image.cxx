@@ -8,7 +8,7 @@ void de::vulkan::vk_depth_image::create(uint32_t viewIndex)
 	renderer* renderer{renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	_format = findSupportedDepthFormat();
+	_format = utils::findSupportedDepthFormat(renderer->getPhysicalDevice());
 
 	_viewIndex = viewIndex;
 
@@ -61,17 +61,6 @@ vk::ImageAspectFlags de::vulkan::vk_depth_image::getImageAspectFlags() const
 vk::ImageUsageFlags de::vulkan::vk_depth_image::getImageUsageFlags() const
 {
 	return vk::ImageUsageFlagBits::eDepthStencilAttachment;
-}
-
-vk::Format de::vulkan::vk_depth_image::findSupportedDepthFormat() const
-{
-	const vk::PhysicalDevice physicalDevice = renderer::get()->getPhysicalDevice();
-	utils::find_supported_format_info findSupportedFormatInfo{};
-	findSupportedFormatInfo._formatCandidates = {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
-	findSupportedFormatInfo._imageTiling = vk::ImageTiling::eOptimal;
-	findSupportedFormatInfo._formatFeatureFlags = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
-
-	return utils::findSupportedFormat(physicalDevice, findSupportedFormatInfo);
 }
 
 bool de::vulkan::vk_depth_image::hasStencilComponent() const

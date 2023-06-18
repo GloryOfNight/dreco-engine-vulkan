@@ -266,30 +266,7 @@ static void parseImages(const tinygltf::Model& tModel, de::gltf::model& dModel)
 
 	const auto asyncImageLoad = [&dModel](de::gltf::image& image)
 	{
-		constexpr auto components = 4U;
-
-		int width, heigth, channels;
-		const auto stbiPixels = stbi_load((dModel._rootPath + '/' + image._uri).data(), &width, &heigth, &channels, components);
-
-		if (stbiPixels)
-		{
-			const size_t pixelCount = width * heigth * components;
-
-			image._width = width;
-			image._height = heigth;
-			image._channels = channels;
-			image._components = components;
-
-			image._pixels.resize(pixelCount);
-			std::memmove(image._pixels.data(), stbiPixels, pixelCount);
-
-			delete[] stbiPixels;
-		}
-		else
-		{
-			DE_LOG(Error, "Failed to load image: %s", image._uri.data());
-			image = de::gltf::image::makePlaceholder(256, 256);
-		}
+		image = std::move(de::gltf::loadImage(dModel._rootPath + '/' + image._uri));
 	};
 	std::for_each(std::execution::par, dModel._images.begin(), dModel._images.end(), asyncImageLoad);
 }
@@ -322,4 +299,34 @@ de::gltf::model de::gltf::loadModel(const std::string_view sceneFile)
 	parseImages(tModel, dModel);
 
 	return dModel;
+}
+
+DRECO_API de::gltf::image de::gltf::loadImage(const std::string_view imageFile)
+{
+	constexpr auto components = 4U;
+
+	int width, heigth, channels;
+	const auto stbiPixels = stbi_load(imageFile.data(), &width, &heigth, &channels, components);
+
+	gltf::image image;
+	if (stbiPixels)
+	{
+		const size_t pixelCount = width * heigth * components;
+
+		image._width = width;
+		image._height = heigth;
+		image._channels = channels;
+		image._components = components;
+
+		image._pixels.resize(pixelCount);
+		std::memmove(image._pixels.data(), stbiPixels, pixelCount);
+
+		delete[] stbiPixels;
+	}
+	else
+	{
+		DE_LOG(Error, "Failed to load image: %s", image._uri.data());
+		image = de::gltf::image::makePlaceholder(256, 256);
+	}
+	return std::move(image);
 }

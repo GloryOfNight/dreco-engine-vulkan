@@ -26,8 +26,6 @@ namespace de::vulkan
 
 		virtual vk::ImageUsageFlags getImageUsageFlags() const override;
 
-		void createSampler(const vk::Device device);
-
 		vk::Sampler _sampler;
 	};
 } // namespace de::vulkan

@@ -29,7 +29,7 @@ namespace de::vulkan
 
 		static void copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer bufferDst, const std::vector<vk::BufferCopy>& bufferCopyRegions);
 
-		[[nodiscard]] static vk::CommandBuffer copyBufferToImage(const buffer& buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height);
+		[[nodiscard]] static vk::CommandBuffer copyBufferToImage(const buffer& buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height, const uint32_t layerCount = 1);
 
 	private:
 		vk::Buffer _buffer{};

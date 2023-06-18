@@ -1,17 +1,28 @@
-#include "texture_image.hxx"
+#include "cubemap_image.hxx"
 
+#include "gltf/gltf.hxx"
 #include "renderer/vulkan/renderer.hxx"
 #include "renderer/vulkan/utils.hxx"
 
-#include "dreco.hxx"
+#include <execution>
 
-void de::vulkan::texture_image::create(const de::gltf::image& image)
+void de::vulkan::cubemap_image::create(const std::array<std::string, 6>& cubeTexures)
 {
-	renderer* renderer{renderer::get()};
-	const vk::Device device = renderer->getDevice();
+	std::array<de::gltf::image, 6> images;
+	for (size_t i = 0; i < cubeTexures.size(); ++i)
+	{
+		images[i] = de::gltf::loadImage(DRECO_ASSET(cubeTexures[i]));
+	}
+
+	const auto width = images[0]._width;
+	const auto height = images[0]._height;
 
 	const vk::Format format = vk::Format::eR8G8B8A8Srgb;
-	createImage(device, format, image._width, image._height);
+
+	auto renderer = renderer::get();
+	auto device = renderer->getDevice();
+
+	createImage(device, format, width, height);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);
 	_deviceMemory.allocate(memoryRequirements, utils::memory_property::device);
@@ -25,7 +36,11 @@ void de::vulkan::texture_image::create(const de::gltf::image& image)
 	const auto transferBufferId = bpTransfer.makeBuffer(memoryRequirements.size);
 	auto region = bpTransfer.map(transferBufferId);
 
-	memcpy(region, image._pixels.data(), image._pixels.size());
+	for (size_t i = 0; i < cubeTexures.size(); ++i)
+	{
+		const auto offset = images[i]._pixels.size() * i;
+		memcpy(reinterpret_cast<uint8_t*>(region) + offset, images[i]._pixels.data(), images[i]._pixels.size());
+	}
 
 	bpTransfer.unmap(transferBufferId);
 
@@ -54,7 +69,7 @@ void de::vulkan::texture_image::create(const de::gltf::image& image)
 
 	commandBuffers[1] = de::vulkan::buffer::copyBufferToImage(
 		bpTransfer.getBuffer(transferBufferId), _image,
-		vk::ImageLayout::eTransferDstOptimal, image._width, image._height);
+		vk::ImageLayout::eTransferDstOptimal, images[0]._width, images[0]._height, getLayerCount());
 
 	transitionLayoutInfo._layoutOld = vk::ImageLayout::eTransferDstOptimal;
 	transitionLayoutInfo._layoutNew = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -104,27 +119,13 @@ void de::vulkan::texture_image::create(const de::gltf::image& image)
 	bpTransfer.freeBuffer(transferBufferId);
 }
 
-void de::vulkan::texture_image::destroy()
+void de::vulkan::cubemap_image::destroy()
 {
+	if (_sampler)
+	{
+		const vk::Device device = renderer::get()->getDevice();
+		device.destroySampler(_sampler);
+		_sampler = nullptr;
+	}
 	image::destroy();
-}
-
-vk::Sampler de::vulkan::texture_image::getSampler() const
-{
-	return _sampler;
-}
-
-bool de::vulkan::texture_image::isValid() const
-{
-	return getImage() && getImageView() && getSampler();
-}
-
-vk::ImageAspectFlags de::vulkan::texture_image::getImageAspectFlags() const
-{
-	return vk::ImageAspectFlagBits::eColor;
-}
-
-vk::ImageUsageFlags de::vulkan::texture_image::getImageUsageFlags() const
-{
-	return vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
 }

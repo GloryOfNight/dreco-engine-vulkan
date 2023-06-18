@@ -72,7 +72,7 @@ void de::vulkan::buffer::copyBuffer(const vk::Buffer bufferSrc, const vk::Buffer
 	renderer->getDevice().freeCommandBuffers(renderer->getTransferCommandPool(), commandBuffer);
 }
 
-vk::CommandBuffer de::vulkan::buffer::copyBufferToImage(const buffer& buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height)
+vk::CommandBuffer de::vulkan::buffer::copyBufferToImage(const buffer& buffer, const vk::Image image, const vk::ImageLayout imageLayout, const uint32_t width, const uint32_t height, const uint32_t layerCount)
 {
 	renderer* renderer{renderer::get()};
 
@@ -83,7 +83,7 @@ vk::CommandBuffer de::vulkan::buffer::copyBufferToImage(const buffer& buffer, co
 			.setAspectMask(vk::ImageAspectFlagBits::eColor)
 			.setMipLevel(0)
 			.setBaseArrayLayer(0)
-			.setLayerCount(1);
+			.setLayerCount(layerCount);
 
 	const vk::BufferImageCopy copyRegion =
 		vk::BufferImageCopy()

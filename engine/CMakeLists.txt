@@ -26,7 +26,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED TRUE
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    EXPORT_COMPILE_COMMANDS TRUE
 )
 
 # make sure src directory is included to public 
