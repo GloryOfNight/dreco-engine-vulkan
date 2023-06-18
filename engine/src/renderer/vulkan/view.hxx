@@ -44,11 +44,12 @@ namespace de::vulkan
 		vk::RenderPass getRenderPass() const { return _renderPass; };
 		vk::Extent2D getCurrentExtent() const { return _currentExtent; };
 		vk::SurfaceKHR getSurface() const { return _surface; }
-		vk::SurfaceFormatKHR getSurfaceFormat() const { return _surfaceFormat; }
 
 		vk::SharingMode getSharingMode() const;
 
 		uint32_t getImageCount() const;
+
+		inline vk::Format getFormat() const { return vk::Format::eB8G8R8A8Srgb; }
 
 	private:
 		void createSwapchain(vk::PhysicalDevice physicalDevice, vk::Device device);
@@ -74,10 +75,6 @@ namespace de::vulkan
 		de::math::mat4 _viewMatrix;
 
 		vk::SurfaceKHR _surface;
-
-		vk::SurfaceFormatKHR _surfaceFormat;
-
-		vk::PresentModeKHR _presentMode;
 
 		vk::SwapchainKHR _swapchain;
 

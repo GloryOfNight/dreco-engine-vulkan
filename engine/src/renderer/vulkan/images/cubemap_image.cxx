@@ -17,7 +17,7 @@ void de::vulkan::cubemap_image::create(const std::array<std::string, 6>& cubeTex
 	const auto width = images[0]._width;
 	const auto height = images[0]._height;
 
-	const vk::Format format = vk::Format::eR8G8B8A8Unorm;
+	const vk::Format format = vk::Format::eR8G8B8A8Srgb;
 
 	auto renderer = renderer::get();
 	auto device = renderer->getDevice();
@@ -128,14 +128,4 @@ void de::vulkan::cubemap_image::destroy()
 		_sampler = nullptr;
 	}
 	image::destroy();
-}
-
-vk::ImageAspectFlags de::vulkan::cubemap_image::getImageAspectFlags() const
-{
-	return vk::ImageAspectFlagBits::eColor;
-}
-
-vk::ImageUsageFlags de::vulkan::cubemap_image::getImageUsageFlags() const
-{
-	return vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst;
 }

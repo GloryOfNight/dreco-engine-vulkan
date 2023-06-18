@@ -10,7 +10,7 @@ void de::vulkan::texture_image::create(const de::gltf::image& image)
 	renderer* renderer{renderer::get()};
 	const vk::Device device = renderer->getDevice();
 
-	const vk::Format format = vk::Format::eR8G8B8A8Unorm;
+	const vk::Format format = vk::Format::eR8G8B8A8Srgb;
 	createImage(device, format, image._width, image._height);
 
 	const vk::MemoryRequirements memoryRequirements = device.getImageMemoryRequirements(_image);

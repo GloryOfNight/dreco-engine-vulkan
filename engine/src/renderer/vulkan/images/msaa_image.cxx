@@ -11,7 +11,7 @@ void de::vulkan::vk_msaa_image::create(uint32_t viewIndex)
 	_viewIndex = viewIndex;
 
 	auto view = renderer->getView(viewIndex);
-	const auto format = view->getSurfaceFormat().format;
+	const auto format = view->getFormat();
 	const auto extent = view->getCurrentExtent();
 	const auto sampleCount = view->getSettings().getSampleCount();
 

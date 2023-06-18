@@ -45,11 +45,11 @@ namespace de::vulkan
 			vk::ImageTiling _imageTiling;
 			vk::FormatFeatureFlags _formatFeatureFlags;
 		};
-		static vk::Format findSupportedFormat(const vk::PhysicalDevice physicalDevice, const find_supported_format_info& info) noexcept;
+		static vk::Format findSupportedDepthFormat(const vk::PhysicalDevice physicalDevice) noexcept;
 
 		static vk::SampleCountFlagBits findMaxSampleCount(const vk::PhysicalDevice physicalDevice);
 
-		static vk::SurfaceFormatKHR findSurfaceFormat(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface);
+		static vk::SurfaceFormatKHR findSurfaceFormat(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface, const vk::Format format);
 
 		static vk::PresentModeKHR findPresentMode(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface);
 	};

@@ -14,9 +14,6 @@ void de::vulkan::view::init(vk::SurfaceKHR surface, uint32_t viewIndex)
 	auto physicalDevice = renderer->getPhysicalDevice();
 	auto device = renderer->getDevice();
 
-	_surfaceFormat = utils::findSurfaceFormat(physicalDevice, surface);
-	_presentMode = utils::findPresentMode(physicalDevice, surface);
-
 	_settings.init();
 
 	updateExtent(physicalDevice);
@@ -235,6 +232,15 @@ uint32_t de::vulkan::view::getImageCount() const
 
 void de::vulkan::view::createSwapchain(vk::PhysicalDevice physicalDevice, vk::Device device)
 {
+	// make sure surface has right surface format
+	const auto surfaceFormat = utils::findSurfaceFormat(physicalDevice, _surface, getFormat());
+	if (surfaceFormat == vk::SurfaceFormatKHR())
+		throw std::runtime_error("Failed to find preferred surface format!");
+
+	const auto presentMode = utils::findPresentMode(physicalDevice, _surface);
+	if (presentMode == vk::PresentModeKHR())
+		DE_LOG(Error, "Failed to to find preffered present mode!");
+
 	const auto sharingMode{getSharingMode()};
 	const auto queueFamilyIndexes{renderer::get()->getQueueFamilyIndices()};
 
@@ -245,8 +251,8 @@ void de::vulkan::view::createSwapchain(vk::PhysicalDevice physicalDevice, vk::De
 		vk::SwapchainCreateInfoKHR()
 			.setSurface(_surface)
 			.setMinImageCount(minImageCount)
-			.setImageFormat(_surfaceFormat.format)
-			.setImageColorSpace(_surfaceFormat.colorSpace)
+			.setImageFormat(surfaceFormat.format)
+			.setImageColorSpace(surfaceFormat.colorSpace)
 			.setImageExtent(_currentExtent)
 			.setImageArrayLayers(1)
 			.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
@@ -254,7 +260,7 @@ void de::vulkan::view::createSwapchain(vk::PhysicalDevice physicalDevice, vk::De
 			.setQueueFamilyIndices(queueFamilyIndexes)
 			.setPreTransform(surfaceCapabilities.currentTransform)
 			.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
-			.setPresentMode(_presentMode)
+			.setPresentMode(presentMode)
 			.setClipped(VK_TRUE)
 			.setOldSwapchain(_swapchain);
 
@@ -313,7 +319,7 @@ void de::vulkan::view::createImageViews(vk::Device device)
 			vk::ImageViewCreateInfo()
 				.setImage(swapchainImages[i])
 				.setViewType(vk::ImageViewType::e2D)
-				.setFormat(_surfaceFormat.format)
+				.setFormat(getFormat())
 				.setComponents(imageViewComponents)
 				.setSubresourceRange(imageSubresourceRange);
 
@@ -332,7 +338,7 @@ void de::vulkan::view::createRenderPass(vk::Device device)
 	std::vector<vk::AttachmentReference> resolveAttachmentReferences;
 
 	attachmentsDescriptions.emplace_back() // color
-		.setFormat(_surfaceFormat.format)
+		.setFormat(getFormat())
 		.setSamples(sampleCount)
 		.setLoadOp(vk::AttachmentLoadOp::eClear)
 		.setStoreOp(isMultisamplingSupported ? vk::AttachmentStoreOp::eDontCare : vk::AttachmentStoreOp::eStore)
@@ -356,7 +362,7 @@ void de::vulkan::view::createRenderPass(vk::Device device)
 	if (isMultisamplingSupported)
 	{
 		attachmentsDescriptions.emplace_back() // color msaa
-			.setFormat(_surfaceFormat.format)
+			.setFormat(getFormat())
 			.setSamples(vk::SampleCountFlagBits::e1)
 			.setLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStoreOp(vk::AttachmentStoreOp::eDontCare)

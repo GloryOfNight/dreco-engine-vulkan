@@ -16,9 +16,9 @@ namespace de::vulkan
 		void destroy() override;
 
 	protected:
-		vk::ImageAspectFlags getImageAspectFlags() const override;
+		vk::ImageAspectFlags getImageAspectFlags() const override { return vk::ImageAspectFlagBits::eColor; }
 
-		vk::ImageUsageFlags getImageUsageFlags() const override;
+		vk::ImageUsageFlags getImageUsageFlags() const override { return vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst; };
 
 		virtual uint32_t getLayerCount() const override { return 6; }
 

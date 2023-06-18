@@ -270,43 +270,39 @@ vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 									   .setMaxDepthBounds(1.0F)
 									   .setStencilTestEnable(VK_TRUE);
 
-	const vk::Extent2D extent = view->getCurrentExtent();
-	const vk::Viewport viewport =
-		vk::Viewport()
-			.setX(0)
-			.setY(0)
-			.setWidth(extent.width)
-			.setHeight(extent.height)
-			.setMinDepth(0.0F)
-			.setMaxDepth(1.0F);
+	const auto extent = view->getCurrentExtent();
+	const auto viewport = vk::Viewport()
+							  .setX(0)
+							  .setY(0)
+							  .setWidth(extent.width)
+							  .setHeight(extent.height)
+							  .setMinDepth(0.0F)
+							  .setMaxDepth(1.0F);
 
-	const vk::Rect2D scissors =
-		vk::Rect2D()
-			.setOffset(vk::Offset2D(0, 0))
-			.setExtent(extent);
+	const auto scissors = vk::Rect2D()
+							  .setOffset(vk::Offset2D(0, 0))
+							  .setExtent(extent);
 
-	const vk::PipelineViewportStateCreateInfo viewportState =
-		vk::PipelineViewportStateCreateInfo()
-			.setViewports(viewport)
-			.setScissors(scissors);
+	const auto viewportState = vk::PipelineViewportStateCreateInfo()
+								   .setViewports(viewport)
+								   .setScissors(scissors);
 
-	const vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
-																.setDynamicStates(_pipelineDynamicStates);
+	const auto dynamicState = vk::PipelineDynamicStateCreateInfo()
+								  .setDynamicStates(_pipelineDynamicStates);
 
-	const vk::GraphicsPipelineCreateInfo pipelineCreateInfo =
-		vk::GraphicsPipelineCreateInfo()
-			.setStages(shaderStages)
-			.setPVertexInputState(&vertexInputState)
-			.setPInputAssemblyState(&inputAssemblyState)
-			.setPViewportState(&viewportState)
-			.setPDynamicState(&dynamicState)
-			.setPRasterizationState(&rasterizationState)
-			.setPColorBlendState(&colorBlendingState)
-			.setPMultisampleState(&multisamplingState)
-			.setPDepthStencilState(&depthStencilState)
-			.setLayout(_pipelineLayout)
-			.setRenderPass(view->getRenderPass())
-			.setSubpass(0);
+	const auto pipelineCreateInfo = vk::GraphicsPipelineCreateInfo()
+										.setStages(shaderStages)
+										.setPVertexInputState(&vertexInputState)
+										.setPInputAssemblyState(&inputAssemblyState)
+										.setPViewportState(&viewportState)
+										.setPDynamicState(&dynamicState)
+										.setPRasterizationState(&rasterizationState)
+										.setPColorBlendState(&colorBlendingState)
+										.setPMultisampleState(&multisamplingState)
+										.setPDepthStencilState(&depthStencilState)
+										.setLayout(_pipelineLayout)
+										.setRenderPass(view->getRenderPass())
+										.setSubpass(0);
 
 	auto createPipelineResult = renderer->getDevice().createGraphicsPipelineUnique(nullptr, pipelineCreateInfo);
 	assert(vk::Result::eSuccess == createPipelineResult.result);

@@ -1,23 +1,25 @@
 #include "utils.hxx"
 
-vk::Format de::vulkan::utils::findSupportedFormat(const vk::PhysicalDevice physicalDevice, const find_supported_format_info& info) noexcept
-{
-	if (physicalDevice)
-	{
-		for (const vk::Format format : info._formatCandidates)
-		{
-			const vk::FormatProperties formatProperties = physicalDevice.getFormatProperties(format);
+#include <algorithm>
 
-			if (info._imageTiling == vk::ImageTiling::eLinear &&
-				(formatProperties.linearTilingFeatures & info._formatFeatureFlags) == info._formatFeatureFlags)
-			{
-				return format;
-			}
-			else if (info._imageTiling == vk::ImageTiling::eOptimal &&
-					 (formatProperties.optimalTilingFeatures & info._formatFeatureFlags) == info._formatFeatureFlags)
-			{
-				return format;
-			}
+vk::Format de::vulkan::utils::findSupportedDepthFormat(const vk::PhysicalDevice physicalDevice) noexcept
+{
+	constexpr auto formatCandidates = std::array{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint};
+	const auto imageTiling = vk::ImageTiling::eOptimal;
+	const auto formatFeatureFlags = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+
+	for (const auto format : formatCandidates)
+	{
+		const auto formatProperties = physicalDevice.getFormatProperties(format);
+		if (imageTiling == vk::ImageTiling::eLinear &&
+			(formatProperties.linearTilingFeatures & formatFeatureFlags) == formatFeatureFlags)
+		{
+			return format;
+		}
+		else if (imageTiling == vk::ImageTiling::eOptimal &&
+				 (formatProperties.optimalTilingFeatures & formatFeatureFlags) == formatFeatureFlags)
+		{
+			return format;
 		}
 	}
 	return vk::Format::eUndefined;
@@ -42,42 +44,29 @@ vk::SampleCountFlagBits de::vulkan::utils::findMaxSampleCount(const vk::Physical
 	return vk::SampleCountFlagBits::e1;
 }
 
-vk::SurfaceFormatKHR de::vulkan::utils::findSurfaceFormat(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
+vk::SurfaceFormatKHR de::vulkan::utils::findSurfaceFormat(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface, const vk::Format format)
 {
 	const auto surfaceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
-
-	for (const auto& surfaceFormat : surfaceFormats)
+	const auto pred = [format](const vk::SurfaceFormatKHR surfaceFormat)
 	{
-		if (vk::Format::eB8G8R8A8Unorm == surfaceFormat.format)
-		{
-			return surfaceFormat;
-		}
-	}
-	throw std::runtime_error("Failed to find preffered surface format!");
-	return vk::SurfaceFormatKHR();
+		return surfaceFormat.format == format;
+	};
+	const auto result = std::find_if(surfaceFormats.begin(), surfaceFormats.end(), pred);
+	return result != surfaceFormats.end() ? *result : vk::SurfaceFormatKHR();
 }
 
 vk::PresentModeKHR de::vulkan::utils::findPresentMode(const vk::PhysicalDevice physicalDevice, const vk::SurfaceKHR surface)
 {
 	// clang-format off
-	const std::array<vk::PresentModeKHR, 4> modesPriority = // prefer top ones over lower ones
+	constexpr auto modesPriority =	
+		std::array
 		{
 			vk::PresentModeKHR::eMailbox,
 			vk::PresentModeKHR::eFifoRelaxed,
-			vk::PresentModeKHR::eFifo,
-			vk::PresentModeKHR::eImmediate
+			vk::PresentModeKHR::eFifo
 		};
 	// clang-format on
-
 	const auto availableModes = physicalDevice.getSurfacePresentModesKHR(surface);
-	const auto availableModesBegin = availableModes.begin();
-	const auto availableModesEnd = availableModes.end();
-	for (const auto mode : modesPriority)
-	{
-		if (std::find(availableModesBegin, availableModesEnd, mode) != availableModesEnd)
-		{
-			return mode;
-		}
-	}
-	return vk::PresentModeKHR::eImmediate;
+	const auto result = std::find_first_of(modesPriority.begin(), modesPriority.end(), availableModes.begin(), availableModes.end());
+	return result != modesPriority.end() ? *result : vk::PresentModeKHR();
 }
