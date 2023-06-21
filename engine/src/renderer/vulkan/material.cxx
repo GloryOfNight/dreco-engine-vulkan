@@ -46,17 +46,23 @@ de::vulkan::material::unique de::vulkan::material::makeNew(shader::shared vert, 
 
 de::vulkan::material_instance* de::vulkan::material::makeInstance()
 {
+	material_instance::unique newMatInst{};
 	try
 	{
-		auto& inst = _instances.emplace_back(material_instance::unique(new material_instance(this)));
-		return inst.get();
+		newMatInst = material_instance::unique(new material_instance(this));
 	}
 	catch (vk::OutOfPoolMemoryError)
 	{
-		DE_LOG(Error, "%s: Out of pool memory", __FUNCTION__);
-		resizeDescriptorPool(_instances.size() * 2);
-		return makeInstance();
+		DE_LOG(Error, "%s: Out of descriptor pool memory. Resizing. . .", __FUNCTION__);
+
+		const auto maxSetsBeforeResize = _depscriptorPoolMaxSets;
+		resizeDescriptorPool(maxSetsBeforeResize * 2);
+
+		// second attempt to create instance, but without handling throw
+		newMatInst = material_instance::unique(new material_instance(this));
 	}
+	auto& inst = _instances.emplace_back(std::move(newMatInst));
+	return inst.get();
 }
 
 void de::vulkan::material::init(size_t maxInstances)
@@ -91,6 +97,10 @@ void de::vulkan::material::resizeDescriptorPool(uint32_t newSize)
 {
 	auto device = renderer::get()->getDevice();
 
+	// free all instances (unnecessary)
+	for (auto& instance : _instances)
+		instance->free();
+
 	for (auto layout : _descriptorSetLayouts)
 		device.destroyDescriptorSetLayout(layout);
 	_descriptorSetLayouts.clear();
@@ -99,10 +109,13 @@ void de::vulkan::material::resizeDescriptorPool(uint32_t newSize)
 
 	createDescriptorPool(newSize);
 
-	const auto instancesCount = _instances.size();
-	_instances.clear();
-	for (size_t i = 0; i < instancesCount; ++i)
-		makeInstance();
+	// re-allocate with new pool and update all sets
+	for (auto& instance : _instances)
+	{
+		instance->allocate();
+		instance->updateDescriptorSets();
+	}
+		
 }
 
 void de::vulkan::material::bindCmd(vk::CommandBuffer commandBuffer) const
@@ -113,6 +126,8 @@ void de::vulkan::material::bindCmd(vk::CommandBuffer commandBuffer) const
 
 void de::vulkan::material::createDescriptorPool(uint32_t maxSets)
 {
+	_depscriptorPoolMaxSets = maxSets;
+
 	auto device = renderer::get()->getDevice();
 	std::vector<shader::descripted_data> shadersDataSets;
 	{
@@ -129,12 +144,14 @@ void de::vulkan::material::createDescriptorPool(uint32_t maxSets)
 	{
 		_descriptorSetLayouts.push_back(device.createDescriptorSetLayout(data._descriptorSetLayoutCreateInfo));
 
-		const auto dataPoolSizes = data.getDescriptorPoolSizes();
+		auto dataPoolSizes = data.getDescriptorPoolSizes(_depscriptorPoolMaxSets);
 		std::move(dataPoolSizes.begin(), dataPoolSizes.end(), std::back_inserter(poolSizes));
 	}
+
 	_descriptorPool = device.createDescriptorPool(vk::DescriptorPoolCreateInfo()
+													  .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
 													  .setPoolSizes(poolSizes)
-													  .setMaxSets(_descriptorSetLayouts.size() * maxSets));
+													  .setMaxSets(_descriptorSetLayouts.size() * _depscriptorPoolMaxSets));
 }
 
 void de::vulkan::material::createPipelineLayout()
@@ -216,7 +233,7 @@ vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 
 	std::array<vk::PipelineColorBlendAttachmentState, 1> colorBlendAttachments;
 	colorBlendAttachments[0] = vk::PipelineColorBlendAttachmentState()
-								   .setBlendEnable(VK_TRUE)
+								   .setBlendEnable(VK_FALSE)
 								   .setColorWriteMask(
 									   vk::ColorComponentFlagBits::eR |
 									   vk::ColorComponentFlagBits::eG |

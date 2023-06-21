@@ -147,14 +147,14 @@ void de::engine::setCreateGameInstanceFunc(std::function<de::gf::game_instance::
 
 uint32_t de::engine::addViewport(const std::string_view& name)
 {
-	auto window1 = SDL_CreateWindow(name.data(), 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
-	const auto window1Indx = _renderer.addView(window1);
-	if (window1Indx != UINT32_MAX)
+	auto newWindow = SDL_CreateWindow(name.data(), 720, 720, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	const auto viewIndx = _renderer.addView(newWindow);
+	if (viewIndx != UINT32_MAX)
 	{
-		_windows[window1Indx] = window1;
-		DE_LOG(Info, "%s: Added viewport: %i", __FUNCTION__, window1Indx);
+		_windows[viewIndx] = newWindow;
+		DE_LOG(Info, "%s: Added viewport: %i", __FUNCTION__, viewIndx);
 	}
-	return window1Indx;
+	return viewIndx;
 }
 
 void de::engine::closeWindow(uint32_t windowId)

@@ -7,7 +7,7 @@
 
 #include <spirv-reflect/spirv_reflect.h>
 
-std::vector<vk::DescriptorPoolSize> de::vulkan::shader::descripted_data::getDescriptorPoolSizes() const
+std::vector<vk::DescriptorPoolSize> de::vulkan::shader::descripted_data::getDescriptorPoolSizes(uint32_t maxSets) const
 {
 	std::vector<vk::DescriptorPoolSize> poolSizes(_descriptorSetLayoutBindings.size(), vk::DescriptorPoolSize());
 	for (uint8_t i = 0; i < poolSizes.size(); i++)
@@ -15,7 +15,7 @@ std::vector<vk::DescriptorPoolSize> de::vulkan::shader::descripted_data::getDesc
 		const auto& binding = _descriptorSetLayoutBindings[i];
 		poolSizes[i] = vk::DescriptorPoolSize()
 						   .setType(binding.descriptorType)
-						   .setDescriptorCount(binding.descriptorCount);
+						   .setDescriptorCount(binding.descriptorCount * maxSets);
 	}
 	return poolSizes;
 }

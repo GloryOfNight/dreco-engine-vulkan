@@ -20,7 +20,7 @@ namespace de::vulkan
 
 			std::vector<vk::DescriptorSetLayoutBinding> _descriptorSetLayoutBindings{};
 
-			std::vector<vk::DescriptorPoolSize> getDescriptorPoolSizes() const;
+			std::vector<vk::DescriptorPoolSize> getDescriptorPoolSizes(uint32_t maxSets) const;
 		};
 
 		struct vertex_input_info

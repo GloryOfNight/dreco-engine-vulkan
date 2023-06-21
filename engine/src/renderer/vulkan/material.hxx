@@ -68,6 +68,8 @@ namespace de::vulkan
 		std::vector<vk::DescriptorSetLayout> _descriptorSetLayouts{};
 		vk::DescriptorPool _descriptorPool{};
 
+		uint32_t _depscriptorPoolMaxSets{};
+
 		vk::PipelineLayout _pipelineLayout{};
 		std::map<uint32_t, vk::UniquePipeline> _pipelines{};
 

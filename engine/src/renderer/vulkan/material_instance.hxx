@@ -18,6 +18,9 @@ namespace de::vulkan
 		friend material;
 		material_instance(material* owner);
 
+		void allocate();
+		void free();
+
 	public:
 		using unique = std::unique_ptr<material_instance>;
 
@@ -48,12 +51,12 @@ namespace de::vulkan
 		std::map<std::string, std::vector<vk::DescriptorBufferInfo>> getDescriptorBufferInfos(const shader& inShader) const;
 		std::map<std::string, std::vector<vk::DescriptorImageInfo>> getDescriptorImageInfos(const shader& inShader) const;
 
-		material* _owner;
+		material* _owner{};
 
-		std::vector<vk::DescriptorSet> _descriptorSets;
+		std::vector<vk::DescriptorSet> _descriptorSets{};
 
-		std::map<std::string, std::vector<const de::vulkan::buffer*>> _buffers;
-		std::map<std::string, std::vector<const image*>> _images;
+		std::map<std::string, std::vector<const de::vulkan::buffer*>> _buffers{};
+		std::map<std::string, std::vector<const image*>> _images{};
 	};
 
 	template <typename Str>
