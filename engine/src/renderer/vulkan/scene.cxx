@@ -229,7 +229,7 @@ void de::vulkan::scene::bindToCmdBuffer(vk::CommandBuffer commandBuffer)
 
 		mat->bindCmd(commandBuffer);
 		matInst->bindCmd(commandBuffer);
-		for (auto& mesh : meshes)
+		for (const auto& mesh : meshes)
 		{
 			commandBuffer.pushConstants(mat->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, sizeof(de::math::mat4), &mesh->_mat);
 			mesh->drawCmd(commandBuffer);
