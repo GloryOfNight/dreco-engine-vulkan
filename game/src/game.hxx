@@ -20,9 +20,9 @@ public:
 		const uint32_t view1Indx = de::engine::get()->addViewport("camera (1)");
 		camera1->setViewId(view1Indx);
 
-		auto camera2 = de::gf::newNode<de::gf::flying_camera>(this);
-		const uint32_t view2Indx = de::engine::get()->addViewport("camera (2)");
-		camera2->setViewId(view2Indx);
+		//auto camera2 = de::gf::newNode<de::gf::flying_camera>(this);
+		//const uint32_t view2Indx = de::engine::get()->addViewport("camera (2)");
+		//camera2->setViewId(view2Indx);
 
 		de::gf::newNode<de::gf::gltf_model>(this, nullptr, "mi-24d/scene.gltf");
 		de::gf::newNode<de::gf::gltf_model>(this, nullptr, "viking_room/scene.gltf");

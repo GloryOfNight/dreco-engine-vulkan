@@ -42,7 +42,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${Vulkan_INCLUDE_DIR} ${SDL3_I
 
 # link modules
 add_subdirectory(modules)
-target_link_libraries(${PROJECT_NAME} PUBLIC dreco-math dreco-core-minimal dreco-gltf dreco-threads dreco-shader-compiler-tool)
+target_link_libraries(${PROJECT_NAME} PUBLIC dreco-core-minimal dreco-math dreco-gltf dreco-threads dreco-shader-compiler-tool)
 
 # link thirdparty libraries
 add_subdirectory(thirdparty)

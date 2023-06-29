@@ -1,5 +1,4 @@
-add_subdirectory(sdl-common)
-
+add_subdirectory(sdl)
 add_subdirectory(core-minimal)
 add_subdirectory(math)
 add_subdirectory(gltf)
