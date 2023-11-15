@@ -10,11 +10,13 @@ jobs:
   Windows:
     runs-on: windows-latest
     steps:
-      - run: choco install cmake
-      - run: choco install ninja
-      - run: choco install llvm
-      
       - uses: actions/checkout@v2
+    
+      - name: Install tools
+        run: |
+          choco install cmake
+          choco install ninja
+          choco install llvm
 
       - name: Compile and install SDL
         run: |
