@@ -15,9 +15,6 @@ namespace de::paths
 		[[nodiscard]] static std::string shadersBinDir();
 
 		[[nodiscard]] static std::string shadersSrcDir();
-
-	private:
-		static bool checkCorePaths();
 	};
 
 } // namespace de::paths

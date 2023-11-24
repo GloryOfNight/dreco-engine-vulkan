@@ -91,7 +91,7 @@ void de::engine::initialize()
 	}
 
 	registerSignals();
-	if (auto sdlInitResult{SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO)}; 0 != sdlInitResult)
+	if (auto sdlInitResult{SDL_Init(SDL_INIT_VIDEO)}; 0 != sdlInitResult)
 	{
 		DE_LOG(Error, "%s: sdl initialization error: %s", __FUNCTION__, SDL_GetError());
 		throw de::except::initialization_error();
