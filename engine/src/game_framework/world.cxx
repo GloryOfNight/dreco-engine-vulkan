@@ -20,5 +20,5 @@ void de::gf::world::tick(double deltaTime)
 
 de::gf::node::unique de::gf::world::makeRootNode()
 {
-	return node::unique(newNode<node>(this));
+	return node::unique(newNode<node>(this, nullptr));
 }

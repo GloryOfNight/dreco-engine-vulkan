@@ -16,7 +16,7 @@ public:
 
 	void init() override
 	{
-		auto camera1 = de::gf::newNode<de::gf::flying_camera>(this);
+		auto camera1 = de::gf::newNode<de::gf::flying_camera>(this, nullptr);
 		const uint32_t view1Indx = de::engine::get()->addViewport("camera (1)");
 		camera1->setViewId(view1Indx);
 
