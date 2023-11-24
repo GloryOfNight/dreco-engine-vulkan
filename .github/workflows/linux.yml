@@ -23,7 +23,7 @@ jobs:
         run: |
           git clone https://github.com/libsdl-org/SDL.git --depth 1
           cmake -S SDL -B SDL/build -DCMAKE_GENERATOR=Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DSDL_TEST_LIBRARY=OFF
-          cmake --build SDL/build
+          cmake --build SDL/build -j
           sudo cmake --install SDL/build
 
       - name: Install Vulkan SDK
@@ -38,4 +38,4 @@ jobs:
 
       - name: CMake Build
         shell: bash
-        run: cmake --build build
+        run: cmake --build build -j
