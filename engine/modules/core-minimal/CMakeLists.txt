@@ -23,4 +23,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/i
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/platforms")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/platforms/paths")
 
-target_link_libraries(${PROJECT_NAME} PUBLIC dreco-sdl-common)
+target_link_libraries(${PROJECT_NAME} PUBLIC dreco-sdl)

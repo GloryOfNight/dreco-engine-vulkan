@@ -11,10 +11,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
+    
+      - name: Install tools
+        run: |
+          choco install cmake
+          choco install ninja
+          choco install llvm
 
-      - name: Install SDL
-        run: git clone https://github.com/libsdl-org/SDL.git && cmake -S SDL -B SDL/build && cmake --build SDL/build --config Release --target INSTALL
-      
+      - name: Compile and install SDL
+        run: |
+            git clone https://github.com/libsdl-org/SDL.git --depth 1
+            cmake -S SDL -B SDL/build -DCMAKE_GENERATOR=Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DSDL_TEST_LIBRARY=OFF
+            cmake --build SDL/build
+            cmake --install SDL/build
+
       - name: Install Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:

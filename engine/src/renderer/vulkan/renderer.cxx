@@ -178,7 +178,7 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 		return viewIndex;
 
 	VkSurfaceKHR newSurface;
-	if (SDL_Vulkan_CreateSurface(window, _instance, &newSurface) == SDL_TRUE)
+	if (SDL_Vulkan_CreateSurface(window, _instance, nullptr, &newSurface) == SDL_TRUE)
 	{
 		_views[viewIndex] = view::unique(new view());
 		_views[viewIndex]->init(newSurface, viewIndex);
@@ -288,12 +288,8 @@ void de::vulkan::renderer::submitSingleTimeTransferCommands(const std::vector<vk
 
 void de::vulkan::renderer::createInstance()
 {
-	std::vector<const char*> instanceExtensions;
-
-	unsigned int count{};
-	SDL_Vulkan_GetInstanceExtensions(&count, nullptr);
-	instanceExtensions.resize(count);
-	SDL_Vulkan_GetInstanceExtensions(&count, instanceExtensions.data() + 0);
+	uint32_t instanceExtensionsCount{};
+	char const* const* instanceExtensions = SDL_Vulkan_GetInstanceExtensions(&instanceExtensionsCount);
 
 	const auto allInstanceLayers = vk::enumerateInstanceLayerProperties();
 
@@ -320,7 +316,7 @@ void de::vulkan::renderer::createInstance()
 	}
 
 	const vk::ApplicationInfo applicationInfo("dreco-launcher", 0, "dreco", 0, _apiVersion);
-	const vk::InstanceCreateInfo instanceCreateInfo({}, &applicationInfo, instanceLayers, instanceExtensions);
+	const vk::InstanceCreateInfo instanceCreateInfo({}, &applicationInfo, instanceLayers.size(), instanceLayers.data(), instanceExtensionsCount, instanceExtensions);
 	_instance = vk::createInstance(instanceCreateInfo);
 }
 

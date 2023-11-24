@@ -1,0 +1,1 @@
+Executable that combines game library and engine library to a single executable.

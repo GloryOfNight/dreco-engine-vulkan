@@ -57,7 +57,7 @@ namespace de::gf
 	};
 
 	template <typename NodeClass, typename... Args>
-	static NodeClass* newNode(world* inWorld, node* inOwner = nullptr, Args&&... args)
+	static NodeClass* newNode(world* inWorld, node* inOwner, Args&&... args)
 	{
 		return node::newNode<NodeClass>(inWorld, inOwner, std::forward<Args>(args)...);
 	}

@@ -5,11 +5,22 @@
 de::vulkan::material_instance::material_instance(material* owner)
 {
 	_owner = owner;
+	allocate();
+}
 
+void de::vulkan::material_instance::allocate()
+{
 	auto device = renderer::get()->getDevice();
 	_descriptorSets = device.allocateDescriptorSets(vk::DescriptorSetAllocateInfo()
 														.setDescriptorPool(_owner->getDescriptorPool())
 														.setSetLayouts(_owner->getDescriptorSetLayouts()));
+}
+
+void de::vulkan::material_instance::free()
+{
+	auto device = renderer::get()->getDevice();
+	device.freeDescriptorSets(_owner->getDescriptorPool(), _descriptorSets);
+	_descriptorSets.clear();
 }
 
 de::vulkan::material* de::vulkan::material_instance::getMaterial() const

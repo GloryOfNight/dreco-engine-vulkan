@@ -23,6 +23,7 @@ namespace de::gltf
 		static image makePlaceholder(uint16_t width, uint16_t height, uint8_t channels = 3U, uint8_t components = 4U)
 		{
 			image outImage = image{
+				._uri = "<placeholder>",
 				._width = width,
 				._height = height,
 				._channels = channels,

@@ -1,9 +1,9 @@
 # TODO: 
 # Dreco SDL-CXX abstruction
 
-project(dreco-sdl-common)
+project(dreco-sdl)
 
-add_library(${PROJECT_NAME} STATIC include/sdl/sdl.h)
+add_library(${PROJECT_NAME} STATIC "src/sdl.cxx")
 set_target_properties(${PROJECT_NAME} PROPERTIES
     LINKER_LANGUAGE CXX
     CXX_STANDARD 20

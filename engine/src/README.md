@@ -1,0 +1,1 @@
+The source directory of engine itself combined with modules into single system.

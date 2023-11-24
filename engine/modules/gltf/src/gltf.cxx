@@ -313,6 +313,8 @@ DRECO_API de::gltf::image de::gltf::loadImage(const std::string_view imageFile)
 	{
 		const size_t pixelCount = width * heigth * components;
 
+		image._uri = imageFile;
+
 		image._width = width;
 		image._height = heigth;
 		image._channels = channels;
