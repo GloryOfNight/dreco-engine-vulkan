@@ -27,19 +27,19 @@ namespace de::math
 
 		union
 		{
-			T _x{}, _r;
+			alignas(4) T _x{}, _r;
 		};
 		union
 		{
-			T _y{}, _g;
+			alignas(4) T _y{}, _g;
 		};
 		union
 		{
-			T _z{}, _b;
+			alignas(4) T _z{}, _b;
 		};
 		union
 		{
-			T _w{}, _a;
+			alignas(4) T _w{}, _a;
 		};
 
 		vec4_t operator+(const vec4_t<T>& other)
@@ -83,8 +83,9 @@ namespace de::math
 		}
 	};
 
-	using vec4i = vec4_t<int32_t>;
-	using vec4d = vec4_t<double>;
-	using vec4f = vec4_t<float>;
-	using vec4 = vec4f;
+	using bvec4 = vec4_t<bool>;
+	using ivec4 = vec4_t<int32_t>;
+	using uvec4 = vec4_t<int32_t>;
+	using dvec4 = vec4_t<double>;
+	using vec4 = vec4_t<float>;
 } // namespace de::math
