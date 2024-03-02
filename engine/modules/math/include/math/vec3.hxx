@@ -34,15 +34,15 @@ namespace de::math
 
 		union
 		{
-			T _x{}, _r;
+			alignas(4) T _x{}, _r;
 		};
 		union
 		{
-			T _y{}, _g;
+			alignas(4) T _y{}, _g;
 		};
 		union
 		{
-			T _z{}, _b;
+			alignas(4) T _z{}, _b;
 		};
 
 		static vec3_t normalize(const vec3_t& v)
@@ -113,8 +113,9 @@ namespace de::math
 		}
 	};
 
-	using vec3i = vec3_t<int32_t>;
-	using vec3d = vec3_t<double>;
-	using vec3f = vec3_t<float>;
-	using vec3 = vec3f;
+	using bvec3 = vec3_t<bool>;
+	using ivec3 = vec3_t<int32_t>;
+	using uvec3 = vec3_t<int32_t>;
+	using dvec3 = vec3_t<double>;
+	using vec3 = vec3_t<float>;
 } // namespace de::math

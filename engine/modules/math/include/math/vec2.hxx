@@ -26,11 +26,11 @@ namespace de::math
 
 		union
 		{
-			T _x{}, _u;
+			alignas(4) T _x{}, _u;
 		};
 		union
 		{
-			T _y{}, _v;
+			alignas(4) T _y{}, _v;
 		};
 
 		vec2_t operator+(const vec2_t<T>& other)
@@ -79,8 +79,9 @@ namespace de::math
 		}
 	};
 
-	using vec2i = vec2_t<int32_t>;
-	using vec2d = vec2_t<double>;
-	using vec2f = vec2_t<float>;
-	using vec2 = vec2f;
+	using bvec2 = vec2_t<bool>;
+	using ivec2 = vec2_t<int32_t>;
+	using uvec2 = vec2_t<int32_t>;
+	using dvec2 = vec2_t<double>;
+	using vec2 = vec2_t<float>;
 } // namespace de::math
