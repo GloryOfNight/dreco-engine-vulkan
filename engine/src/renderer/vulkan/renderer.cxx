@@ -8,8 +8,8 @@
 #include "dreco.hxx"
 #include "utils.hxx"
 
-#include <SDL_video.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_video.h>
+#include <SDL3/SDL_vulkan.h>
 #include <chrono>
 
 de::vulkan::renderer::~renderer()
@@ -37,7 +37,7 @@ void de::vulkan::renderer::init()
 
 	{ // the base of vulkan renderer initialization
 
-		if (SDL_Vulkan_LoadLibrary(NULL) != 0)
+		if (!SDL_Vulkan_LoadLibrary(NULL))
 		{
 			DE_LOG(Critical, "Failed to load vulkan library");
 			std::exit(EXIT_FAILURE);
@@ -178,7 +178,7 @@ uint32_t de::vulkan::renderer::addView(SDL_Window* window)
 		return viewIndex;
 
 	VkSurfaceKHR newSurface;
-	if (SDL_Vulkan_CreateSurface(window, _instance, nullptr, &newSurface) == SDL_TRUE)
+	if (SDL_Vulkan_CreateSurface(window, _instance, nullptr, &newSurface))
 	{
 		_views[viewIndex] = view::unique(new view());
 		_views[viewIndex]->init(newSurface, viewIndex);

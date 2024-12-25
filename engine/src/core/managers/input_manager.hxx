@@ -21,7 +21,7 @@ namespace de
 		{
 			key_state() = default;
 			key_state(const SDL_Event& event)
-				: _state{event.key.state}
+				: _state{event.key.down}
 				, _timestamp{event.key.timestamp}
 				, _repeat{static_cast<bool>(event.key.repeat)}
 			{

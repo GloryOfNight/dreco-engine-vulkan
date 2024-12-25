@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL_log.h>
+#include <SDL3/SDL_log.h>
 #include <string>
 #include <type_traits>
 

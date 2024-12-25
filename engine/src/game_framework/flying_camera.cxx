@@ -70,29 +70,29 @@ void de::gf::flying_camera::tick(double deltaTime)
 		}
 
 		auto& pos = transform._translation;
-		if (_inputManager.isKeyPressed(SDLK_w))
+		if (_inputManager.isKeyPressed(SDLK_W))
 		{
 			pos += camFowVec * camMoveSpeed * deltaTime;
 		}
-		else if (_inputManager.isKeyPressed(SDLK_s))
+		else if (_inputManager.isKeyPressed(SDLK_S))
 		{
 			pos += camFowVec * (-camMoveSpeed * deltaTime);
 		}
 
-		if (_inputManager.isKeyPressed(SDLK_d))
+		if (_inputManager.isKeyPressed(SDLK_D))
 		{
 			pos += camRightVec * (camMoveSpeed * deltaTime);
 		}
-		else if (_inputManager.isKeyPressed(SDLK_a))
+		else if (_inputManager.isKeyPressed(SDLK_A))
 		{
 			pos += camRightVec * (-camMoveSpeed * deltaTime);
 		}
 
-		if (_inputManager.isKeyPressed(SDLK_e))
+		if (_inputManager.isKeyPressed(SDLK_E))
 		{
 			pos += de::math::vec3(0, camMoveSpeed * deltaTime, 0);
 		}
-		else if (_inputManager.isKeyPressed(SDLK_q))
+		else if (_inputManager.isKeyPressed(SDLK_Q))
 		{
 			pos += de::math::vec3(0, -camMoveSpeed * deltaTime, 0);
 		}

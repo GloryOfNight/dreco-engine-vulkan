@@ -1,7 +1,6 @@
 #include "thread_pool.hxx"
 
-#include "SDL_thread.h"
-
+#include <SDL3/SDL_thread.h>
 #include <algorithm>
 
 de::async::thread_pool::~thread_pool()
@@ -109,7 +108,7 @@ int de::async::thread_pool::threadsLoop(void* data)
 {
 	auto& pool = *reinterpret_cast<thread_pool*>(data);
 
-	SDL_SetThreadPriority(static_cast<SDL_ThreadPriority>(pool.getPriority()));
+	SDL_SetCurrentThreadPriority(static_cast<SDL_ThreadPriority>(pool.getPriority()));
 
 	while (pool.getLoopCondition())
 	{

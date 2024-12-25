@@ -1,9 +1,9 @@
 #pragma once
 
-#include "SDL_platform.h"
+#include <SDL3/SDL_platform.h>
 
 #define PLATFORM_LINUX __LINUX__
-#define PLATFORM_WINDOWS __WINDOWS__
+#define PLATFORM_WINDOWS _WIN32
 
 #include "paths/generic.hxx"
 

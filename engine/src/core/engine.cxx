@@ -7,7 +7,7 @@
 
 #include "engine.hxx"
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <chrono>
 #include <csignal>
 
@@ -91,7 +91,7 @@ void de::engine::initialize()
 	}
 
 	registerSignals();
-	if (auto sdlInitResult{SDL_Init(SDL_INIT_VIDEO)}; 0 != sdlInitResult)
+	if (!SDL_Init(SDL_INIT_VIDEO))
 	{
 		DE_LOG(Error, "%s: sdl initialization error: %s", __FUNCTION__, SDL_GetError());
 		throw de::except::initialization_error();

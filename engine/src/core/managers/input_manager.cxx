@@ -3,7 +3,7 @@
 #include "core/engine.hxx"
 #include "platforms/platform.h"
 
-#include <SDL_events.h>
+#include <SDL3/SDL_events.h>
 
 void de::input_manager::init(event_manager& eventManager)
 {
@@ -18,7 +18,7 @@ void de::input_manager::init(event_manager& eventManager)
 bool de::input_manager::isKeyPressed(const uint32_t key) const
 {
 	const auto& findRes = _keys.find(key);
-	if (findRes != _keys.end() && findRes->second._state == SDL_PRESSED)
+	if (findRes != _keys.end() && findRes->second._state == true)
 	{
 		return true;
 	}
@@ -63,7 +63,7 @@ void de::input_manager::setMouseRelativeMode(const bool state) const
 #if PLATFORM_LINUX
 	showCursor(!state);
 #else
-	SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state));
+	// SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state)); ???
 #endif
 }
 
@@ -80,7 +80,7 @@ void de::input_manager::onKeyEvent(const SDL_Event& event)
 		return;
 	}
 
-	_keys.insert_or_assign(event.key.keysym.sym, key_state(event));
+	_keys.insert_or_assign(event.key.key, key_state(event));
 }
 
 void de::input_manager::onMouseEvent(const SDL_Event& event)
@@ -103,7 +103,7 @@ void de::input_manager::onMouseEvent(const SDL_Event& event)
 		}
 		else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP)
 		{
-			_mouseState._state = event.button.state;
+			_mouseState._state = event.button.down;
 			_mouseState._x = event.button.x;
 			_mouseState._y = event.button.y;
 		}

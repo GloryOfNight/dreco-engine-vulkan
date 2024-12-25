@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL_events.h>
+#include <SDL3/SDL_events.h>
 #include <cstdint>
 #include <forward_list>
 #include <functional>
