@@ -17,7 +17,7 @@ struct material_data
 	alignas(4) bool _hasMetallicRoughness{false};
 	alignas(4) bool _hasNormal{false};
 
-	alignas(4) float _metallicFactor{1.F};
-	alignas(4) float _roughnessFactor{1.F};
-	alignas(4) float _normalScale{1.F};
+	float _metallicFactor{1.F};
+	float _roughnessFactor{1.F};
+	float _normalScale{1.F};
 };
