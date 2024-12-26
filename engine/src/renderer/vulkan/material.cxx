@@ -78,9 +78,9 @@ void de::vulkan::material::init(size_t maxInstances)
 	}
 }
 
-void de::vulkan::material::setDynamicStates(std::vector<vk::DynamicState>&& dynamicStates)
+void de::vulkan::material::setDynamicStates(std::vector<vk::DynamicState> dynamicStates)
 {
-	_pipelineDynamicStates = dynamicStates;
+	_pipelineDynamicStates = std::move(dynamicStates);
 }
 
 void de::vulkan::material::setShaderVert(const shader::shared& inShader)

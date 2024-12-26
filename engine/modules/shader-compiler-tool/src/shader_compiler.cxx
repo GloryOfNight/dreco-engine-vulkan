@@ -106,7 +106,7 @@ int shader_compiler::attemptCompileShaders(const std::string_view& srcShaderDir,
 		{
 			const std::string sourceShaderPath = path.generic_string();
 			const std::string outputShaderPath = shaderBinDirPath.generic_string() + '/' + path.filename().generic_string() + ".spv";
-			const std::string command = "glslc" + exeStem + ' ' + sourceShaderPath + " -o " + outputShaderPath + " --target-env=vulkan";
+			const std::string command = "glslc" + exeStem + ' ' + sourceShaderPath + " -o " + outputShaderPath + " --target-env=vulkan1.3";
 			const int result = std::system(command.data());
 			if (result == 0)
 			{

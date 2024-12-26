@@ -29,10 +29,11 @@ void de::vulkan::shader::create(const std::string_view inShaderPath)
 {
 	_shaderPath = inShaderPath;
 
-	const auto shaderCode = file::read(_shaderPath);
+	const std::string shaderCode = file::read(_shaderPath);
 	if (!shaderCode.empty())
 	{
-		_shaderModule = renderer::get()->getDevice().createShaderModule(vk::ShaderModuleCreateInfo({}, shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data())));
+		const vk::ShaderModuleCreateInfo shaderModuleCreateInfo = vk::ShaderModuleCreateInfo({}, shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data()));
+		_shaderModule = renderer::get()->getDevice().createShaderModule(shaderModuleCreateInfo);
 
 		const SpvReflectResult result =
 			spvReflectCreateShaderModule(shaderCode.size(), reinterpret_cast<const uint32_t*>(shaderCode.data()), &_reflModule);

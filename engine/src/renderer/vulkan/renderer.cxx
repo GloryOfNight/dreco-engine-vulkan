@@ -33,7 +33,7 @@ bool de::vulkan::renderer::isSupported()
 
 void de::vulkan::renderer::init()
 {
-	_apiVersion = vk::enumerateInstanceVersion();
+	_apiVersion = VK_API_VERSION_1_3;
 
 	{ // the base of vulkan renderer initialization
 
@@ -79,7 +79,6 @@ void de::vulkan::renderer::init()
 			const auto vert = loadShader(DRECO_SHADER(constants::shaders::skyboxVert));
 			const auto frag = loadShader(DRECO_SHADER(constants::shaders::skyboxFrag));
 			const auto& [iter, isEmplaced] = _materials.try_emplace(constants::materials::skybox, material::makeNew(vert, frag));
-			iter->second->setDynamicStates({vk::DynamicState::eDepthTestEnable});
 			iter->second->init(128);
 		}
 		_skybox.init();
@@ -289,7 +288,13 @@ void de::vulkan::renderer::submitSingleTimeTransferCommands(const std::vector<vk
 void de::vulkan::renderer::createInstance()
 {
 	uint32_t instanceExtensionsCount{};
-	char const* const* instanceExtensions = SDL_Vulkan_GetInstanceExtensions(&instanceExtensionsCount);
+	char const* const* instanceExtensionsSdl = SDL_Vulkan_GetInstanceExtensions(&instanceExtensionsCount);
+
+	std::vector<const char*> instanceExtensions{};
+	for (int32_t i =0; i < instanceExtensionsCount; ++i)
+	{
+		instanceExtensions.push_back(instanceExtensionsSdl[i]);
+	}
 
 	const auto allInstanceLayers = vk::enumerateInstanceLayerProperties();
 
@@ -316,7 +321,7 @@ void de::vulkan::renderer::createInstance()
 	}
 
 	const vk::ApplicationInfo applicationInfo("dreco-launcher", 0, "dreco", 0, _apiVersion);
-	const vk::InstanceCreateInfo instanceCreateInfo({}, &applicationInfo, instanceLayers.size(), instanceLayers.data(), instanceExtensionsCount, instanceExtensions);
+	const vk::InstanceCreateInfo instanceCreateInfo({}, &applicationInfo, instanceLayers, instanceExtensions);
 	_instance = vk::createInstance(instanceCreateInfo);
 }
 

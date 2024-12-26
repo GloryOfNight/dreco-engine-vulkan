@@ -26,7 +26,7 @@ namespace de::vulkan
 
 		void init(size_t maxInstances);
 
-		void setDynamicStates(std::vector<vk::DynamicState>&& dynamicStates);
+		void setDynamicStates(std::vector<vk::DynamicState> dynamicStates);
 
 		material(material&) = delete;
 		material(material&&) = default;
