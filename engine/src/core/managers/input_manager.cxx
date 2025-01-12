@@ -59,12 +59,7 @@ void de::input_manager::showCursor(const bool state) const
 
 void de::input_manager::setMouseRelativeMode(const bool state) const
 {
-	// SDL Relative mode acting weird on Linux, until figure out, use hack:
-#if PLATFORM_LINUX
 	showCursor(!state);
-#else
-	// SDL_SetRelativeMouseMode(static_cast<SDL_bool>(state)); ???
-#endif
 }
 
 bool de::input_manager::isInMouseFocus() const
