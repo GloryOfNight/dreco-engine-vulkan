@@ -149,6 +149,9 @@ void de::vulkan::renderer::tick(double deltaTime)
 
 		auto commandBuffer = currentView->beginCommandBuffer(nextImage);
 
+		commandBuffer.setViewport(0, vk::Viewport(0.f, 0.f, static_cast<float>(viewExtent.width), static_cast<float>(viewExtent.height), 0.f, 1.f));
+		commandBuffer.setScissor(0, vk::Rect2D(vk::Offset2D(0, 0), viewExtent));
+
 		_skybox.drawCmd(commandBuffer);
 
 		for (auto& scene : _scenes)

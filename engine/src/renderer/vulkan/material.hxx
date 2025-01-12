@@ -75,6 +75,6 @@ namespace de::vulkan
 
 		std::vector<material_instance::unique> _instances{};
 
-		std::vector<vk::DynamicState> _pipelineDynamicStates{};
+		std::vector<vk::DynamicState> _pipelineDynamicStates{vk::DynamicState::eViewport, vk::DynamicState::eScissor, vk::DynamicState::eDepthTestEnable};
 	};
 } // namespace de::vulkan

@@ -288,21 +288,10 @@ vk::UniquePipeline de::vulkan::material::createPipeline(uint32_t viewIndex)
 									   .setStencilTestEnable(VK_TRUE);
 
 	const auto extent = view->getCurrentExtent();
-	const auto viewport = vk::Viewport()
-							  .setX(0)
-							  .setY(0)
-							  .setWidth(extent.width)
-							  .setHeight(extent.height)
-							  .setMinDepth(0.0F)
-							  .setMaxDepth(1.0F);
-
-	const auto scissors = vk::Rect2D()
-							  .setOffset(vk::Offset2D(0, 0))
-							  .setExtent(extent);
 
 	const auto viewportState = vk::PipelineViewportStateCreateInfo()
-								   .setViewports(viewport)
-								   .setScissors(scissors);
+									.setViewportCount(1)
+									.setScissorCount(1);
 
 	const auto dynamicState = vk::PipelineDynamicStateCreateInfo()
 								  .setDynamicStates(_pipelineDynamicStates);
